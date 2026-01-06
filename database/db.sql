@@ -51,7 +51,7 @@ CREATE TABLE users (
   id BIGSERIAL PRIMARY KEY,
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
-  role user_role NOT NULL,
+  role VARCHAR(20) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -78,9 +78,9 @@ CREATE TABLE companies (
   google_maps_embed_url TEXT,
 
   catalog_file_url TEXT,
-  catalog_file_type catalog_file_type,
+  catalog_file_type VARCHAR(10),
 
-  status company_status NOT NULL DEFAULT 'INACTIVE',
+  status VARCHAR(20) NOT NULL DEFAULT 'INACTIVE',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -91,12 +91,12 @@ CREATE TABLE companies (
 CREATE TABLE company_applications (
   id BIGSERIAL PRIMARY KEY,
   user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  application_type company_application_type NOT NULL,
+  application_type VARCHAR(30) NOT NULL,
 
   target_company_id BIGINT REFERENCES companies(id) ON DELETE SET NULL,
   proposed_company_name VARCHAR(255),
 
-  status company_application_status NOT NULL DEFAULT 'PENDING',
+  status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -131,7 +131,7 @@ CREATE TABLE company_materials (
   id BIGSERIAL PRIMARY KEY,
   company_id BIGINT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   material_id BIGINT NOT NULL REFERENCES materials(id) ON DELETE CASCADE,
-  role company_material_role NOT NULL,
+  role VARCHAR(20) NOT NULL,
   price NUMERIC(12,2) NOT NULL CHECK (price >= 0),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (company_id, material_id)
