@@ -1,0 +1,188 @@
+[
+  {
+    "company_name": "Ereğli Demir Çelik",
+    "website": "https://www.erdemir.com.tr",
+    "sector": "Çelik/Metal",
+    "notes": "ISO 500 - Türkiye'nin en büyük çelik üreticisi"
+  },
+  {
+    "company_name": "Tosyalı Holding",
+    "website": "https://www.tosyali.com",
+    "sector": "Çelik/Metal",
+    "notes": "ISO 500 - Büyük çelik üreticisi"
+  },
+  {
+    "company_name": "İskenderun Demir Çelik",
+    "website": "https://www.isdemir.com.tr",
+    "sector": "Çelik/Metal",
+    "notes": "ISO 500 - Entegre demir çelik"
+  },
+  {
+    "company_name": "Kardemir",
+    "website": "https://www.kardemir.com",
+    "sector": "Çelik/Metal",
+    "notes": "ISO 500 - Karabük Demir Çelik"
+  },
+  {
+    "company_name": "Borusan Mannesmann",
+    "website": "https://www.borusanmannesmann.com",
+    "sector": "Çelik/Metal",
+    "notes": "ISO 500 - Çelik boru üretimi"
+  },
+  {
+    "company_name": "Borçelik",
+    "website": "https://www.borcelik.com.tr",
+    "sector": "Çelik/Metal",
+    "notes": "Spiral kaynaklı boru üreticisi"
+  },
+  {
+    "company_name": "Çolakoğlu Metalurji",
+    "website": "https://www.colakoglu.com.tr",
+    "sector": "Çelik/Metal",
+    "notes": "ISO 500 - Çelik üretimi"
+  },
+  {
+    "company_name": "İzmir Demir Çelik",
+    "website": "https://www.izdemir.com.tr",
+    "sector": "Çelik/Metal",
+    "notes": "ISO 500 - Haddehane"
+  },
+  {
+    "company_name": "Noksel Çelik",
+    "website": "https://www.noksel.com.tr",
+    "sector": "Çelik/Metal",
+    "notes": "Çelik boru ve profil"
+  },
+  {
+    "company_name": "Yücel Boru",
+    "website": "https://www.yucelboru.com",
+    "sector": "Çelik/Metal",
+    "notes": "Çelik boru üreticisi"
+  },
+  {
+    "company_name": "Kroman Çelik",
+    "website": "https://www.kroman.com.tr",
+    "sector": "Çelik/Metal",
+    "notes": "ISO 500 - Çelik haddeciliği"
+  },
+  {
+    "company_name": "Assan Alüminyum",
+    "website": "https://www.assanaluminyum.com",
+    "sector": "Çelik/Metal",
+    "notes": "ISO 500 - Alüminyum üretimi"
+  },
+  {
+    "company_name": "Çemtaş Çelik",
+    "website": "https://www.cemtas.com.tr",
+    "sector": "Çelik/Metal",
+    "notes": "Çelik döküm ve hadde"
+  },
+  {
+    "company_name": "Kaptan Demir Çelik",
+    "website": "https://www.kaptancelik.com",
+    "sector": "Çelik/Metal",
+    "notes": "Profil ve çelik üretimi"
+  },
+  {
+    "company_name": "İçdaş Çelik",
+    "website": "https://www.icdas.com.tr",
+    "sector": "Çelik/Metal",
+    "notes": "ISO 500 - Çelik üretimi"
+  },
+  {
+    "company_name": "Yazıcı Demir Çelik",
+    "website": "https://www.yazicicelik.com.tr",
+    "sector": "Çelik/Metal",
+    "notes": "İnşaat demiri üretimi"
+  },
+  {
+    "company_name": "Diler Demir Çelik",
+    "website": "https://www.dilerholding.com",
+    "sector": "Çelik/Metal",
+    "notes": "ISO 500 - Çelik haddeciliği"
+  },
+  {
+    "company_name": "Ekinciler Demir Çelik",
+    "website": "https://www.ekinciler.com.tr",
+    "sector": "Çelik/Metal",
+    "notes": "Profil ve çelik üretimi"
+  },
+  {
+    "company_name": "Sarkuysan",
+    "website": "https://www.sarkuysan.com",
+    "sector": "Çelik/Metal",
+    "notes": "Bakır ve alüminyum üretimi"
+  },
+  {
+    "company_name": "Erbakır",
+    "website": "https://www.erbakir.com",
+    "sector": "Çelik/Metal",
+    "notes": "Bakır tel ve boru üretimi"
+  },
+  {
+    "company_name": "Çimsa",
+    "website": "https://www.cimsa.com.tr",
+    "sector": "İnşaat",
+    "notes": "ISO 500 - Çimento üretimi"
+  },
+  {
+    "company_name": "Nuh Çimento",
+    "website": "https://www.nuhcimento.com.tr",
+    "sector": "İnşaat",
+    "notes": "ISO 500 - Çimento"
+  },
+  {
+    "company_name": "Oyak Çimento",
+    "website": "https://www.oyakcimento.com.tr",
+    "sector": "İnşaat",
+    "notes": "ISO 500 - Çimento üreticisi"
+  },
+  {
+    "company_name": "Betek Boya",
+    "website": "https://www.betek.com.tr",
+    "sector": "İnşaat",
+    "notes": "ISO 500 - Boya ve kaplama"
+  },
+  {
+    "company_name": "Filli Boya",
+    "website": "https://www.filli.com.tr",
+    "sector": "İnşaat",
+    "notes": "Boya üreticisi"
+  },
+  {
+    "company_name": "Marshall Boya",
+    "website": "https://www.marshall.com.tr",
+    "sector": "İnşaat",
+    "notes": "Boya ve kaplama sistemleri"
+  },
+  {
+    "company_name": "Jotun Boya",
+    "website": "https://www.jotun.com/tr-tr",
+    "sector": "İnşaat",
+    "notes": "Endüstriyel boya"
+  },
+  {
+    "company_name": "İzocam",
+    "website": "https://www.izocam.com.tr",
+    "sector": "İnşaat",
+    "notes": "ISO 500 - Yalıtım malzemeleri"
+  },
+  {
+    "company_name": "Olmuksan",
+    "website": "https://www.olmuksan.com.tr",
+    "sector": "Plastik/Kimya",
+    "notes": "Kablo ve plastik ürünler"
+  },
+{
+  "company_name": "Çimko",
+  "website": "https://www.cimko.com.tr",
+  "sector": "İnşaat",
+  "notes": "Çimento ve inşaat malzemeleri"
+  },
+  {
+    "company_name": "Yıldız Entegre",
+    "website": "https://www.yildizentegre.com.tr",
+    "sector": "İnşaat",
+    "notes": "Ahşap ve panel üretimi"
+  }
+]
