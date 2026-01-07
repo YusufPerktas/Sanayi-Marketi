@@ -17,13 +17,11 @@ from bs4 import BeautifulSoup
 
 # Selenium imports
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, WebDriverException
-from webdriver_manager.chrome import ChromeDriverManager
 
 # Config'den ayarları al
 try:
@@ -127,8 +125,8 @@ class BaseScraper(ABC):
             chrome_options.add_argument('--log-level=3')
             chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
-            service = ChromeService(ChromeDriverManager().install())
-            driver = webdriver.Chrome(service=service, options=chrome_options)
+            # Selenium 4.6+ kendi driver yönetimini yapıyor
+            driver = webdriver.Chrome(options=chrome_options)
 
             driver.set_page_load_timeout(SELENIUM_PAGE_TIMEOUT)
             driver.implicitly_wait(SELENIUM_IMPLICIT_WAIT)

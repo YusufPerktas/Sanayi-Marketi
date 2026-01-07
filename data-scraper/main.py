@@ -39,7 +39,8 @@ from config.settings import (
     STATUS_SUCCESS,
     STATUS_PARTIAL,
     STATUS_FAILED,
-    STATUS_ERROR
+    STATUS_ERROR,
+    RunSession
 )
 from scrapers import GenericScraper
 from utils import ExcelWriter, get_logger
@@ -191,6 +192,15 @@ def main() -> None:
     # Banner göster
     print_banner()
 
+    # ==========================================================================
+    # RUN SESSION OLUŞTUR (Tarih bazlı klasör yapısı)
+    # ==========================================================================
+    session = RunSession.create_new()
+    print(f"Oturum: {session.timestamp}")
+    print(f"Kataloglar: {session.catalogs_dir}")
+    print(f"Excel: {session.excel_file}")
+    print()
+
     # Dizinleri oluştur
     ensure_directories()
 
@@ -233,10 +243,10 @@ def main() -> None:
     # 2. SCRAPING İŞLEMİ
     # ==========================================================================
     tracker = ProgressTracker(total_companies)
-    excel_writer = ExcelWriter()
+    excel_writer = ExcelWriter(file_path=session.excel_file)
     results: List[Dict[str, Any]] = []
 
-    with GenericScraper() as scraper:
+    with GenericScraper(catalogs_dir=session.catalogs_dir) as scraper:
         for i, company in enumerate(companies, 1):
             company_name = company.get('company_name', 'Bilinmeyen')
 
@@ -312,8 +322,8 @@ def main() -> None:
 
     # Çıktı konumları
     print("\nÇıktılar:")
-    print(f"  - Kataloglar : {os.path.abspath(CATALOGS_DIR)}")
-    print(f"  - Excel      : {os.path.abspath(excel_writer.file_path)}")
+    print(f"  - Kataloglar : {os.path.abspath(session.catalogs_dir)}")
+    print(f"  - Excel      : {os.path.abspath(session.excel_file)}")
     print(f"  - Loglar     : {os.path.abspath(LOGS_DIR)}")
 
     logger.info(f"İşlem tamamlandı. Süre: {duration}")

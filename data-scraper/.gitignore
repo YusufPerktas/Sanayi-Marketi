@@ -34,15 +34,18 @@ ENV/
 # =============================================================================
 # Output Files - İndirilen Dosyalar
 # =============================================================================
-output/catalogs/*.pdf
-output/catalogs/*.doc
-output/catalogs/*.docx
-output/catalogs/*.xls
-output/catalogs/*.xlsx
+# Katalog klasörü içindeki tüm tarih klasörleri ve dosyaları
+output/catalogs/*/
+
+# Excel çıktı dosyaları (tarihli olanlar dahil)
 output/*.xlsx
+output/company_data*.xlsx
+
+# Log dosyaları
 output/logs/*.log
 
 # Boş klasörleri git'e eklemek için .gitkeep dosyaları hariç
+!output/.gitkeep
 !output/catalogs/.gitkeep
 !output/logs/.gitkeep
 

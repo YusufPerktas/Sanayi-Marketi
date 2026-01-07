@@ -168,21 +168,381 @@
     "notes": "ISO 500 - Yalıtım malzemeleri"
   },
   {
+    "company_name": "Knauf",
+    "website": "https://www.knauf.com.tr",
+    "sector": "İnşaat",
+    "notes": "Alçı ve yalıtım sistemleri"
+  },
+  {
+    "company_name": "Eczacıbaşı Yapı Gereçleri",
+    "website": "https://www.eczacibasi.com.tr",
+    "sector": "İnşaat",
+    "notes": "ISO 500 - Seramik"
+  },
+  {
+    "company_name": "Kale Seramik",
+    "website": "https://www.kale.com.tr",
+    "sector": "İnşaat",
+    "notes": "Seramik ve banyo ürünleri"
+  },
+  {
+    "company_name": "Seranit",
+    "website": "https://www.seranit.com",
+    "sector": "İnşaat",
+    "notes": "Granit seramik üretimi"
+  },
+  {
+    "company_name": "Mapei",
+    "website": "https://www.mapei.com.tr",
+    "sector": "İnşaat",
+    "notes": "Yapı kimyasalları"
+  },
+  {
+    "company_name": "Sika Yapı Kimyasalları",
+    "website": "https://www.sika.com/tr",
+    "sector": "İnşaat",
+    "notes": "Yapı kimyasalları ve katkılar"
+  },
+  {
+    "company_name": "Düzce Cam",
+    "website": "https://www.duzcecam.com.tr",
+    "sector": "İnşaat",
+    "notes": "ISO 500 - Cam üretimi"
+  },
+  {
+    "company_name": "Şişecam",
+    "website": "https://www.sisecam.com.tr",
+    "sector": "İnşaat",
+    "notes": "ISO 500 - Cam üretimi"
+  },
+  {
+    "company_name": "Türk Prysmian Kablo",
+    "website": "https://www.prysmiangroup.com.tr",
+    "sector": "İnşaat",
+    "notes": "ISO 500 - Kablo üretimi"
+  },
+  {
+    "company_name": "Nexans Türkiye",
+    "website": "https://www.nexans.com.tr",
+    "sector": "İnşaat",
+    "notes": "Kablo ve enerji sistemleri"
+  },
+  {
+    "company_name": "Doğuş İnşaat",
+    "website": "https://www.dogusinsaat.com.tr",
+    "sector": "İnşaat",
+    "notes": "ISO 500 - İnşaat malzemeleri"
+  },
+  {
+    "company_name": "Petkim",
+    "website": "https://www.petkim.com.tr",
+    "sector": "Plastik/Kimya",
+    "notes": "ISO 500 - Petrokimya üretimi"
+  },
+  {
+    "company_name": "Soda Sanayi",
+    "website": "https://www.sisecam.com.tr/soda-sanayi",
+    "sector": "Plastik/Kimya",
+    "notes": "ISO 500 - Soda ve kimyasallar"
+  },
+  {
+    "company_name": "Polinas",
+    "website": "https://www.polinas.com.tr",
+    "sector": "Plastik/Kimya",
+    "notes": "Plastik hammadde üretimi"
+  },
+  {
+    "company_name": "Polylen",
+    "website": "https://www.polylen.com",
+    "sector": "Plastik/Kimya",
+    "notes": "Plastik üretimi"
+  },
+  {
+    "company_name": "Brisa",
+    "website": "https://www.brisa.com.tr",
+    "sector": "Plastik/Kimya",
+    "notes": "ISO 500 - Lastik üretimi"
+  },
+  {
+    "company_name": "Petlas",
+    "website": "https://www.petlas.com.tr",
+    "sector": "Plastik/Kimya",
+    "notes": "Lastik üretimi"
+  },
+  {
+    "company_name": "Tüpraş",
+    "website": "https://www.tupras.com.tr",
+    "sector": "Plastik/Kimya",
+    "notes": "ISO 500 - Petrol rafinerisi"
+  },
+  {
+    "company_name": "Aksa Akrilik",
+    "website": "https://www.aksa.com",
+    "sector": "Plastik/Kimya",
+    "notes": "ISO 500 - Akrilik elyaf"
+  },
+  {
+    "company_name": "Orta Anadolu",
+    "website": "https://www.oaanadolu.com.tr",
+    "sector": "Plastik/Kimya",
+    "notes": "Kimyasal gübre üretimi"
+  },
+  {
+    "company_name": "Ege Gübre",
+    "website": "https://www.egegubre.com.tr",
+    "sector": "Plastik/Kimya",
+    "notes": "Gübre üretimi"
+  },
+  {
+    "company_name": "DYO Boya",
+    "website": "https://www.dyo.com.tr",
+    "sector": "Plastik/Kimya",
+    "notes": "ISO 500 - Boya ve kimyasallar"
+  },
+  {
+    "company_name": "Sanko Pazarlama",
+    "website": "https://www.sanko.com.tr",
+    "sector": "Plastik/Kimya",
+    "notes": "ISO 500 - Kimya ve tekstil"
+  },
+  {
+    "company_name": "Koruma Klor Alkali",
+    "website": "https://www.korumakimya.com",
+    "sector": "Plastik/Kimya",
+    "notes": "Klor alkali üretimi"
+  },
+  {
+    "company_name": "Ravago",
+    "website": "https://www.ravago.com/tr",
+    "sector": "Plastik/Kimya",
+    "notes": "Plastik dağıtım ve üretim"
+  },
+  {
     "company_name": "Olmuksan",
     "website": "https://www.olmuksan.com.tr",
     "sector": "Plastik/Kimya",
     "notes": "Kablo ve plastik ürünler"
   },
-{
-  "company_name": "Çimko",
-  "website": "https://www.cimko.com.tr",
-  "sector": "İnşaat",
-  "notes": "Çimento ve inşaat malzemeleri"
+  {
+    "company_name": "Ayvaz",
+    "website": "https://www.ayvaz.com",
+    "sector": "Endüstriyel/Mekanik",
+    "notes": "Fiyat listesi dosyasından - Endüstriyel / Mekanik"
   },
   {
-    "company_name": "Yıldız Entegre",
-    "website": "https://www.yildizentegre.com.tr",
+    "company_name": "Tense Elektronik",
+    "website": "https://tense.com.tr",
+    "sector": "Elektrik/Elektronik",
+    "notes": "Fiyat listesi dosyasından - Elektronik"
+  },
+  {
+    "company_name": "Loobar / Emisay",
+    "website": "https://loobar.com.tr",
+    "sector": "Endüstriyel/Mekanik",
+    "notes": "Fiyat listesi dosyasından - Çeşitli / Endüstriyel"
+  },
+  {
+    "company_name": "Cata / Galip",
+    "website": "https://galip.com.tr",
+    "sector": "Elektrik/Elektronik",
+    "notes": "Fiyat listesi dosyasından - Aydınlatma / Elektrik"
+  },
+  {
+    "company_name": "Saray",
+    "website": "https://www.saray.com.tr",
     "sector": "İnşaat",
-    "notes": "Ahşap ve panel üretimi"
+    "notes": "Fiyat listesi dosyasından - Mobilya / İnşaat"
+  },
+  {
+    "company_name": "Schlüter-Systems",
+    "website": "https://eu.schluter.com",
+    "sector": "İnşaat",
+    "notes": "Fiyat listesi dosyasından - Yapı / Seramik"
+  },
+  {
+    "company_name": "BüyükAlpler",
+    "website": "https://www.buyukalpler.com.tr",
+    "sector": "Elektrik/Elektronik",
+    "notes": "Fiyat listesi dosyasından - Elektrik / Aydınlatma"
+  },
+  {
+    "company_name": "Mete Enerji",
+    "website": "https://www.mete-enerji.com.tr",
+    "sector": "Elektrik/Elektronik",
+    "notes": "Fiyat listesi dosyasından - Enerji / Elektrik"
+  },
+  {
+    "company_name": "Chint Türkiye",
+    "website": "https://chint.com.tr",
+    "sector": "Elektrik/Elektronik",
+    "notes": "Fiyat listesi dosyasından - Elektrik / Enerji"
+  },
+  {
+    "company_name": "IMPO",
+    "website": "https://www.impo.com.tr",
+    "sector": "Endüstriyel/Mekanik",
+    "notes": "Fiyat listesi dosyasından - Pompa / Endüstriyel"
+  },
+  {
+    "company_name": "Fiat Türkiye",
+    "website": "https://kampanya.fiat.com.tr",
+    "sector": "Çeşitli",
+    "notes": "Fiyat listesi dosyasından - Otomotiv"
+  },
+  {
+    "company_name": "ABB (ADSMühendislik link)",
+    "website": "https://www.adsmuhendislik.com.tr",
+    "sector": "Elektrik/Elektronik",
+    "notes": "Fiyat listesi dosyasından - Elektrik / Şalt"
+  },
+  {
+    "company_name": "Bucak Grup / Zerpa",
+    "website": "https://www.bucakgrup.com.tr",
+    "sector": "Elektrik/Elektronik",
+    "notes": "Fiyat listesi dosyasından - Elektrik / Aydınlatma"
+  },
+  {
+    "company_name": "HES",
+    "website": "https://www.hes.com.tr",
+    "sector": "Elektrik/Elektronik",
+    "notes": "Fiyat listesi dosyasından - Kablo / Elektrik"
+  },
+  {
+    "company_name": "Emas / Erele Elektrik",
+    "website": "https://erelelektrik.com.tr",
+    "sector": "Elektrik/Elektronik",
+    "notes": "Fiyat listesi dosyasından - Elektrik"
+  },
+  {
+    "company_name": "Evren Metal",
+    "website": "https://www.evrenmetal.com.tr",
+    "sector": "Çelik/Metal",
+    "notes": "Fiyat listesi dosyasından - Metal / Profil"
+  },
+  {
+    "company_name": "Gav Teknik",
+    "website": "https://www.gavteknik.com",
+    "sector": "Endüstriyel/Mekanik",
+    "notes": "Fiyat listesi dosyasından - Endüstriyel Alet / Havalı Alet"
+  },
+  {
+    "company_name": "Fırat A.Ş.",
+    "website": "https://www.firat.com",
+    "sector": "Çelik/Metal",
+    "notes": "Fiyat listesi dosyasından - Boru / Plastik"
+  },
+  {
+    "company_name": "Valftek",
+    "website": "https://valftek.com",
+    "sector": "Endüstriyel/Mekanik",
+    "notes": "Fiyat listesi dosyasından - Vana / Akışkan Kontrol"
+  },
+  {
+    "company_name": "Turconn Metal A.Ş.",
+    "website": "https://www.opdova.com",
+    "sector": "Çelik/Metal",
+    "notes": "Fiyat listesi dosyasından - Metal / Bağlantı Elemanları"
+  },
+  {
+    "company_name": "Nöksel Çelik Boru",
+    "website": "https://tr.noksel.com",
+    "sector": "Çelik/Metal",
+    "notes": "Fiyat listesi dosyasından - Çelik Boru"
+  },
+  {
+    "company_name": "WisGroup Otomotiv",
+    "website": "https://www.wisgroup.com.tr",
+    "sector": "Çeşitli",
+    "notes": "Fiyat listesi dosyasından - Oto Yedek Parça"
+  },
+  {
+    "company_name": "Sardoğan / Sesayapi",
+    "website": "https://sesayapi.com.tr",
+    "sector": "Çeşitli",
+    "notes": "Fiyat listesi dosyasından - Sanayi Üretim"
+  },
+  {
+    "company_name": "Loobar (tekrar)",
+    "website": "https://loobar.com.tr",
+    "sector": "Çeşitli",
+    "notes": "Fiyat listesi dosyasından - Çeşitli"
+  },
+  {
+    "company_name": "Schlüter‑Systems",
+    "website": "https://www.schluter.com.tr",
+    "sector": "İnşaat",
+    "notes": "Fiyat listesi dosyasından - Yapı / Seramik"
+  },
+  {
+    "company_name": "CND Endüstri",
+    "website": "https://www.cndendustri.com.tr",
+    "sector": "Endüstriyel/Mekanik",
+    "notes": "Fiyat listesi dosyasından - Endüstriyel"
+  },
+  {
+    "company_name": "Siemens Türkiye",
+    "website": "https://www.siemens.com",
+    "sector": "Elektrik/Elektronik",
+    "notes": "Fiyat listesi dosyasından - Şalt / Enstalasyon"
+  },
+  {
+    "company_name": "ABB / ADS Mühendislik",
+    "website": "https://www.adsmuhendislik.com.tr",
+    "sector": "Çeşitli",
+    "notes": "Fiyat listesi dosyasından - Elektrifikasyon / Pano"
+  },
+  {
+    "company_name": "Çözümbu Civata & Hırdavat",
+    "website": "https://www.cozumbu.com.tr",
+    "sector": "Çelik/Metal",
+    "notes": "Fiyat listesi dosyasından - Civata / Bağlantı Elemanları"
+  },
+  {
+    "company_name": "Eine",
+    "website": "https://einetr.com",
+    "sector": "Elektrik/Elektronik",
+    "notes": "Fiyat listesi dosyasından - Elektrik / Pano / Trafo / Komponent"
+  },
+  {
+    "company_name": "Mutlusan",
+    "website": "https://www.mutlusan.com.tr",
+    "sector": "Elektrik/Elektronik",
+    "notes": "Fiyat listesi dosyasından - Elektrik / Aksesuar"
+  },
+  {
+    "company_name": "Legrand Türkiye",
+    "website": "https://www.legrand.com.tr",
+    "sector": "Elektrik/Elektronik",
+    "notes": "Fiyat listesi dosyasından - Elektrik / Altyapı / Bina Sistemleri"
+  },
+  {
+    "company_name": "Turconn Metal",
+    "website": "https://www.turconn.com.tr",
+    "sector": "Çelik/Metal",
+    "notes": "HES listesinden - Bağlantı elemanları"
+  },
+  {
+    "company_name": "Siemens",
+    "website": "https://www.siemens.com/tr/tr",
+    "sector": "Elektrik/Elektronik",
+    "notes": "HES listesinden - Elektrifikasyon ve otomasyon"
+  },
+  {
+    "company_name": "ABB Türkiye",
+    "website": "https://new.abb.com/tr",
+    "sector": "Elektrik/Elektronik",
+    "notes": "HES listesinden - Elektrifikasyon ve otomasyon"
+  },
+  {
+    "company_name": "Emko Elektronik",
+    "website": "https://www.emkoelektronik.com.tr",
+    "sector": "Elektrik/Elektronik",
+    "notes": "HES listesinden - Endüstriyel elektronik"
+  },
+  {
+    "company_name": "Tahriksan",
+    "website": "https://www.tahriksan.com.tr",
+    "sector": "Endüstriyel/Mekanik",
+    "notes": "HES listesinden - Makina ve tahrik sistemleri"
   }
 ]

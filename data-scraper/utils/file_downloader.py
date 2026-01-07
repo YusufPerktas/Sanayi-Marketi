@@ -97,6 +97,24 @@ class FileDownloader:
         # Ana dizini oluştur
         os.makedirs(self.base_dir, exist_ok=True)
 
+    def _normalize_turkish(self, text: str) -> str:
+        """
+        Türkçe karakterleri normalize eder (case-insensitive karşılaştırma için).
+
+        Türkçe İ/i ve I/ı harfleri Python'ın standart lower() fonksiyonu ile
+        düzgün dönüşmez. Bu fonksiyon Türkçe karakterleri ASCII'ye çevirir.
+        """
+        # Türkçe karakter dönüşüm tablosu
+        tr_map = str.maketrans({
+            'İ': 'i', 'I': 'i', 'ı': 'i',
+            'Ğ': 'g', 'ğ': 'g',
+            'Ü': 'u', 'ü': 'u',
+            'Ş': 's', 'ş': 's',
+            'Ö': 'o', 'ö': 'o',
+            'Ç': 'c', 'ç': 'c',
+        })
+        return text.translate(tr_map).lower()
+
     def should_download_url(self, url: str, link_text: str = '') -> Tuple[bool, str]:
         """
         URL'nin indirilip indirilmeyeceğini kontrol eder (indirmeden önce).
@@ -117,9 +135,14 @@ class FileDownloader:
             >>> print(should_download)  # False
             >>> print(reason)  # "Negative keyword: privacy"
         """
-        url_lower = url.lower()
-        text_lower = link_text.lower() if link_text else ''
-        combined = f"{url_lower} {text_lower}"
+        # URL'yi decode et (URL-encoded karakterler için: %C3%B6 -> ö)
+        decoded_url = self._normalize_turkish(unquote(url))
+        text_lower = self._normalize_turkish(link_text) if link_text else ''
+
+        # Dosya adını URL'den çıkar ve ekle
+        filename = self._normalize_turkish(self._extract_filename(url))
+
+        combined = f"{decoded_url} {text_lower} {filename}"
 
         # Negatif keyword kontrolü (bunlar engelleyici)
         for neg_kw in PDF_NEGATIVE_KEYWORDS:
@@ -132,8 +155,8 @@ class FileDownloader:
         if has_positive:
             return True, "Has positive keyword"
 
-        # Negatif yok ama pozitif de yok - yine de indir (düşük öncelik)
-        return True, "No blocking keywords"
+        # Pozitif keyword yoksa indirme - alakasız dosya olabilir
+        return False, "No positive keyword found"
 
     def get_url_score(self, url: str, link_text: str = '') -> int:
         """
