@@ -22,7 +22,7 @@ REQUEST_TIMEOUT = int(os.getenv('REQUEST_TIMEOUT', 10))
 DOWNLOAD_TIMEOUT = int(os.getenv('DOWNLOAD_TIMEOUT', 30))
 
 # Başarısız isteklerde maksimum yeniden deneme sayısı
-MAX_RETRIES = int(os.getenv('MAX_RETRIES', 3))
+MAX_RETRIES = int(os.getenv('MAX_RETRIES', 1))
 
 # Tarayıcı User-Agent bilgisi (bot tespitini önlemek için)
 USER_AGENT = os.getenv(
@@ -231,7 +231,19 @@ PDF_NEGATIVE_KEYWORDS = [
     'montaj', 'installation',  # Montaj kılavuzları katalog değil
     # Diğer alakasız
     'basin', 'basın', 'press', 'haber', 'duyuru', 'reach',
-    'entegre_yonetim', 'entegre-yonetim', 'yonetim_sistemi', 'yönetim_sistemi'
+    'entegre_yonetim', 'entegre-yonetim', 'yonetim_sistemi', 'yönetim_sistemi',
+    # Genel kurul ve yönetim belgeleri
+    'genel_kurul', 'genel-kurul', 'genel_kurulun', 'toplanti_tutanak',
+    'vekaleten', 'oy-kullanma', 'oy_kullanma', 'vekalet',
+    'yonetim-kurulu', 'yonetim_kurulu', 'yonetici',
+    'ozgecmis', 'özgeçmiş', 'ozgecmisler', 'özgeçmişler',
+    'ic_yonerge', 'ic-yonerge', 'yonerge', 'yönerge',
+    'bagimsizlik', 'bağımsızlık', 'bagimsiz', 'bağımsız',
+    'esas_sozlesme', 'esas-sozlesme', 'esas_sözleşme',
+    # Çevre ve enerji belgeleri (katalog değil)
+    'cevre-ve-iklim', 'cevre_ve_iklim', 'cevre-iklim', 'iklim',
+    'enerji_yonetimi', 'enerji-yonetimi', 'enerji_yonetim',
+    'karbon', 'carbon', 'emisyon', 'emission',
 ]
 
 # Minimum PDF dosya boyutu (bytes) - boş/placeholder PDF'leri filtreler
@@ -294,11 +306,78 @@ EMAIL_EXCLUDE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp']
 # REGEX PATTERNLERİ
 # =============================================================================
 
-# Telefon numarası regex pattern'i (Türkiye formatı)
-PHONE_PATTERN = r'(?:\+90|0)?[\s.-]?(?:\(?\d{3}\)?[\s.-]?)?\d{3}[\s.-]?\d{2}[\s.-]?\d{2}'
+# Telefon numarası regex pattern'leri (Türkiye formatı - birden fazla)
+# Ana pattern: +90/0090/90/0 ile başlayan veya başlamayan, çeşitli formatlar
+PHONE_PATTERN = r'(?:(?:\+90|0090|90|0)[\s\.\-\/]?)?(?:\(?\d{3}\)?[\s\.\-\/]?)\d{3}[\s\.\-\/]?\d{2}[\s\.\-\/]?\d{2}'
 
-# E-posta regex pattern'i
-EMAIL_PATTERN = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+# Genişletilmiş telefon patternleri - farklı formatları yakalamak için
+PHONE_PATTERNS = [
+    # +90 (XXX) XXX XX XX veya +90 XXX XXX XX XX
+    r'(?:\+90|0090)[\s\.\-]?\(?\d{3}\)?[\s\.\-]?\d{3}[\s\.\-]?\d{2}[\s\.\-]?\d{2}',
+    # 0XXX XXX XX XX (mobil/sabit)
+    r'\b0\d{3}[\s\.\-]?\d{3}[\s\.\-]?\d{2}[\s\.\-]?\d{2}\b',
+    # (0XXX) XXX XX XX
+    r'\(0\d{3}\)[\s\.\-]?\d{3}[\s\.\-]?\d{2}[\s\.\-]?\d{2}',
+    # XXX XXX XX XX (alan kodu olmadan, 10 hane)
+    r'\b\d{3}[\s\.\-]\d{3}[\s\.\-]\d{2}[\s\.\-]\d{2}\b',
+    # Pbx/Santral formatı: (0XXX) XXX XX XX - YY
+    r'\(0\d{3}\)[\s\.\-]?\d{3}[\s\.\-]?\d{2}[\s\.\-]?\d{2}[\s\.\-]?\d{0,4}',
+    # Uluslararası: +90 XXX XXX XXXX (birleşik son 4)
+    r'(?:\+90|0090)[\s\.\-]?\d{3}[\s\.\-]?\d{3}[\s\.\-]?\d{4}',
+    # Tek satırda: 02123456789 veya 05321234567
+    r'\b0[1-5]\d{9}\b',
+]
+
+# E-posta regex pattern'i (geliştirilmiş)
+EMAIL_PATTERN = r'[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}'
+
+# Geçersiz telefon numarası başlangıçları (bunlarla başlayan numaraları atla)
+INVALID_PHONE_STARTS = [
+    '0000', '1111', '2222', '3333', '4444', '5555', '6666', '7777', '8888', '9999',
+    '1234', '0123', '9876', '0900', '0800',  # Ücretli/ücretsiz hatlar
+]
+
+# Geçerli Türkiye alan kodları
+VALID_AREA_CODES = [
+    # Sabit hat alan kodları
+    '212', '216',  # İstanbul
+    '312',  # Ankara
+    '232',  # İzmir
+    '224',  # Bursa
+    '242',  # Antalya
+    '322',  # Adana
+    '342',  # Gaziantep
+    '262',  # Kocaeli
+    '324',  # Mersin
+    '352',  # Kayseri
+    '222',  # Eskişehir
+    '258',  # Denizli
+    '236',  # Manisa
+    '264',  # Sakarya
+    '362',  # Samsun
+    '462',  # Trabzon
+    '412',  # Diyarbakır
+    '414',  # Şanlıurfa
+    '422',  # Malatya
+    '442',  # Erzurum
+    '274',  # Kütahya
+    '252',  # Muğla
+    '284',  # Edirne
+    '266',  # Balıkesir
+    '372',  # Zonguldak
+    '332',  # Konya
+    '226',  # Yalova
+    '288',  # Kırklareli
+    '286',  # Çanakkale
+    '256',  # Aydın
+    '246',  # Isparta
+    '248',  # Burdur
+    # Mobil operatörler
+    '530', '531', '532', '533', '534', '535', '536', '537', '538', '539',  # Turkcell
+    '540', '541', '542', '543', '544', '545', '546', '547', '548', '549',  # Vodafone
+    '550', '551', '552', '553', '554', '555', '556', '557', '558', '559',  # Türk Telekom
+    '501', '505', '506', '507',  # Eski operatör kodları
+]
 
 # =============================================================================
 # EXCEL KOLON AYARLARI

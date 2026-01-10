@@ -8,7 +8,11 @@ ve tüm scraper'ların uyması gereken arayüzü tanımlar.
 """
 
 import time
+import warnings
 import requests
+
+# BeautifulSoup XML uyarılarını bastır
+warnings.filterwarnings('ignore', category=UserWarning, module='bs4')
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any, List
 from urllib.parse import urljoin, urlparse
@@ -135,7 +139,7 @@ class BaseScraper(ABC):
             return driver
 
         except Exception as e:
-            logger.warning(f"Selenium driver başlatılamadı: {e}")
+            logger.debug(f"Selenium driver başlatılamadı: {e}")
             return None
 
     def fetch_page_with_js(self, url: str, wait_for_element: Optional[str] = None) -> Optional[BeautifulSoup]:
@@ -181,15 +185,15 @@ class BaseScraper(ABC):
             return soup
 
         except TimeoutException:
-            logger.warning(f"Selenium zaman aşımı: {url}")
+            logger.debug(f"Selenium zaman aşımı: {url}")
             return self.fetch_page(url)  # Fallback to requests
 
         except WebDriverException as e:
-            logger.warning(f"Selenium hatası: {url} - {e}")
+            logger.debug(f"Selenium hatası: {url} - {e}")
             return self.fetch_page(url)  # Fallback to requests
 
         except Exception as e:
-            logger.error(f"Beklenmeyen Selenium hatası: {url} - {e}")
+            logger.debug(f"Beklenmeyen Selenium hatası: {url} - {e}")
             return self.fetch_page(url)  # Fallback to requests
 
     def fetch_page(self, url: str, retry_count: int = 0) -> Optional[BeautifulSoup]:
@@ -234,26 +238,26 @@ class BaseScraper(ABC):
             return soup
 
         except requests.exceptions.Timeout:
-            logger.warning(f"Zaman aşımı: {url}")
+            logger.debug(f"Zaman aşımı: {url}")
             if retry_count < self.max_retries:
-                logger.info(f"Yeniden deneniyor ({retry_count + 1}/{self.max_retries})...")
+                logger.debug(f"Yeniden deneniyor ({retry_count + 1}/{self.max_retries})...")
                 return self.fetch_page(url, retry_count + 1)
 
         except requests.exceptions.HTTPError as e:
-            logger.error(f"HTTP hatası ({e.response.status_code}): {url}")
+            logger.debug(f"HTTP hatası ({e.response.status_code}): {url}")
             if retry_count < self.max_retries and e.response.status_code >= 500:
-                logger.info(f"Yeniden deneniyor ({retry_count + 1}/{self.max_retries})...")
+                logger.debug(f"Yeniden deneniyor ({retry_count + 1}/{self.max_retries})...")
                 return self.fetch_page(url, retry_count + 1)
 
         except requests.exceptions.ConnectionError:
-            logger.error(f"Bağlantı hatası: {url}")
+            logger.debug(f"Bağlantı hatası: {url}")
             if retry_count < self.max_retries:
                 time.sleep(2)  # Bağlantı hatalarında biraz daha bekle
-                logger.info(f"Yeniden deneniyor ({retry_count + 1}/{self.max_retries})...")
+                logger.debug(f"Yeniden deneniyor ({retry_count + 1}/{self.max_retries})...")
                 return self.fetch_page(url, retry_count + 1)
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"İstek hatası: {url} - {str(e)}")
+            logger.debug(f"İstek hatası: {url} - {str(e)}")
 
         except Exception as e:
             logger.error(f"Beklenmeyen hata: {url} - {str(e)}")

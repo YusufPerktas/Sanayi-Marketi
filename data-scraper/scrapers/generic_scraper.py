@@ -8,7 +8,7 @@ Her türlü firma web sitesinden katalog ve iletişim bilgisi
 """
 
 import re
-from typing import Dict, List, Any, Optional, Set
+from typing import Dict, List, Any, Optional, Set, Tuple
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
@@ -21,6 +21,9 @@ try:
         CATALOG_PAGE_KEYWORDS,
         CONTACT_KEYWORDS,
         PHONE_PATTERN,
+        PHONE_PATTERNS,
+        INVALID_PHONE_STARTS,
+        VALID_AREA_CODES,
         EMAIL_PATTERN,
         STATUS_SUCCESS,
         STATUS_PARTIAL,
@@ -41,6 +44,9 @@ except ImportError:
     CATALOG_PAGE_KEYWORDS = ['katalog', 'catalog', 'download', 'indir', 'dokuman', 'document']
     CONTACT_KEYWORDS = ['iletisim', 'contact', 'hakkimizda', 'about', 'kurumsal']
     PHONE_PATTERN = r'(?:\+90|0)?[\s.-]?(?:\(?\d{3}\)?[\s.-]?)?\d{3}[\s.-]?\d{2}[\s.-]?\d{2}'
+    PHONE_PATTERNS = [PHONE_PATTERN]
+    INVALID_PHONE_STARTS = ['0000', '1111', '1234', '0900', '0800']
+    VALID_AREA_CODES = ['212', '216', '312', '232', '224', '530', '531', '532', '533', '534', '535']
     EMAIL_PATTERN = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
     STATUS_SUCCESS = 'SUCCESS'
     STATUS_PARTIAL = 'PARTIAL'
@@ -56,6 +62,7 @@ except ImportError:
     PDF_NEGATIVE_KEYWORDS = ['privacy', 'policy', 'terms', 'legal']
 
 from scrapers.base_scraper import BaseScraper
+from scrapers.catalog_strategies import StrategyManager
 from utils.logger import get_logger
 from utils.file_downloader import FileDownloader
 from utils.validators import determine_status, has_contact_info
@@ -84,18 +91,22 @@ class GenericScraper(BaseScraper):
         >>> print(result['status'])
     """
 
-    def __init__(self, max_depth: int = 2, catalogs_dir: Optional[str] = None):
+    def __init__(self, max_depth: int = 2, catalogs_dir: Optional[str] = None,
+                 use_multi_strategy: bool = True):
         """
         GenericScraper'ı başlatır.
 
         Args:
             max_depth: Maksimum link takip derinliği (varsayılan: 2)
             catalogs_dir: Katalog indirme dizini (varsayılan: CATALOGS_DIR)
+            use_multi_strategy: Multi-strateji sistemini kullan (varsayılan: True)
         """
         super().__init__()
         self.downloader = FileDownloader(base_dir=catalogs_dir)
         self.visited_urls: Set[str] = set()
         self.max_depth = max_depth
+        self.use_multi_strategy = use_multi_strategy
+        self._strategy_manager: Optional[StrategyManager] = None
 
     def scrape(self, website: str, company_name: str,
                sector: str = '') -> Dict[str, Any]:
@@ -166,7 +177,7 @@ class GenericScraper(BaseScraper):
                 main_soup = self.fetch_page(website)
 
             if not main_soup:
-                logger.error(f"Ana sayfa çekilemedi: {website}")
+                logger.debug(f"Ana sayfa çekilemedi: {website}")
                 result['status'] = STATUS_ERROR
                 return result
 
@@ -175,7 +186,15 @@ class GenericScraper(BaseScraper):
             # =================================================================
             catalog_links = self._find_all_catalogs(main_soup, base_url)
 
-            logger.info(f"Bulunan katalog sayısı: {len(catalog_links)}")
+            # Eğer katalog bulunamadıysa ve multi-strateji aktifse, alternatif stratejileri dene
+            if not catalog_links and self.use_multi_strategy:
+                catalog_links, strategy_soup = self._try_alternative_strategies(website)
+
+                # Strateji soup'u varsa iletişim bilgisi için kullan
+                if strategy_soup and not main_soup:
+                    main_soup = strategy_soup
+
+            logger.info(f"Bulunan katalog: {len(catalog_links)}")
 
             # =================================================================
             # 3. İLETİŞİM BİLGİLERİNİ ÇIKAR
@@ -205,7 +224,7 @@ class GenericScraper(BaseScraper):
             logger.info(f"Scraping tamamlandı: {company_name} - Status: {result['status']}")
 
         except Exception as e:
-            logger.error(f"Scraping hatası ({company_name}): {str(e)}")
+            logger.debug(f"Scraping hatası ({company_name}): {str(e)}")
             result['status'] = STATUS_ERROR
 
         return result
@@ -255,15 +274,24 @@ class GenericScraper(BaseScraper):
             logger.debug(f"Sitemap'te {len(sitemap_catalogs)} potansiyel katalog sayfası bulundu")
             catalog_pages.extend(sitemap_catalogs)
 
-        # 4. Yaygın katalog URL'lerini dene
+        # 4. Yaygın katalog URL'lerini dene - /tr/ prefix'li olanlar önce
         common_catalog_paths = [
-            '/katalog', '/kataloglar', '/catalog', '/catalogs', '/catalogue',
-            '/download', '/downloads', '/indir', '/indirmeler',
+            # Öncelikli: /tr/ prefix'li (Türk siteleri)
+            '/tr/download-listesi', '/tr/katalog', '/tr/download', '/tr/downloads',
+            '/tr/dokuman', '/tr/dokumanlar', '/tr/urunler', '/tr/urun',
+            '/tr/media', '/tr/medya',
+            # Kök dizin path'leri
+            '/download-listesi', '/katalog', '/kataloglar', '/download', '/downloads',
+            '/catalog', '/catalogs', '/catalogue',
+            '/indir', '/indirmeler', '/indirme-merkezi',
             '/dokuman', '/dokumanlar', '/documents', '/docs',
-            '/media', '/medya', '/dosyalar', '/files',
+            '/dosya', '/dosyalar', '/files', '/dosya-merkezi',
+            '/media', '/medya',
             '/brosur', '/brosurler', '/brochure', '/brochures',
             '/pdf', '/pdfs', '/fiyat-listesi', '/pricelist',
-            '/kurumsal/katalog', '/tr/katalog', '/tr/catalog'
+            '/urunler', '/urun', '/products', '/product',
+            # Alt dizinler
+            '/kurumsal/katalog', '/kurumsal/dokuman',
         ]
 
         for path in common_catalog_paths:
@@ -310,6 +338,54 @@ class GenericScraper(BaseScraper):
                             catalog_pages.append(sub_url)
 
         return list(all_catalogs)
+
+    def _try_alternative_strategies(self, website: str) -> Tuple[List[str], Optional[BeautifulSoup]]:
+        """
+        Alternatif katalog çekme stratejilerini dener.
+
+        İlk 3 strateji (primary):
+        1. Default - Standart requests
+        2. Alternative Headers - Farklı User-Agent
+        3. Deep Scan - Agresif tarama
+
+        Sonraki 2 strateji (fallback):
+        4. Google Cache - Cache üzerinden
+        5. Stealth Selenium - Anti-detection
+
+        Args:
+            website: Hedef web sitesi URL'si
+
+        Returns:
+            Tuple[List[str], BeautifulSoup]: (katalog_linkleri, soup)
+        """
+        from typing import Tuple
+
+        # Lazy initialization
+        if self._strategy_manager is None:
+            self._strategy_manager = StrategyManager()
+
+        try:
+            # Tüm stratejileri çalıştır
+            catalog_links, soup = self._strategy_manager.execute_all(
+                website,
+                stop_on_success=True,
+                min_catalogs=1
+            )
+
+            # Bulunan katalogları filtrele (negatif keyword kontrolü)
+            filtered_catalogs = []
+            for url in catalog_links:
+                should_download, reason = self.downloader.should_download_url(url, '')
+                if should_download:
+                    filtered_catalogs.append(url)
+                else:
+                    logger.debug(f"Strateji katalogu filtrelendi: {url} - {reason}")
+
+            return filtered_catalogs, soup
+
+        except Exception as e:
+            logger.debug(f"Multi-strateji hatası: {e}")
+            return [], None
 
     def _check_sitemap_for_catalogs(self, base_url: str) -> List[str]:
         """
@@ -480,9 +556,13 @@ class GenericScraper(BaseScraper):
     def _find_contact_info(self, main_soup: BeautifulSoup,
                            base_url: str) -> Dict[str, str]:
         """
-        İletişim bilgilerini bulur (ana sayfa + iletişim sayfaları).
+        İletişim bilgilerini bulur (geliştirilmiş versiyon).
 
-        Geliştirilmiş versiyon: Daha fazla sayfa kontrol eder, Selenium kullanır.
+        Strateji:
+        1. Ana sayfanın footer'ından
+        2. Yaygın iletişim URL'lerini dene
+        3. Sayfadaki linklerden iletişim sayfalarını bul
+        4. Her sayfada önce requests, sonra Selenium dene
 
         Args:
             main_soup: Ana sayfa BeautifulSoup nesnesi
@@ -493,45 +573,75 @@ class GenericScraper(BaseScraper):
         """
         contact_info = {'phone': '', 'email': '', 'address': ''}
 
-        # 1. Ana sayfadan dene
+        # 1. Ana sayfadan dene (özellikle footer)
         contact_info = self.extract_contact_info(main_soup)
 
-        # Eğer eksik bilgi varsa iletişim sayfalarını tara
-        if not contact_info['phone'] or not contact_info['email']:
-            contact_pages = self.find_pages_by_keywords(
-                main_soup, base_url, CONTACT_KEYWORDS
-            )
+        if contact_info['phone'] and contact_info['email']:
+            return contact_info
 
-            # Daha fazla sayfa kontrol et (eskiden 2 idi)
-            max_contact_pages = 5
+        # 2. Yaygın iletişim sayfası URL'lerini dene
+        common_contact_paths = [
+            '/iletisim', '/iletişim', '/contact', '/contact-us', '/contactus',
+            '/bize-ulasin', '/bizeulasin', '/bize-ulaşın',
+            '/hakkimizda', '/hakkımızda', '/about', '/about-us', '/aboutus',
+            '/kurumsal', '/kurumsal/iletisim', '/tr/iletisim', '/tr/contact',
+            '/corporate/contact', '/sirket/iletisim', '/şirket/iletişim',
+        ]
 
-            for page_url in contact_pages[:max_contact_pages]:
-                if page_url in self.visited_urls:
-                    continue
+        contact_pages = []
+        for path in common_contact_paths:
+            contact_pages.append(base_url.rstrip('/') + path)
 
-                self.visited_urls.add(page_url)
-                logger.debug(f"İletişim sayfası taranıyor: {page_url}")
+        # 3. Sayfadaki linklerden iletişim sayfalarını bul
+        found_pages = self.find_pages_by_keywords(main_soup, base_url, CONTACT_KEYWORDS)
+        contact_pages.extend(found_pages)
 
-                # İletişim sayfaları için Selenium kullan (genellikle dinamik içerik var)
+        # Duplicate'ları kaldır
+        contact_pages = list(dict.fromkeys(contact_pages))
+
+        # 4. Her sayfayı dene (maksimum 8 sayfa)
+        max_contact_pages = 8
+        pages_tried = 0
+
+        for page_url in contact_pages:
+            if pages_tried >= max_contact_pages:
+                break
+
+            if page_url in self.visited_urls:
+                continue
+
+            self.visited_urls.add(page_url)
+            pages_tried += 1
+
+            logger.debug(f"İletişim sayfası taranıyor ({pages_tried}/{max_contact_pages}): {page_url}")
+
+            # Önce hızlı requests ile dene
+            page_soup = self.fetch_page(page_url)
+
+            # Başarısızsa veya içerik az ise Selenium dene
+            if page_soup:
+                page_text = page_soup.get_text()
+                # Sayfa çok kısa ise muhtemelen JS ile yükleniyor
+                if len(page_text) < 500:
+                    page_soup = self.fetch_page_with_js(page_url)
+            else:
                 page_soup = self.fetch_page_with_js(page_url)
 
-                if not page_soup:
-                    page_soup = self.fetch_page(page_url)
+            if page_soup:
+                page_contact = self.extract_contact_info(page_soup)
 
-                if page_soup:
-                    page_contact = self.extract_contact_info(page_soup)
+                # Eksik bilgileri doldur
+                if not contact_info['phone'] and page_contact['phone']:
+                    contact_info['phone'] = page_contact['phone']
+                if not contact_info['email'] and page_contact['email']:
+                    contact_info['email'] = page_contact['email']
+                if not contact_info['address'] and page_contact['address']:
+                    contact_info['address'] = page_contact['address']
 
-                    # Eksik bilgileri doldur
-                    if not contact_info['phone'] and page_contact['phone']:
-                        contact_info['phone'] = page_contact['phone']
-                    if not contact_info['email'] and page_contact['email']:
-                        contact_info['email'] = page_contact['email']
-                    if not contact_info['address'] and page_contact['address']:
-                        contact_info['address'] = page_contact['address']
-
-                    # Tüm bilgiler tamamlandıysa dur
-                    if contact_info['phone'] and contact_info['email']:
-                        break
+                # Tüm bilgiler tamamlandıysa dur
+                if contact_info['phone'] and contact_info['email']:
+                    logger.debug(f"İletişim bilgileri bulundu: {page_url}")
+                    break
 
         return contact_info
 
@@ -540,10 +650,12 @@ class GenericScraper(BaseScraper):
         Sayfadan iletişim bilgilerini çıkarır (geliştirilmiş versiyon).
 
         Strateji:
-        1. Semantik HTML etiketlerinden (address, footer, contact divs)
-        2. Labeled patterns (Tel:, Email:, Adres:)
-        3. mailto: ve tel: linkleri
-        4. Fallback: full-page regex scan
+        1. JSON-LD Schema.org verisi
+        2. mailto: ve tel: linkleri (en güvenilir)
+        3. Footer'dan çıkar
+        4. Semantik HTML etiketlerinden
+        5. Etiketli pattern'ler
+        6. Full-page regex (fallback)
 
         Args:
             soup: BeautifulSoup nesnesi
@@ -555,29 +667,40 @@ class GenericScraper(BaseScraper):
             'phone': '',
             'email': '',
             'address': '',
-            'phones': [],   # Bulunan tüm telefonlar
-            'emails': []    # Bulunan tüm email'ler
+            'phones': [],
+            'emails': []
         }
 
         # =================================================================
-        # STRATEGY 1: Semantik HTML Etiketleri
+        # STRATEGY 0: JSON-LD Schema.org (En güvenilir)
         # =================================================================
-        contact = self._extract_from_semantic_elements(soup, contact)
+        contact = self._extract_from_schema_org(soup, contact)
 
         # =================================================================
-        # STRATEGY 2: Etiketli Pattern'ler
+        # STRATEGY 1: mailto: ve tel: linkleri (Çok güvenilir)
+        # =================================================================
+        contact = self._extract_from_links(soup, contact)
+
+        # =================================================================
+        # STRATEGY 2: Footer'dan çıkar (Genellikle iletişim bilgisi burada)
+        # =================================================================
+        if not contact['phone'] or not contact['email']:
+            contact = self._extract_from_footer(soup, contact)
+
+        # =================================================================
+        # STRATEGY 3: Semantik HTML Etiketleri
+        # =================================================================
+        if not contact['phone'] or not contact['email']:
+            contact = self._extract_from_semantic_elements(soup, contact)
+
+        # =================================================================
+        # STRATEGY 4: Etiketli Pattern'ler
         # =================================================================
         if not contact['phone'] or not contact['email']:
             contact = self._extract_from_labeled_patterns(soup, contact)
 
         # =================================================================
-        # STRATEGY 3: mailto: ve tel: linkleri
-        # =================================================================
-        if not contact['email']:
-            contact = self._extract_from_links(soup, contact)
-
-        # =================================================================
-        # STRATEGY 4: Full-page regex (fallback)
+        # STRATEGY 5: Full-page regex (fallback)
         # =================================================================
         if not contact['phone'] or not contact['email']:
             contact = self._extract_from_page_text(soup, contact)
@@ -594,6 +717,97 @@ class GenericScraper(BaseScraper):
         # Geçici listeleri temizle
         del contact['phones']
         del contact['emails']
+
+        return contact
+
+    def _extract_from_schema_org(self, soup: BeautifulSoup, contact: Dict) -> Dict:
+        """JSON-LD Schema.org verisinden iletişim bilgisi çıkarır."""
+        import json
+
+        for script in soup.find_all('script', type='application/ld+json'):
+            try:
+                data = json.loads(script.string or '{}')
+
+                # Liste ise ilk elemanı al
+                if isinstance(data, list):
+                    data = data[0] if data else {}
+
+                # Telefon
+                if not contact['phone']:
+                    phone = data.get('telephone') or data.get('phone')
+                    if phone:
+                        formatted = self._format_phone(str(phone))
+                        if formatted:
+                            contact['phone'] = formatted
+
+                # Email
+                if not contact['email']:
+                    email = data.get('email')
+                    if email and self._is_valid_email(email):
+                        contact['email'] = email
+
+                # Adres
+                if not contact['address']:
+                    addr = data.get('address')
+                    if isinstance(addr, dict):
+                        parts = [
+                            addr.get('streetAddress', ''),
+                            addr.get('addressLocality', ''),
+                            addr.get('postalCode', ''),
+                            addr.get('addressCountry', '')
+                        ]
+                        address = ' '.join(p for p in parts if p)
+                        if address and len(address) > 20:
+                            contact['address'] = address
+                    elif isinstance(addr, str) and len(addr) > 20:
+                        contact['address'] = addr
+
+            except (json.JSONDecodeError, TypeError, AttributeError):
+                continue
+
+        return contact
+
+    def _extract_from_footer(self, soup: BeautifulSoup, contact: Dict) -> Dict:
+        """Footer'dan iletişim bilgisi çıkarır."""
+        footer_selectors = [
+            'footer',
+            '[class*="footer"]',
+            '[id*="footer"]',
+            '[class*="bottom"]',
+            '[class*="alt-bilgi"]',
+        ]
+
+        for selector in footer_selectors:
+            try:
+                footers = soup.select(selector)
+                for footer in footers:
+                    footer_text = footer.get_text(separator=' ')
+
+                    # Telefon
+                    if not contact['phone']:
+                        phones = self._find_phones_in_text(footer_text)
+                        contact['phones'].extend(phones)
+
+                    # Email
+                    if not contact['email']:
+                        emails = self._find_emails_in_text(footer_text)
+                        contact['emails'].extend(emails)
+
+                    # mailto: linklerinden email
+                    for mailto in footer.find_all('a', href=re.compile(r'^mailto:', re.I)):
+                        email = mailto['href'].replace('mailto:', '').split('?')[0].strip()
+                        if self._is_valid_email(email) and email not in contact['emails']:
+                            contact['emails'].append(email)
+
+                    # tel: linklerinden telefon
+                    for tel in footer.find_all('a', href=re.compile(r'^tel:', re.I)):
+                        phone = tel['href'].replace('tel:', '').strip()
+                        formatted = self._format_phone(phone)
+                        if formatted and formatted not in contact['phones']:
+                            contact['phones'].append(formatted)
+
+            except Exception:
+                continue
 
         return contact
 
@@ -646,34 +860,67 @@ class GenericScraper(BaseScraper):
 
     def _extract_from_labeled_patterns(self, soup: BeautifulSoup,
                                         contact: Dict) -> Dict:
-        """Etiketli pattern'lerden iletişim bilgisi çıkarır."""
+        """
+        Etiketli pattern'lerden iletişim bilgisi çıkarır (geliştirilmiş versiyon).
+
+        Telefon etiketleri etrafındaki numaraları daha geniş bir alanda arar.
+        """
         page_text = soup.get_text(separator='\n')
 
-        # Telefon label'ları ile ara
-        for label in PHONE_LABELS:
-            pattern = rf'(?:{label})[\s:]*([+\d\s\-\(\)]{10,20})'
-            matches = re.findall(pattern, page_text, re.IGNORECASE)
-            for match in matches:
-                formatted = self._format_phone(match)
-                if formatted and formatted not in contact['phones']:
-                    # Fax olmadığından emin ol
-                    context_start = max(0, page_text.lower().find(match.lower()) - 20)
-                    context = page_text[context_start:context_start + 50].lower()
-                    if not any(fax in context for fax in FAX_LABELS):
-                        contact['phones'].append(formatted)
+        # Genişletilmiş telefon label'ları
+        extended_phone_labels = PHONE_LABELS + [
+            'tel.', 'tel:', 'telefon:', 'phone:', 'gsm:', 'cep:', 'mobil:',
+            't.', 'fon', 'numarası', 'numarasi', 'no:', 'santral', 'pbx'
+        ]
+
+        # Telefon label'ları ile ara - daha geniş pattern
+        for label in extended_phone_labels:
+            # Label'dan sonra gelen numarayı bul (daha esnek pattern)
+            patterns = [
+                rf'(?:{re.escape(label)})[\s:]*([+\d\s\-\(\)\/\.]{10,25})',
+                rf'(?:{re.escape(label)})\s*[:=]?\s*([+\d\s\-\(\)\/\.]{10,25})',
+            ]
+
+            for pattern in patterns:
+                matches = re.findall(pattern, page_text, re.IGNORECASE)
+                for match in matches:
+                    formatted = self._format_phone(match)
+                    if formatted and formatted not in contact['phones']:
+                        # Fax olmadığından emin ol
+                        match_pos = page_text.lower().find(match.lower())
+                        if match_pos >= 0:
+                            context_start = max(0, match_pos - 30)
+                            context_end = min(len(page_text), match_pos + len(match) + 10)
+                            context = page_text[context_start:context_end].lower()
+                            if not any(fax in context for fax in FAX_LABELS):
+                                contact['phones'].append(formatted)
+
+        # Genişletilmiş email label'ları
+        extended_email_labels = EMAIL_LABELS + [
+            'e-mail:', 'email:', 'e-posta:', 'mail:', 'iletişim:',
+            'contact:', '@', 'adres:', 'electronic mail'
+        ]
 
         # Email label'ları ile ara
-        for label in EMAIL_LABELS:
-            pattern = rf'(?:{label})[\s:]*({EMAIL_PATTERN})'
+        for label in extended_email_labels:
+            if label == '@':
+                continue  # @ tek başına çok geniş, atla
+
+            pattern = rf'(?:{re.escape(label)})[\s:]*({EMAIL_PATTERN})'
             matches = re.findall(pattern, page_text, re.IGNORECASE)
             for match in matches:
-                if self._is_valid_email(match) and match not in contact['emails']:
+                if self._is_valid_email(match) and match.lower() not in [e.lower() for e in contact['emails']]:
                     contact['emails'].append(match)
 
         # Adres label'ları ile ara
         if not contact['address']:
-            for label in ADDRESS_LABELS:
-                pattern = rf'(?:{label})[\s:]*([^\n]{{20,200}})'
+            extended_address_labels = ADDRESS_LABELS + [
+                'adres:', 'address:', 'merkez:', 'fabrika:', 'lokasyon:',
+                'konum:', 'location:', 'genel müdürlük:', 'headquarters:'
+            ]
+
+            for label in extended_address_labels:
+                pattern = rf'(?:{re.escape(label)})[\s:]*([^\n]{{20,250}})'
                 match = re.search(pattern, page_text, re.IGNORECASE)
                 if match:
                     address = self.clean_text(match.group(1))
@@ -718,28 +965,138 @@ class GenericScraper(BaseScraper):
         return contact
 
     def _find_phones_in_text(self, text: str) -> List[str]:
-        """Metinden tüm telefon numaralarını bulur."""
-        phones = []
-        matches = re.findall(PHONE_PATTERN, text)
+        """
+        Metinden tüm telefon numaralarını bulur (geliştirilmiş versiyon).
 
-        for match in matches:
-            formatted = self._format_phone(match)
-            if formatted and formatted not in phones:
-                # En az 10 rakam kontrolü
+        Özellikler:
+        - Birden fazla regex pattern kullanır
+        - Geçersiz numaraları filtreler (0000, 1234 vb.)
+        - Alan kodu doğrulaması yapar
+        - Fax numaralarını hariç tutar
+        """
+        phones = []
+        seen_digits = set()  # Tekrarları önle
+
+        # Tüm patternleri dene
+        all_patterns = PHONE_PATTERNS + [PHONE_PATTERN]
+
+        for pattern in all_patterns:
+            matches = re.findall(pattern, text)
+
+            for match in matches:
+                # Temizle ve formatla
+                formatted = self._format_phone(match)
+                if not formatted:
+                    continue
+
+                # Sadece rakamları al
                 digits = re.sub(r'\D', '', formatted)
-                if len(digits) >= 10:
-                    phones.append(formatted)
+
+                # En az 10 rakam olmalı
+                if len(digits) < 10:
+                    continue
+
+                # Çok uzun numaraları atla (muhtemelen başka bir şey)
+                if len(digits) > 14:
+                    continue
+
+                # Tekrar kontrolü (aynı numaranın farklı formatları)
+                # Son 10 haneyi karşılaştır
+                last_10 = digits[-10:]
+                if last_10 in seen_digits:
+                    continue
+
+                # Geçersiz başlangıç kontrolü
+                if any(digits.startswith(inv) or last_10.startswith(inv)
+                       for inv in INVALID_PHONE_STARTS):
+                    continue
+
+                # Alan kodu doğrulaması
+                area_code = None
+                if digits.startswith('90') and len(digits) >= 12:
+                    area_code = digits[2:5]  # +90 XXX
+                elif digits.startswith('0') and len(digits) >= 11:
+                    area_code = digits[1:4]  # 0XXX
+                elif len(digits) == 10:
+                    area_code = digits[0:3]  # XXX (alan kodu dahil 10 hane)
+
+                # Alan kodu bilinmiyor ama uzunluk doğru ise kabul et
+                if area_code and area_code not in VALID_AREA_CODES:
+                    # Çok yaygın olmayan alan kodları için yine de kabul et
+                    # ama sadece uzunluk doğruysa
+                    if not (len(digits) == 10 or len(digits) == 11 or len(digits) == 12):
+                        continue
+
+                # Fax kontrolü - context'e bak
+                match_pos = text.find(match)
+                if match_pos >= 0:
+                    context_start = max(0, match_pos - 30)
+                    context_end = min(len(text), match_pos + len(match) + 10)
+                    context = text[context_start:context_end].lower()
+
+                    if any(fax in context for fax in FAX_LABELS):
+                        continue
+
+                seen_digits.add(last_10)
+                phones.append(formatted)
 
         return phones
 
     def _find_emails_in_text(self, text: str) -> List[str]:
-        """Metinden tüm email adreslerini bulur."""
+        """
+        Metinden tüm email adreslerini bulur (geliştirilmiş versiyon).
+
+        Özellikler:
+        - Birden fazla pattern ile arama
+        - JavaScript/CSS içindeki sahte email'leri filtreler
+        - Geçersiz domain'leri ve uzantıları hariç tutar
+        """
         emails = []
-        matches = re.findall(EMAIL_PATTERN, text)
+        seen_emails = set()
+
+        # Ana pattern
+        matches = re.findall(EMAIL_PATTERN, text, re.IGNORECASE)
+
+        # Ek patternler - farklı formatlar için
+        extra_patterns = [
+            r'[\w.+-]+\s*@\s*[\w.-]+\.\w{2,}',  # Boşluklu format
+            r'[\w.+-]+\s*\[at\]\s*[\w.-]+\.\w{2,}',  # [at] formatı
+            r'[\w.+-]+\s*\(at\)\s*[\w.-]+\.\w{2,}',  # (at) formatı
+        ]
+
+        for pattern in extra_patterns:
+            extra_matches = re.findall(pattern, text, re.IGNORECASE)
+            # [at] ve (at) formatlarını @ ile değiştir
+            for match in extra_matches:
+                normalized = re.sub(r'\s*\[at\]\s*|\s*\(at\)\s*', '@', match, flags=re.IGNORECASE)
+                normalized = re.sub(r'\s+', '', normalized)  # Boşlukları kaldır
+                matches.append(normalized)
 
         for email in matches:
-            if self._is_valid_email(email) and email not in emails:
-                emails.append(email)
+            email = email.strip().lower()
+
+            # Tekrar kontrolü
+            if email in seen_emails:
+                continue
+
+            # Geçerlilik kontrolü
+            if not self._is_valid_email(email):
+                continue
+
+            # Context kontrolü - JavaScript/CSS içinde mi?
+            email_pos = text.lower().find(email)
+            if email_pos >= 0:
+                context_start = max(0, email_pos - 50)
+                context = text[context_start:email_pos].lower()
+
+                # JavaScript/CSS içindeki sahte email'leri atla
+                js_indicators = ['var ', 'const ', 'let ', 'function', '{', 'placeholder',
+                                 'example', 'sample', 'test@', 'user@', 'your@', 'name@']
+                if any(ind in context for ind in js_indicators):
+                    continue
+
+            seen_emails.add(email)
+            emails.append(email)
 
         return emails
 
@@ -892,13 +1249,29 @@ class GenericScraper(BaseScraper):
         return has_street_component and (has_city or has_postal or has_number)
 
     def _is_valid_email(self, email: str) -> bool:
-        """Email'in geçerli olup olmadığını kontrol eder."""
+        """
+        Email'in geçerli olup olmadığını kontrol eder (geliştirilmiş versiyon).
+
+        Kontroller:
+        - Format doğrulaması
+        - Hariç tutulan domain/uzantılar
+        - Placeholder email'leri reddetme
+        - Minimum uzunluk kontrolü
+        """
         if not email:
             return False
 
-        email_lower = email.lower()
+        email_lower = email.lower().strip()
 
-        # Hariç tutulan uzantıları kontrol et
+        # Minimum uzunluk kontrolü (x@y.zz = en az 6 karakter)
+        if len(email_lower) < 6:
+            return False
+
+        # @ işareti kontrolü
+        if '@' not in email_lower or email_lower.count('@') != 1:
+            return False
+
+        # Hariç tutulan uzantıları kontrol et (görsel dosyaları)
         for ext in EMAIL_EXCLUDE_EXTENSIONS:
             if email_lower.endswith(ext):
                 return False
@@ -908,8 +1281,52 @@ class GenericScraper(BaseScraper):
             if domain in email_lower:
                 return False
 
+        # Placeholder email'leri reddet
+        placeholder_patterns = [
+            'example.com', 'test.com', 'sample.com', 'demo.com', 'dummy.com',
+            'email@email', 'your@email', 'name@email', 'user@email',
+            'xxx@', 'abc@abc', 'info@info.', 'admin@admin.',
+            '@localhost', '@domain.com', '@yoursite', '@yourdomain',
+            'placeholder', 'noreply@example', 'no-reply@example'
+        ]
+        if any(ph in email_lower for ph in placeholder_patterns):
+            return False
+
+        # Tam eşleşme gereken placeholder'lar
+        exact_placeholders = [
+            'info@info.com', 'test@test.com', 'admin@admin.com',
+            'email@email.com', 'mail@mail.com', 'user@user.com'
+        ]
+        if email_lower in exact_placeholders:
+            return False
+
+        # Domain kısmını kontrol et
+        parts = email_lower.split('@')
+        if len(parts) != 2:
+            return False
+
+        local_part, domain = parts
+
+        # Local part kontrolü
+        if not local_part or len(local_part) < 1:
+            return False
+
+        # Domain kontrolü
+        if not domain or '.' not in domain:
+            return False
+
+        # Domain TLD kontrolü
+        domain_parts = domain.split('.')
+        tld = domain_parts[-1]
+        if len(tld) < 2 or len(tld) > 10:
+            return False
+
+        # Sadece rakamlardan oluşan domain'leri reddet
+        if domain.replace('.', '').isdigit():
+            return False
+
         # Temel format kontrolü
-        if not re.match(EMAIL_PATTERN, email):
+        if not re.match(EMAIL_PATTERN, email, re.IGNORECASE):
             return False
 
         return True
@@ -953,26 +1370,62 @@ class GenericScraper(BaseScraper):
 
     def _format_phone(self, phone: str) -> str:
         """
-        Telefon numarasını temizler ve formatlar.
+        Telefon numarasını temizler ve formatlar (geliştirilmiş versiyon).
 
         Args:
             phone: Ham telefon string'i
 
         Returns:
-            str: Formatlanmış telefon numarası
+            str: Formatlanmış telefon numarası veya boş string
+
+        Desteklenen formatlar:
+        - +90 XXX XXX XX XX
+        - 0XXX XXX XX XX
+        - (0XXX) XXX XX XX
         """
+        if not phone:
+            return ''
+
         # Sadece rakam ve + işaretini koru
         cleaned = re.sub(r'[^\d+]', '', phone)
 
-        # Başında 0 varsa ve 11 haneli ise +90 ekle
-        if cleaned.startswith('0') and len(cleaned) == 11:
+        # Çok kısa numaraları reddet
+        if len(cleaned) < 10:
+            return ''
+
+        # Çok uzun numaraları kırp (extension olabilir)
+        if len(cleaned) > 15:
+            cleaned = cleaned[:13]  # +90 + 10 hane
+
+        # Farklı formatları normalize et
+        # 0090 -> +90
+        if cleaned.startswith('0090'):
+            cleaned = '+9' + cleaned[2:]
+        # 90 (+ olmadan) -> +90
+        elif cleaned.startswith('90') and len(cleaned) == 12:
+            cleaned = '+' + cleaned
+        # 0 ile başlıyor ve 11 hane -> +90 ekle
+        elif cleaned.startswith('0') and len(cleaned) == 11:
             cleaned = '+9' + cleaned
+        # 10 hane (alan kodu dahil, başında 0 yok)
+        elif len(cleaned) == 10 and not cleaned.startswith('+'):
+            cleaned = '+90' + cleaned
 
         # Formatlama: +90 XXX XXX XX XX
         if cleaned.startswith('+90') and len(cleaned) == 13:
             return f"+90 {cleaned[3:6]} {cleaned[6:9]} {cleaned[9:11]} {cleaned[11:13]}"
+        # +90 ile başlıyor ama 13 haneden uzun (extension var)
+        elif cleaned.startswith('+90') and len(cleaned) > 13:
+            base = f"+90 {cleaned[3:6]} {cleaned[6:9]} {cleaned[9:11]} {cleaned[11:13]}"
+            ext = cleaned[13:]
+            if ext:
+                return f"{base} (Dahili: {ext})"
+            return base
+        # Diğer formatlar için orijinal temizlenmiş hali döndür
+        elif len(cleaned) >= 10:
+            return cleaned
 
-        return phone.strip()
+        return ''
 
     def _download_catalogs(self, catalog_urls: List[str],
                            company_name: str) -> List[str]:
@@ -1009,3 +1462,22 @@ class GenericScraper(BaseScraper):
             Dict: Firma bilgileri
         """
         return self.scrape(website, company_name, sector)
+
+    def close(self) -> None:
+        """
+        Kaynakları temizler.
+
+        Session, Selenium driver ve strateji yöneticisini kapatır.
+        """
+        # Parent class'ın close'unu çağır
+        super().close()
+
+        # Strateji yöneticisini kapat
+        if self._strategy_manager:
+            try:
+                self._strategy_manager.close()
+                logger.debug("Strateji yöneticisi kapatıldı")
+            except Exception as e:
+                logger.debug(f"Strateji yöneticisi kapatılırken hata: {e}")
+            finally:
+                self._strategy_manager = None

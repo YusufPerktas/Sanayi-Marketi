@@ -135,14 +135,23 @@ class FileDownloader:
             >>> print(should_download)  # False
             >>> print(reason)  # "Negative keyword: privacy"
         """
+        import re
+
         # URL'yi decode et (URL-encoded karakterler için: %C3%B6 -> ö)
         decoded_url = self._normalize_turkish(unquote(url))
         text_lower = self._normalize_turkish(link_text) if link_text else ''
 
-        # Dosya adını URL'den çıkar ve ekle
-        filename = self._normalize_turkish(self._extract_filename(url))
+        # Dosya adını URL'den çıkar
+        filename = self._extract_filename(url)
+        filename_normalized = self._normalize_turkish(filename)
 
-        combined = f"{decoded_url} {text_lower} {filename}"
+        # Hash'li dosya adı kontrolü (MD5/SHA1 gibi sadece hex karakterlerden oluşan)
+        # Örnek: 44e6837acccc042ae3d6cd8eac957784.pdf
+        name_without_ext = os.path.splitext(filename)[0]
+        if re.match(r'^[a-f0-9]{20,}$', name_without_ext.lower()):
+            return False, "Hash-based filename (not a catalog)"
+
+        combined = f"{decoded_url} {text_lower} {filename_normalized}"
 
         # Negatif keyword kontrolü (bunlar engelleyici)
         for neg_kw in PDF_NEGATIVE_KEYWORDS:
@@ -155,7 +164,11 @@ class FileDownloader:
         if has_positive:
             return True, "Has positive keyword"
 
-        # Pozitif keyword yoksa indirme - alakasız dosya olabilir
+        # PDF uzantılı dosyalar için: negatif keyword yoksa indir
+        if url.lower().endswith('.pdf'):
+            return True, "PDF file without negative keywords"
+
+        # PDF olmayan ve pozitif keyword olmayan dosyaları indirme
         return False, "No positive keyword found"
 
     def get_url_score(self, url: str, link_text: str = '') -> int:
@@ -264,7 +277,7 @@ class FileDownloader:
             should_download, filter_reason = self.should_download_url(url, link_text)
 
             if not should_download:
-                logger.info(f"URL filtrelendi: {url} - Sebep: {filter_reason}")
+                logger.debug(f"URL filtrelendi: {url} - Sebep: {filter_reason}")
                 result['skipped'] = True
                 result['skip_reason'] = filter_reason
                 return result
@@ -291,7 +304,7 @@ class FileDownloader:
             # Uzantı kontrolü
             if not self._has_valid_extension(filename):
                 result['error'] = f"Geçersiz dosya uzantısı: {filename}"
-                logger.warning(f"Geçersiz uzantı: {filename}")
+                logger.debug(f"Geçersiz uzantı: {filename}")
                 return result
 
             # Dosyayı indir
@@ -319,7 +332,7 @@ class FileDownloader:
                     if filename.lower().endswith('.pdf'):
                         is_valid, validation_msg = self.validate_pdf_content(content, url)
                         if not is_valid:
-                            logger.info(f"PDF doğrulama başarısız: {url} - {validation_msg}")
+                            logger.debug(f"PDF doğrulama başarısız: {url} - {validation_msg}")
                             result['skipped'] = True
                             result['skip_reason'] = validation_msg
                             return result
@@ -329,7 +342,7 @@ class FileDownloader:
 
                     if content_hash in self.downloaded_hashes:
                         existing_file = self.downloaded_hashes[content_hash]
-                        logger.info(f"Aynı içerik zaten mevcut: {existing_file}")
+                        logger.debug(f"Aynı içerik zaten mevcut: {existing_file}")
                         result['success'] = True
                         result['file_path'] = existing_file
                         result['skipped'] = True
@@ -349,17 +362,17 @@ class FileDownloader:
                     return result
 
                 except requests.RequestException as e:
-                    logger.warning(f"İndirme hatası (deneme {attempt}): {str(e)}")
+                    logger.debug(f"İndirme hatası (deneme {attempt}): {str(e)}")
                     if attempt == self.max_retries:
                         raise
 
         except requests.RequestException as e:
             result['error'] = f"İndirme hatası: {str(e)}"
-            logger.error(f"İndirme başarısız: {url} - {str(e)}")
+            logger.debug(f"İndirme başarısız: {url} - {str(e)}")
 
         except Exception as e:
             result['error'] = f"Beklenmeyen hata: {str(e)}"
-            logger.error(f"Beklenmeyen hata: {url} - {str(e)}")
+            logger.debug(f"Beklenmeyen hata: {url} - {str(e)}")
 
         return result
 
@@ -380,8 +393,7 @@ class FileDownloader:
         """
         results = []
 
-        for i, url in enumerate(urls, 1):
-            logger.info(f"[{i}/{len(urls)}] İndiriliyor...")
+        for url in urls:
             result = self.download(url, company_name)
             results.append(result)
 
