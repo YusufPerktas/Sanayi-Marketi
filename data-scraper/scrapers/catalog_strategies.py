@@ -378,6 +378,9 @@ class StealthSeleniumStrategy(CatalogStrategy):
             # Log seviyesi
             options.add_argument('--log-level=3')
 
+            # Eager loading: DOM hazır olunca devam et (timeout azaltır)
+            options.page_load_strategy = 'eager'
+
             driver = webdriver.Chrome(options=options)
 
             # Navigator.webdriver'ı gizle
@@ -520,6 +523,9 @@ class DeepScanStrategy(CatalogStrategy):
             options.add_argument('--window-size=1920,1080')
             options.add_argument(f'--user-agent={random.choice(USER_AGENTS)}')
             options.add_argument('--log-level=3')
+
+            # Eager loading: DOM hazır olunca devam et (timeout azaltır)
+            options.page_load_strategy = 'eager'
 
             driver = webdriver.Chrome(options=options)
             driver.set_page_load_timeout(self.timeout)
@@ -690,9 +696,13 @@ class DeepScanStrategy(CatalogStrategy):
 
             # Hash'li dosya adı kontrolü (MD5/SHA1 gibi sadece hex karakterlerden oluşan)
             # Örnek: 44e6837acccc042ae3d6cd8eac957784.pdf
+            # NOT: Sadece "buttons" dizinindeki hash'li dosyaları atla
+            # "files" dizinindeki hash'li dosyalar gerçek katalog olabilir (örn: Çemtaş)
             name_without_ext = os.path.splitext(filename)[0]
             if re.match(r'^[a-f0-9]{20,}$', name_without_ext.lower()):
-                return False  # Hash'li dosyaları atla
+                # Sadece buttons dizinindeyse atla, files dizinindeyse kabul et
+                if '/buttons/' in url.lower() or '/button/' in url.lower():
+                    return False  # Hash'li dosyaları atla
 
             # Her ikisini de kontrol et
             combined = f"{decoded_url} {filename_normalized}"

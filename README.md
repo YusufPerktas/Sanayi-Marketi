@@ -5,8 +5,8 @@ A web platform connecting users searching for materials with companies that manu
 ## Tech Stack
 
 ### Server
-- Java 20
-- Spring Boot 3.4.1
+- Java 21
+- Spring Boot 4
 - PostgreSQL
 
 ### Client

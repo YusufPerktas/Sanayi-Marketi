@@ -126,13 +126,13 @@
     "notes": "Fiyat listesi dosyasından - Elektronik"
   },
   {
-    "company_name": "Loobar / Emisay",
+    "company_name": "Loobar",
     "website": "https://loobar.com.tr",
     "sector": "Endüstriyel/Mekanik",
     "notes": "Fiyat listesi dosyasından - Çeşitli / Endüstriyel"
   },
   {
-    "company_name": "Cata / Galip",
+    "company_name": "Galip",
     "website": "https://galip.com.tr",
     "sector": "Elektrik/Elektronik",
     "notes": "Fiyat listesi dosyasından - Aydınlatma / Elektrik"
@@ -150,7 +150,7 @@
     "notes": "Fiyat listesi dosyasından - Elektrik / Aydınlatma"
   },
   {
-    "company_name": "Chint Türkiye",
+    "company_name": "Chint",
     "website": "https://chint.com.tr",
     "sector": "Elektrik/Elektronik",
     "notes": "Fiyat listesi dosyasından - Elektrik / Enerji"
@@ -168,7 +168,7 @@
     "notes": "Fiyat listesi dosyasından - Kablo / Elektrik"
   },
   {
-    "company_name": "Emas / Erele Elektrik",
+    "company_name": "Erele Elektrik",
     "website": "https://erelelektrik.com.tr",
     "sector": "Elektrik/Elektronik",
     "notes": "Fiyat listesi dosyasından - Elektrik"
@@ -204,19 +204,13 @@
     "notes": "Fiyat listesi dosyasından - Metal / Bağlantı Elemanları"
   },
   {
-    "company_name": "Nöksel Çelik Boru",
-    "website": "https://tr.noksel.com",
-    "sector": "Çelik/Metal",
-    "notes": "Fiyat listesi dosyasından - Çelik Boru"
-  },
-  {
     "company_name": "WisGroup Otomotiv",
     "website": "https://www.wisgroup.com.tr",
     "sector": "Çeşitli",
     "notes": "Fiyat listesi dosyasından - Oto Yedek Parça"
   },
   {
-    "company_name": "Sardoğan / Sesayapi",
+    "company_name": "Sesayapi",
     "website": "https://sesayapi.com.tr",
     "sector": "Çeşitli",
     "notes": "Fiyat listesi dosyasından - Sanayi Üretim"
@@ -228,13 +222,7 @@
     "notes": "Fiyat listesi dosyasından - Endüstriyel"
   },
   {
-    "company_name": "ABB / ADS Mühendislik",
-    "website": "https://www.adsmuhendislik.com.tr",
-    "sector": "Çeşitli",
-    "notes": "Fiyat listesi dosyasından - Elektrifikasyon / Pano"
-  },
-  {
-    "company_name": "Çözümbu Civata & Hırdavat",
+    "company_name": "Çözümbu",
     "website": "https://www.cozumbu.com.tr",
     "sector": "Çelik/Metal",
     "notes": "Fiyat listesi dosyasından - Civata / Bağlantı Elemanları"
@@ -250,5 +238,83 @@
     "website": "https://www.turconn.com.tr",
     "sector": "Çelik/Metal",
     "notes": "HES listesinden - Bağlantı elemanları"
+  },
+  {
+    "company_name": "Ekin Endüstriyel",
+    "website": "https://www.ekinendustriyel.com",
+    "sector": "Endüstriyel Ekipman",
+    "notes": "Genel ürün kataloğu (PDF)"
+  },
+  {
+    "company_name": "KM Metal",
+    "website": "https://www.kmmetal.com.tr",
+    "sector": "Metal Sanayi",
+    "notes": "Ürün katalogları mevcut"
+  },
+  {
+    "company_name": "Dizayn Grup",
+    "website": "https://www.dizayngrup.com/tr",
+    "sector": "Endüstriyel Tasarım & Üretim",
+    "notes": "Ürün katalogları"
+  },
+  {
+    "company_name": "Vansan",
+    "website": "https://www.vansan.com.tr",
+    "sector": "Pompa Sistemleri",
+    "notes": "Ürün ve teknik kataloglar"
+  },
+  {
+    "company_name": "Etna",
+    "website": "https://www.etna.com.tr",
+    "sector": "Vana & Pompa",
+    "notes": "Ürün katalogları"
+  },
+  {
+    "company_name": "Standart Pompa",
+    "website": "https://www.standartpompa.com",
+    "sector": "Pompa",
+    "notes": "PDF kataloglar"
+  },
+  {
+    "company_name": "Best Transformer",
+    "website": "https://www.besttransformer.com",
+    "sector": "Elektrik",
+    "notes": "Trafo ürün katalogları"
+  },
+  {
+    "company_name": "Sigma Elektrik",
+    "website": "https://www.sigmaelektrik.com",
+    "sector": "Elektrik",
+    "notes": "Elektrik ürün katalogları"
+  },
+  {
+    "company_name": "EAE Elektrik",
+    "website": "https://www.eae.com.tr",
+    "sector": "Elektrik & Busbar",
+    "notes": "Kapsamlı kataloglar"
+  },
+  {
+    "company_name": "Onka Elektrik",
+    "website": "https://www.onka.com.tr",
+    "sector": "Elektrik",
+    "notes": "Ürün katalogları"
+  },
+  {
+    "company_name": "Mutlusan",
+    "website": "https://www.mutlusan.com.tr",
+    "sector": "Elektrik",
+    "notes": "Ürün katalogları"
+  },
+  {
+    "company_name": "Tuna Vida",
+    "website": "https://www.tunavida.com",
+    "sector": "Bağlantı Elemanları",
+    "notes": "PDF ürün katalogları"
+  },
+  {
+    "company_name": "Sarkuysan",
+    "website": "https://www.sarkuysan.com",
+    "sector": "Metal",
+    "notes": "Ürün ve teknik kataloglar"
   }
 ]

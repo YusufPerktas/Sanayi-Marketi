@@ -1,11 +1,4 @@
-"""
-Base Scraper Module
-===================
-Tüm scraper'lar için abstract base class.
-
-Bu sınıf, web scraping işlemleri için temel yapıyı sağlar
-ve tüm scraper'ların uyması gereken arayüzü tanımlar.
-"""
+"""Tüm scraper'lar için abstract base class."""
 
 import time
 import warnings
@@ -57,27 +50,7 @@ logger = get_logger(__name__)
 
 
 class BaseScraper(ABC):
-    """
-    Tüm scraper'lar için abstract base class.
-
-    Bu sınıf, web scraping işlemleri için temel metodları sağlar
-    ve alt sınıfların uygulaması gereken abstract metodları tanımlar.
-
-    Attributes:
-        timeout: HTTP istek zaman aşımı (saniye)
-        max_retries: Maksimum yeniden deneme sayısı
-        delay: İstekler arası bekleme süresi
-        session: requests.Session nesnesi (connection pooling için)
-
-    Example:
-        >>> class MyScraper(BaseScraper):
-        ...     def extract_catalog_links(self, soup, base_url):
-        ...         # Katalog linklerini çıkar
-        ...         pass
-        ...     def extract_contact_info(self, soup):
-        ...         # İletişim bilgilerini çıkar
-        ...         pass
-    """
+    """Tüm scraper'lar için abstract base class."""
 
     def __init__(self):
         """BaseScraper'ı başlatır."""
@@ -102,12 +75,7 @@ class BaseScraper(ABC):
         self._selenium_driver: Optional[webdriver.Chrome] = None
 
     def _init_selenium_driver(self) -> Optional[webdriver.Chrome]:
-        """
-        Selenium WebDriver'ı başlatır.
-
-        Returns:
-            webdriver.Chrome: Chrome driver instance, hata durumunda None
-        """
+        """Selenium WebDriver'ı başlatır."""
         if not USE_SELENIUM:
             return None
 
@@ -128,6 +96,9 @@ class BaseScraper(ABC):
             # Logging'i bastır
             chrome_options.add_argument('--log-level=3')
             chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
+
+            # Eager loading: DOM hazır olunca devam et (timeout azaltır)
+            chrome_options.page_load_strategy = 'eager'
 
             # Selenium 4.6+ kendi driver yönetimini yapıyor
             driver = webdriver.Chrome(options=chrome_options)

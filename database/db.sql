@@ -1,11 +1,5 @@
--- =====================================================
--- EXTENSIONS
--- =====================================================
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
--- =====================================================
--- ENUM TYPES
--- =====================================================
 
 CREATE TYPE user_role AS ENUM (
   'BASIC_USER',
@@ -43,9 +37,6 @@ CREATE TYPE catalog_file_type AS ENUM (
   'DOCX'
 );
 
--- =====================================================
--- USERS
--- =====================================================
 
 CREATE TABLE users (
   id BIGSERIAL PRIMARY KEY,
@@ -55,9 +46,6 @@ CREATE TABLE users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- =====================================================
--- COMPANIES
--- =====================================================
 
 CREATE TABLE companies (
   id BIGSERIAL PRIMARY KEY,
@@ -84,9 +72,7 @@ CREATE TABLE companies (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- =====================================================
--- COMPANY APPLICATIONS
--- =====================================================
+
 
 CREATE TABLE company_applications (
   id BIGSERIAL PRIMARY KEY,
@@ -100,11 +86,7 @@ CREATE TABLE company_applications (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- =====================================================
--- COMPANY USERS
--- (1 user = 1 company enforced by PRIMARY KEY)
--- (Admin users cannot be linked to companies - enforced by trigger)
--- =====================================================
+
 
 CREATE TABLE company_users (
   user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -112,9 +94,6 @@ CREATE TABLE company_users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- =====================================================
--- MATERIALS (GLOBAL POOL)
--- =====================================================
 
 CREATE TABLE materials (
   id BIGSERIAL PRIMARY KEY,
@@ -123,9 +102,7 @@ CREATE TABLE materials (
   parent_material_id BIGINT REFERENCES materials(id) ON DELETE SET NULL
 );
 
--- =====================================================
--- COMPANY MATERIALS (PRICE + ROLE)
--- =====================================================
+
 
 CREATE TABLE company_materials (
   id BIGSERIAL PRIMARY KEY,
@@ -137,9 +114,6 @@ CREATE TABLE company_materials (
   UNIQUE (company_id, material_id)
 );
 
--- =====================================================
--- FAVORITES
--- =====================================================
 
 CREATE TABLE user_favorite_companies (
   user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
@@ -155,9 +129,6 @@ CREATE TABLE user_favorite_materials (
   PRIMARY KEY (user_id, material_id)
 );
 
--- =====================================================
--- TRIGGER FUNCTIONS
--- =====================================================
 
 -- Material name normalization
 CREATE OR REPLACE FUNCTION normalize_material_name()
@@ -241,9 +212,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- =====================================================
--- TRIGGERS
--- =====================================================
 
 CREATE TRIGGER trg_normalize_material
 BEFORE INSERT OR UPDATE ON materials
@@ -265,9 +233,6 @@ AFTER UPDATE ON company_applications
 FOR EACH ROW
 EXECUTE FUNCTION approve_company_application();
 
--- =====================================================
--- INDEXES
--- =====================================================
 
 -- Users (email already has implicit unique index)
 CREATE INDEX idx_users_role ON users(role);
@@ -319,9 +284,6 @@ CREATE INDEX idx_fav_materials_user
 CREATE INDEX idx_fav_materials_material
   ON user_favorite_materials(material_id);
 
--- =====================================================
--- COMMENTS (DOCUMENTATION)
--- =====================================================
 
 COMMENT ON TABLE company_users IS 
   'One user can own only one company (enforced by PK). Admin users cannot be linked to companies (enforced by trigger).';

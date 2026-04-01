@@ -1,14 +1,4 @@
-"""
-File Downloader Module
-======================
-Katalog dosyalarını indiren modül.
-
-Özellikler:
-- Türkçe karakter desteği
-- Hash kontrolü ile tekrar indirmeyi önleme
-- Progress göstergesi
-- Retry mekanizması
-"""
+"""Katalog dosyalarını indiren modül."""
 
 import os
 import re
@@ -49,38 +39,9 @@ logger = get_logger(__name__)
 
 
 class FileDownloader:
-    """
-    Katalog dosyalarını indiren sınıf.
-
-    Özellikler:
-    - Firma bazlı klasör yapısı
-    - Hash kontrolü ile duplicate önleme
-    - Retry mekanizması
-    - Türkçe dosya adı desteği
-
-    Attributes:
-        base_dir: Katalogların indirileceği ana dizin
-        timeout: İndirme zaman aşımı (saniye)
-        max_retries: Maksimum yeniden deneme sayısı
-        downloaded_hashes: İndirilen dosyaların hash'leri (duplicate kontrolü)
-
-    Example:
-        >>> downloader = FileDownloader()
-        >>> result = downloader.download(
-        ...     url="https://example.com/katalog.pdf",
-        ...     company_name="ABC Firma"
-        ... )
-        >>> print(result)
-        {'success': True, 'file_path': 'output/catalogs/ABC_Firma/katalog.pdf'}
-    """
+    """Katalog dosyalarını indiren sınıf."""
 
     def __init__(self, base_dir: Optional[str] = None):
-        """
-        FileDownloader'ı başlatır.
-
-        Args:
-            base_dir: Katalogların indirileceği ana dizin (varsayılan: CATALOGS_DIR)
-        """
         self.base_dir = base_dir or CATALOGS_DIR
         self.timeout = DOWNLOAD_TIMEOUT
         self.max_retries = MAX_RETRIES
@@ -147,9 +108,12 @@ class FileDownloader:
 
         # Hash'li dosya adı kontrolü (MD5/SHA1 gibi sadece hex karakterlerden oluşan)
         # Örnek: 44e6837acccc042ae3d6cd8eac957784.pdf
+        # NOT: Sadece "buttons" dizinindeki hash'li dosyaları atla
+        # "files" dizinindeki hash'li dosyalar gerçek katalog olabilir (örn: Çemtaş)
         name_without_ext = os.path.splitext(filename)[0]
         if re.match(r'^[a-f0-9]{20,}$', name_without_ext.lower()):
-            return False, "Hash-based filename (not a catalog)"
+            if '/buttons/' in url.lower() or '/button/' in url.lower():
+                return False, "Hash-based filename in buttons directory"
 
         combined = f"{decoded_url} {text_lower} {filename_normalized}"
 
