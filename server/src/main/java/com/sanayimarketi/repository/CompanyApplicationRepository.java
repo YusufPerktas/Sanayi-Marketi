@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CompanyApplicationRepository extends JpaRepository<CompanyApplication, Long> {
@@ -15,4 +16,6 @@ public interface CompanyApplicationRepository extends JpaRepository<CompanyAppli
     List<CompanyApplication> findByUserId(Long userId);
 
     List<CompanyApplication> findByStatusOrderByCreatedAtAsc(CompanyApplicationStatus status);
+
+    Optional<CompanyApplication> findTopByUserIdOrderByCreatedAtDesc(Long userId);
 }

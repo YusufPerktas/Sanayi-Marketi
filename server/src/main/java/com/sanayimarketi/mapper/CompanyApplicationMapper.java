@@ -17,6 +17,7 @@ public class CompanyApplicationMapper {
                 .targetCompanyName(application.getTargetCompany() != null ? application.getTargetCompany().getCompanyName() : null)
                 .proposedCompanyName(application.getProposedCompanyName())
                 .status(application.getStatus())
+                .rejectionReason(application.getRejectionReason())
                 .createdAt(application.getCreatedAt())
                 .build();
     }

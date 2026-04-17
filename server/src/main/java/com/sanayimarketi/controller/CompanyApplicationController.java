@@ -12,9 +12,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/applications")
+@RequestMapping("/api/company-applications")
 @RequiredArgsConstructor
 public class CompanyApplicationController {
 
@@ -25,7 +26,6 @@ public class CompanyApplicationController {
     public ResponseEntity<CompanyApplicationResponseDTO> submitApplication(
             @Valid @RequestBody CompanyApplicationRequestDTO request,
             @RequestAttribute("userId") Long userId) {
-        // userId will be extracted from JWT token by security filter
 
         CompanyApplication application = applicationService.submitApplication(
                 userId,
@@ -39,9 +39,16 @@ public class CompanyApplicationController {
                 .body(applicationMapper.toResponseDTO(application));
     }
 
+    @GetMapping("/mine")
+    public ResponseEntity<CompanyApplicationResponseDTO> getMyApplication(
+            @RequestAttribute("userId") Long userId) {
+        return applicationService.getLatestApplicationByUserId(userId)
+                .map(app -> ResponseEntity.ok(applicationMapper.toResponseDTO(app)))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/pending")
     public ResponseEntity<List<CompanyApplicationResponseDTO>> getPendingApplications() {
-        // Admin-only access will be enforced by Spring Security
         List<CompanyApplicationResponseDTO> applications = applicationService.getPendingApplications()
                 .stream()
                 .map(applicationMapper::toResponseDTO)
@@ -52,15 +59,16 @@ public class CompanyApplicationController {
 
     @PutMapping("/{id}/approve")
     public ResponseEntity<CompanyApplicationResponseDTO> approveApplication(@PathVariable Long id) {
-        // Admin-only access will be enforced by Spring Security
         CompanyApplication application = applicationService.approveApplication(id);
         return ResponseEntity.ok(applicationMapper.toResponseDTO(application));
     }
 
     @PutMapping("/{id}/reject")
-    public ResponseEntity<CompanyApplicationResponseDTO> rejectApplication(@PathVariable Long id) {
-        // Admin-only access will be enforced by Spring Security
-        CompanyApplication application = applicationService.rejectApplication(id);
+    public ResponseEntity<CompanyApplicationResponseDTO> rejectApplication(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, String> body) {
+        String reason = body != null ? body.get("reason") : null;
+        CompanyApplication application = applicationService.rejectApplication(id, reason);
         return ResponseEntity.ok(applicationMapper.toResponseDTO(application));
     }
 }

@@ -4,6 +4,8 @@ import com.sanayimarketi.entity.Material;
 import com.sanayimarketi.exception.ResourceNotFoundException;
 import com.sanayimarketi.repository.MaterialRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,8 +17,8 @@ public class MaterialService {
 
     private final MaterialRepository materialRepository;
 
-    public List<Material> getAllMaterials() {
-        return materialRepository.findAll();
+    public Page<Material> getAllMaterials(Pageable pageable) {
+        return materialRepository.findAll(pageable);
     }
 
     public Material getMaterialById(Long id) {
@@ -41,6 +43,7 @@ public class MaterialService {
     public Material createMaterial(String materialName, Long parentMaterialId) {
         Material material = Material.builder()
                 .materialName(materialName)
+                .normalizedName(materialName.toLowerCase().trim())
                 .build();
 
         if (parentMaterialId != null) {
@@ -55,6 +58,7 @@ public class MaterialService {
     public Material updateMaterial(Long id, String materialName, Long parentMaterialId) {
         Material material = getMaterialById(id);
         material.setMaterialName(materialName);
+        material.setNormalizedName(materialName.toLowerCase().trim());
 
         if (parentMaterialId != null) {
             if (parentMaterialId.equals(id)) {

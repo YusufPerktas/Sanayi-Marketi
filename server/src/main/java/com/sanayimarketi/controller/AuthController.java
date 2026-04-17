@@ -2,11 +2,16 @@ package com.sanayimarketi.controller;
 
 import com.sanayimarketi.dto.AuthResponseDTO;
 import com.sanayimarketi.dto.LoginRequestDTO;
+import com.sanayimarketi.dto.RegisterCompanyRequestDTO;
 import com.sanayimarketi.dto.RegisterRequestDTO;
 import com.sanayimarketi.entity.User;
+import com.sanayimarketi.entity.enums.CompanyApplicationType;
+import com.sanayimarketi.entity.enums.UserRole;
 import com.sanayimarketi.exception.ResourceNotFoundException;
 import com.sanayimarketi.security.JwtService;
+import com.sanayimarketi.service.CompanyApplicationService;
 import com.sanayimarketi.service.UserService;
+import org.springframework.transaction.annotation.Transactional;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -33,6 +38,7 @@ public class AuthController {
     private final UserService userService;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+    private final CompanyApplicationService companyApplicationService;
 
     private static final String REFRESH_TOKEN_COOKIE_NAME = "refresh_token";
     private static final long REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
@@ -67,6 +73,51 @@ public class AuthController {
         setRefreshTokenCookie(response, refreshToken);
 
         // Return access token and user info
+        AuthResponseDTO responseDto = AuthResponseDTO.builder()
+                .accessToken(accessToken)
+                .userId(user.getId())
+                .role(user.getRole())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
+    }
+
+    /**
+     * Register a new company applicant.
+     * Atomically creates a PENDING_COMPANY_USER account and a CompanyApplication.
+     */
+    @PostMapping("/register-company")
+    @Transactional
+    public ResponseEntity<AuthResponseDTO> registerCompany(
+            @Valid @RequestBody RegisterCompanyRequestDTO request,
+            HttpServletResponse response) {
+
+        if (request.getApplicationType() == CompanyApplicationType.AUTO_IMPORTED) {
+            throw new IllegalArgumentException("AUTO_IMPORTED applications cannot be submitted by users");
+        }
+
+        if (userService.findByEmail(request.getEmail()).isPresent()) {
+            throw new IllegalStateException("Email is already registered");
+        }
+
+        User user = userService.registerUser(
+                request.getEmail(),
+                request.getPassword(),
+                UserRole.PENDING_COMPANY_USER
+        );
+
+        companyApplicationService.submitApplication(
+                user.getId(),
+                request.getApplicationType(),
+                request.getTargetCompanyId(),
+                request.getProposedCompanyName()
+        );
+
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
+
+        setRefreshTokenCookie(response, refreshToken);
+
         AuthResponseDTO responseDto = AuthResponseDTO.builder()
                 .accessToken(accessToken)
                 .userId(user.getId())

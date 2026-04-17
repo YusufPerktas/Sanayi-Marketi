@@ -23,5 +23,6 @@ public class CompanyApplicationResponseDTO {
     private String targetCompanyName;
     private String proposedCompanyName;
     private CompanyApplicationStatus status;
+    private String rejectionReason;
     private LocalDateTime createdAt;
 }

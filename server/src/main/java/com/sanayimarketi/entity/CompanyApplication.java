@@ -41,6 +41,9 @@ public class CompanyApplication {
     @Column(name = "status", nullable = false)
     private CompanyApplicationStatus status;
 
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

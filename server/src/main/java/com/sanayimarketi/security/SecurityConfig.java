@@ -47,12 +47,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/logout").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register-company").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/companies/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/materials/**").permitAll()
                         // Admin-only endpoints
-                        .requestMatchers(HttpMethod.GET, "/api/applications/pending").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/applications/*/approve").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/applications/*/reject").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/company-applications/pending").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/company-applications/*/approve").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/company-applications/*/reject").hasRole("ADMIN")
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )

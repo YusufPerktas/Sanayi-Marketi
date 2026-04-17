@@ -5,6 +5,7 @@ import com.sanayimarketi.entity.CompanyApplication;
 import com.sanayimarketi.entity.User;
 import com.sanayimarketi.entity.enums.CompanyApplicationStatus;
 import com.sanayimarketi.entity.enums.CompanyApplicationType;
+import com.sanayimarketi.entity.enums.UserRole;
 import com.sanayimarketi.exception.ResourceNotFoundException;
 import com.sanayimarketi.repository.CompanyApplicationRepository;
 import com.sanayimarketi.repository.CompanyRepository;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -60,11 +62,18 @@ public class CompanyApplicationService {
         }
 
         application.setStatus(CompanyApplicationStatus.APPROVED);
-        return applicationRepository.save(application);
+        applicationRepository.save(application);
+
+        // Upgrade user role from PENDING_COMPANY_USER to COMPANY_USER
+        User user = application.getUser();
+        user.setRole(UserRole.COMPANY_USER);
+        userRepository.save(user);
+
+        return application;
     }
 
     @Transactional
-    public CompanyApplication rejectApplication(Long id) {
+    public CompanyApplication rejectApplication(Long id, String reason) {
         CompanyApplication application = applicationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CompanyApplication", id));
 
@@ -73,6 +82,11 @@ public class CompanyApplicationService {
         }
 
         application.setStatus(CompanyApplicationStatus.REJECTED);
+        application.setRejectionReason(reason);
         return applicationRepository.save(application);
+    }
+
+    public Optional<CompanyApplication> getLatestApplicationByUserId(Long userId) {
+        return applicationRepository.findTopByUserIdOrderByCreatedAtDesc(userId);
     }
 }

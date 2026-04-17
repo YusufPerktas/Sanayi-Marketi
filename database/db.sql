@@ -3,6 +3,7 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE TYPE user_role AS ENUM (
   'BASIC_USER',
+  'PENDING_COMPANY_USER',
   'COMPANY_USER',
   'ADMIN'
 );
@@ -83,6 +84,7 @@ CREATE TABLE company_applications (
   proposed_company_name VARCHAR(255),
 
   status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  rejection_reason TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

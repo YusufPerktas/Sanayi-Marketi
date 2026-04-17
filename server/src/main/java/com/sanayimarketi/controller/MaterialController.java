@@ -4,6 +4,7 @@ import com.sanayimarketi.dto.CompanyMaterialRequestDTO;
 import com.sanayimarketi.dto.CompanyMaterialResponseDTO;
 import com.sanayimarketi.dto.MaterialCreateRequestDTO;
 import com.sanayimarketi.dto.MaterialResponseDTO;
+import com.sanayimarketi.dto.PagedResponseDTO;
 import com.sanayimarketi.entity.CompanyMaterial;
 import com.sanayimarketi.entity.Material;
 import com.sanayimarketi.mapper.CompanyMaterialMapper;
@@ -12,6 +13,8 @@ import com.sanayimarketi.service.CompanyMaterialService;
 import com.sanayimarketi.service.MaterialService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,12 +32,22 @@ public class MaterialController {
     private final CompanyMaterialMapper companyMaterialMapper;
 
     @GetMapping
-    public ResponseEntity<List<MaterialResponseDTO>> getAllMaterials() {
-        List<MaterialResponseDTO> materials = materialService.getAllMaterials()
-                .stream()
+    public ResponseEntity<PagedResponseDTO<MaterialResponseDTO>> getAllMaterials(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Page<Material> materialPage = materialService.getAllMaterials(PageRequest.of(page, size));
+        List<MaterialResponseDTO> content = materialPage.getContent().stream()
                 .map(materialMapper::toResponseDTO)
                 .toList();
-        return ResponseEntity.ok(materials);
+        return ResponseEntity.ok(new PagedResponseDTO<>(
+                content,
+                materialPage.getNumber(),
+                materialPage.getSize(),
+                materialPage.getTotalElements(),
+                materialPage.getTotalPages(),
+                materialPage.isFirst(),
+                materialPage.isLast()
+        ));
     }
 
     @GetMapping("/{id}")

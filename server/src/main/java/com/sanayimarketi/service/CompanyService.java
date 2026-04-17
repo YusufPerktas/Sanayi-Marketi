@@ -1,10 +1,14 @@
 package com.sanayimarketi.service;
 
 import com.sanayimarketi.entity.Company;
+import com.sanayimarketi.entity.CompanyUser;
 import com.sanayimarketi.entity.enums.CompanyStatus;
 import com.sanayimarketi.exception.ResourceNotFoundException;
 import com.sanayimarketi.repository.CompanyRepository;
+import com.sanayimarketi.repository.CompanyUserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,9 +19,10 @@ import java.util.List;
 public class CompanyService {
 
     private final CompanyRepository companyRepository;
+    private final CompanyUserRepository companyUserRepository;
 
-    public List<Company> getAllCompanies() {
-        return companyRepository.findAll();
+    public Page<Company> getAllCompanies(Pageable pageable) {
+        return companyRepository.findAll(pageable);
     }
 
     public List<Company> getCompaniesByStatus(CompanyStatus status) {
@@ -30,8 +35,14 @@ public class CompanyService {
     }
 
     @Transactional
-    public Company updateCompany(Long id, Company companyDetails) {
+    public Company updateCompany(Long id, Company companyDetails, Long requestingUserId) {
         Company company = getCompanyById(id);
+
+        CompanyUser companyUser = companyUserRepository.findByUserId(requestingUserId)
+                .orElseThrow(() -> new SecurityException("User is not linked to any company"));
+        if (!companyUser.getCompany().getId().equals(id)) {
+            throw new SecurityException("User is not authorized to update this company");
+        }
 
         company.setCompanyName(companyDetails.getCompanyName());
         company.setDescription(companyDetails.getDescription());
