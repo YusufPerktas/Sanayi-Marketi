@@ -1,0 +1,62 @@
+export const colors = {
+  primary: '#004ac6',
+  primaryContainer: '#2563eb',
+  onPrimary: '#ffffff',
+  onPrimaryContainer: '#eeefff',
+  primaryFixed: '#dbe1ff',
+  primaryFixedDim: '#b4c5ff',
+  onPrimaryFixed: '#00174b',
+  onPrimaryFixedVariant: '#003ea8',
+
+  secondary: '#3755c3',
+  secondaryContainer: '#708cfd',
+  onSecondary: '#ffffff',
+  onSecondaryContainer: '#00217a',
+  secondaryFixed: '#dde1ff',
+  secondaryFixedDim: '#b8c4ff',
+  onSecondaryFixed: '#001453',
+  onSecondaryFixedVariant: '#173bab',
+
+  tertiary: '#006058',
+  tertiaryContainer: '#007b71',
+  onTertiary: '#ffffff',
+  onTertiaryContainer: '#b3fff3',
+  tertiaryFixed: '#89f5e7',
+  tertiaryFixedDim: '#6bd8cb',
+  onTertiaryFixed: '#00201d',
+  onTertiaryFixedVariant: '#005049',
+
+  error: '#ba1a1a',
+  errorContainer: '#ffdad6',
+  onError: '#ffffff',
+  onErrorContainer: '#93000a',
+
+  surface: '#f9f9ff',
+  surfaceBright: '#f9f9ff',
+  surfaceDim: '#cfdaf2',
+  surfaceVariant: '#d8e3fb',
+  surfaceContainerLowest: '#ffffff',
+  surfaceContainerLow: '#f0f3ff',
+  surfaceContainer: '#e7eeff',
+  surfaceContainerHigh: '#dee8ff',
+  surfaceContainerHighest: '#d8e3fb',
+
+  onSurface: '#111c2d',
+  onSurfaceVariant: '#434655',
+  onBackground: '#111c2d',
+  background: '#f9f9ff',
+
+  outline: '#737686',
+  outlineVariant: '#c3c6d7',
+
+  inverseSurface: '#263143',
+  inverseOnSurface: '#ecf1ff',
+  inversePrimary: '#b4c5ff',
+
+  surfaceTint: '#0053db',
+
+  gradientPrimary: 'linear-gradient(135deg, #004ac6, #2563eb)',
+  shadow: '0 20px 40px rgba(17, 28, 45, 0.06)',
+  shadowSm: '0 10px 30px rgba(17, 28, 45, 0.03)',
+  shadowLg: '0 8px 16px rgba(0, 74, 198, 0.2)',
+} as const;

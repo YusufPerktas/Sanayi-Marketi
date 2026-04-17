@@ -1,29 +1,11 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Route grupları
-const PUBLIC_PATHS = ['/', '/search', '/login', '/register'];
-const COMPANY_PATHS = ['/company'];
-const ADMIN_PATHS = ['/admin'];
-const AUTH_PATHS = ['/dashboard', '/favorites', '/company', '/admin'];
-
-function isPublicPath(pathname: string): boolean {
-  if (PUBLIC_PATHS.includes(pathname)) return true;
-  // /companies/:id de public
-  if (pathname.startsWith('/companies/')) return true;
-  return false;
-}
+// Protected route prefixes — everything else is public
+const AUTH_PATHS = ['/dashboard', '/favorites', '/company', '/admin', '/application'];
 
 function requiresAuth(pathname: string): boolean {
-  return AUTH_PATHS.some((p) => pathname.startsWith(p));
-}
-
-function requiresCompanyRole(pathname: string): boolean {
-  return COMPANY_PATHS.some((p) => pathname.startsWith(p));
-}
-
-function requiresAdminRole(pathname: string): boolean {
-  return ADMIN_PATHS.some((p) => pathname.startsWith(p));
+  return AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
 }
 
 // Next.js 16: export edilen fonksiyon "proxy" olarak adlandırılmalı

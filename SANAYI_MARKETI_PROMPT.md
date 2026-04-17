@@ -581,93 +581,237 @@ Frontend:
 
 ---
 
+USER ROLES (UPDATED)
+
+1. Visitors (Unauthenticated)           -- as before
+2. Basic Users (BASIC_USER)             -- as before
+3. PENDING_COMPANY_USER  [NEW ROLE]
+   - Created when a company application form is submitted
+   - Can ONLY access /application/status page
+   - On admin approval: role upgraded to COMPANY_USER
+4. Company Users (COMPANY_USER)         -- as before, login redirects to /company/manage
+5. Admin Users (ADMIN)                  -- as before
+
+---
+
+PAGE STRUCTURE  [LOCKED 2026-04-17]
+
+Public (no auth):
+  /                          Ana sayfa -- hero search + featured companies + popular materials
+  /companies                 Firma listesi + arama + filtreleme
+  /companies/[id]            Firma detay (SSR) -- tabs: Genel/Malzemeler/Katalog/Konum
+                             "Mesaj Gönder" = mailto: link -> opens Gmail with company email pre-filled
+  /materials                 Materyal listesi + arama
+  /materials/[id]            Materyal detay + satan firmalar listesi
+  /login                     Giriş formu + "Firma başvurusu" link -> /company-apply
+  /register                  Kayıt formu (BASIC_USER) -- "Firma Kullanıcısı" seçeneği -> /company-apply
+  /company-apply             Firma başvuru formu (PUBLIC) -- creates PENDING_COMPANY_USER + CompanyApplication
+
+Auth - BASIC_USER:
+  /dashboard                 Kullanıcı paneli -- favori istatistikleri + "firma başvurusu" notu
+  /favorites                 Favori firmalar + materyaller
+
+Auth - PENDING_COMPANY_USER (ONLY this page):
+  /application/status        Başvuru durumu (PENDING/APPROVED/REJECTED + sebep)
+
+Auth - COMPANY_USER:
+  /company/manage            Firma genel bakış (login sonrası direkt buraya)
+  /company/edit              Firma bilgilerini düzenle
+  /company/materials         Materyal listesi + ekle/güncelle/sil
+  /company/catalog           Katalog dosyası yönetimi (PDF/DOC/DOCX)
+
+Auth - ADMIN:
+  /admin                     Genel bakış + istatistik kartları
+  /admin/approvals           Bekleyen başvurular -- onayla/reddet
+  /admin/duplicates          Duplikat şirket çözümü
+  /admin/scraper             Scraper kontrol paneli (UI only -- backend deferred)
+  /admin/statistics          Sistem istatistikleri
+
+Login redirect by role:
+  BASIC_USER              -> /dashboard
+  PENDING_COMPANY_USER    -> /application/status
+  COMPANY_USER            -> /company/manage
+  ADMIN                   -> /admin
+
+---
+
+UI DESIGN SYSTEM  [LOCKED 2026-04-17]
+
+Source designs: /stitch_sanayi_marketi_industrial_platform/ (HTML files from Stitch tool)
+  Folders: homepage, login, register, search_results, company_detail, company_dashboard,
+           user_dashboard, admin_panel, admin_approvals, admin_duplicates,
+           materials_management, scraper_control
+
+Approach: MUI v9 components styled to match Stitch designs (NOT Tailwind CSS)
+Fonts: Manrope (headlines/h1-h6) + Inter (body) via next/font/google
+Color palette: Material Design 3 tokens -- extracted to src/utils/colors.ts
+
+Key color values:
+  primary:                  #004ac6
+  primaryContainer:         #2563eb
+  onSurface:                #111c2d
+  onSurfaceVariant:         #434655
+  surface:                  #f9f9ff
+  surfaceContainerLow:      #f0f3ff
+  surfaceContainer:         #e7eeff
+  surfaceContainerHigh:     #dee8ff
+  outline:                  #737686
+  outlineVariant:           #c3c6d7
+  inverseSurface (dark):    #263143
+  error:                    #ba1a1a
+  gradientPrimary:          linear-gradient(135deg, #004ac6, #2563eb)
+
+Layout components:
+  MainLayout     (src/components/layout/MainLayout.tsx)
+    -- Sticky navbar + footer; for all public pages
+  DashboardLayout (src/components/layout/DashboardLayout.tsx)
+    -- Light sidebar (288px) + top header; variant: 'user' | 'company'
+  AdminLayout    (src/components/layout/AdminLayout.tsx)
+    -- Dark sidebar (#263143, 256px) + top header; for all /admin/* pages
+
+---
+
 CURRENT PROJECT STATE
 
 Database:     COMPLETE & LOCKED
               PostgreSQL 18, schema: db.sql
 
 Backend:      RUNNING (Spring Boot Dashboard, port 8080)
-              JWT Security: COMPLETE (not yet tested via client)
-              Known issues logged above (to fix in next phase)
-              AdminController + ScraperService: TODO (deferred)
+              JWT Security: COMPLETE
+              AdminController + ScraperService: DEFERRED
 
-Frontend:     IN PROGRESS  (started 2026-04-17)
-              Auth foundation: COMPLETE
-                - Next.js 16.2.4 + React 19.2 + TypeScript project created
-                - Axios client + token interceptors + refresh queue: DONE
-                - AuthContext (in-memory token + page-refresh recovery): DONE
-                - proxy.ts route protection: DONE
-                - auth.service.ts (login/register/refresh/logout): DONE
-                - Login page + Register page: DONE
-                - Home page + Dashboard placeholder: DONE
-                - TypeScript: 0 errors
-              End-to-end auth test with backend: PENDING
-              Remaining pages/components: TODO (see folder structure above)
+              CRITICAL bugs (frontend blocked until fixed):
+                1. PENDING_COMPANY_USER missing from UserRole enum
+                   File: entity/enums/UserRole.java
+                   Fix:  Add PENDING_COMPANY_USER to the enum
+
+                2. POST /api/auth/register-company endpoint does not exist
+                   Frontend /company-apply calls this; currently gets 404
+                   Fix:  New endpoint in AuthController -- atomically create User
+                         (role=PENDING_COMPANY_USER) + CompanyApplication in one @Transactional
+
+                3. CompanyApplicationController path mismatch
+                   Controller uses @RequestMapping("/api/applications")
+                   Frontend calls /api/company-applications
+                   Fix:  Change @RequestMapping to "/api/company-applications"
+
+                4. rejectApplication() ignores rejection reason
+                   Frontend sends { reason: "..." } body; backend signature has no reason param
+                   Fix:  Add String reason param to rejectApplication(Long id, String reason)
+                         and persist it on the CompanyApplication entity
+
+              IMPORTANT gaps (feature incomplete):
+                5. GET /api/company-users/me endpoint does not exist
+                   CompanyUser entity + CompanyUserRepository exist but no controller/service uses them
+                   /company/manage, /company/edit, /company/materials cannot fetch the logged-in
+                   user's company -- pages use placeholder (hardcoded null) until this is added
+                   Fix:  New endpoint: read userId from @RequestAttribute, query company_users table,
+                         return Company data
+
+                6. approveApplication() does not upgrade user role
+                   Sets status=APPROVED but user remains PENDING_COMPANY_USER forever
+                   Fix:  After approval, set user.role = COMPANY_USER and save
+
+                7. normalizedName never set in MaterialService
+                   createMaterial() and updateMaterial() do not set normalizedName
+                   searchMaterials() queries normalizedName -> always returns empty results
+                   Fix:  Add material.setNormalizedName(name.toLowerCase().trim()) in both methods
+
+              Minor (non-blocking):
+                8. No pagination on getAllCompanies() / getAllMaterials() -- returns full table
+                   Fix:  Add Pageable parameter to service + repository methods
+                9. Company updateCompany() has no ownership check -- any COMPANY_USER can edit any firm
+                   Fix:  Compare JWT userId against company_users.user_id before allowing update
+
+Frontend:     COMPLETE (2026-04-17)
+              Foundation:    Next.js 16.2.4 + React 19.2 + TypeScript, Axios, AuthContext, proxy.ts
+              Design system: MUI theme, Manrope + Inter fonts, MD3 color tokens (colors.ts),
+                             MainLayout, DashboardLayout, AdminLayout
+              Services:      auth, company, material, favorite, companyApplication
+              All pages:     DONE (20 pages, 0 TypeScript errors)
+                - /                    home -- hero search + featured companies
+                - /login               role-based redirect after login
+                - /register            BASIC_USER registration
+                - /companies           list + search + city filter + pagination
+                - /companies/[id]      detail tabs (Genel/Malzemeler/Katalog/Konum) + mailto
+                - /materials           list + search + pagination
+                - /materials/[id]      detail + sellers list
+                - /company-apply       PUBLIC form (graceful 404 until backend ready)
+                - /dashboard           user dashboard -- favorites stats + CTA
+                - /favorites           favorite companies & materials with remove
+                - /application/status  PENDING / APPROVED / REJECTED status card
+                - /company/manage      company overview + quick actions + completeness widget
+                - /company/edit        company info edit form
+                - /company/materials   material table + add/edit/delete
+                - /company/catalog     drag-and-drop catalog upload (upload API pending)
+                - /admin               overview + recent applications table
+                - /admin/approvals     approve/reject with reason dialog (real API)
+                - /admin/duplicates    side-by-side comparison + merge/deactivate (mock data)
+                - /admin/scraper       scraper UI only (backend deferred)
+                - /admin/statistics    stats cards + city distribution + popular materials (mock)
+              proxy.ts:      COMPLETE -- auth prefix matching fixed, /company-apply is public
 
 Data Scraper: DEFERRED
 Mobile:       OUT OF SCOPE
 
 ---
 
-COMPLETED PHASE: Frontend Setup & Auth Implementation  [DONE 2026-04-17]
+COMPLETED PHASES
 
-  1. [DONE] Create Next.js 16 + TypeScript project in /client folder
-  2. [DONE] Install dependencies: MUI v9, TanStack Query v5, Axios
-  3. [DONE] Set up folder structure
-  4. [DONE] AuthContext (in-memory access token + page-refresh recovery)
-  5. [DONE] Axios client + interceptors (Bearer token attach, 401 refresh, queue)
-  6. [DONE] Login page + Register page
-  7. [DONE] proxy.ts route protection (Next.js 16 -- NOT middleware.ts)
-  8. [PENDING] Test full auth flow end-to-end with running backend
+Phase 1: Backend Setup                   [DONE]
+Phase 2: Frontend Setup & Auth           [DONE 2026-04-17]
+Phase 3: Design System & Layout          [DONE 2026-04-17]
+Phase 4: All Frontend Pages              [DONE 2026-04-17]
+  - 20 pages, 4 services, proxy.ts updated, 0 TypeScript errors
 
 ---
 
-NEXT PHASE: Auth Test + Core Pages
+NEXT PHASE: Backend Fixes
 
-Steps:
-  1. Start frontend (npm run dev) + verify backend is running on 8080
-  2. Test full auth flow: register -> login -> role redirect -> refresh -> logout
-  3. Implement MainLayout (Navbar with login/logout button, role-aware links)
-  4. Implement company list page (/search or home) with pagination
-  5. Implement company detail page (/companies/[id]) -- SSR
-  6. Implement material search
-  7. Implement favorites (BASIC_USER + COMPANY_USER)
-  8. Implement company management pages (COMPANY_USER)
-  9. Implement admin panel pages (ADMIN)
-
-Backend fixes (still pending -- do not block frontend):
-  - normalizedName fix in MaterialService
-  - Pagination on list endpoints
-  - Company update ownership check
-  - FavoriteService null checks
-  - CompanyApplicationService type validation
-  - CompanyUser service usage for COMPANY_USER role
+Priority order (top = most blocking):
+  1. Add PENDING_COMPANY_USER to UserRole enum
+  2. POST /api/auth/register-company endpoint (atomic User + CompanyApplication)
+  3. Fix CompanyApplicationController path -> /api/company-applications
+  4. Add rejection reason to rejectApplication()
+  5. Approve: upgrade user role PENDING_COMPANY_USER -> COMPANY_USER
+  6. GET /api/company-users/me endpoint (for company management pages)
+  7. normalizedName fix in MaterialService (for material search)
+  8. Pagination on list endpoints
+  9. Company update ownership check
 
 ---
 
 DECISIONS LOG
 
-| Topic                  | Decision                                              | Status  |
-|------------------------|-------------------------------------------------------|---------|
-| Database               | PostgreSQL 18 -- schema in db.sql                     | LOCKED  |
-| Backend framework      | Spring Boot 4.0.1 + Java 21                           | LOCKED  |
-| ORM                    | Spring Data JPA + Hibernate 7.2.0                     | LOCKED  |
-| JWT library            | JJWT 0.12.6                                           | LOCKED  |
-| DTO mapping            | MapStruct 1.6.3                                       | LOCKED  |
-| Auth strategy          | Hybrid: Refresh (HttpOnly Cookie) + Access (Memory)   | LOCKED  |
-| Frontend framework     | React 19.2 + Next.js 16.2.4 (App Router)             | LOCKED  |
-| Frontend language      | TypeScript                                            | LOCKED  |
-| Component library      | Material UI (MUI) v9                                  | LOCKED  |
-| Data fetching          | TanStack Query v5 + Axios v1                          | LOCKED  |
-| Route protection file  | src/proxy.ts (Next.js 16 -- NOT middleware.ts)        | LOCKED  |
-| API success format     | Raw data, no wrapper                                  | LOCKED  |
-| API error format       | Coded error object + fieldErrors for validation       | LOCKED  |
-| Pagination             | Offset (Spring Pageable) -- page/size/totalElements   | LOCKED  |
-| Mobile client          | Out of scope                                          | LOCKED  |
-| Data Scraper backend   | Deferred -- UI design only in current phase           | LOCKED  |
+| Topic                   | Decision                                              | Status  |
+|-------------------------|-------------------------------------------------------|---------|
+| Database                | PostgreSQL 18 -- schema in db.sql                     | LOCKED  |
+| Backend framework       | Spring Boot 4.0.1 + Java 21                           | LOCKED  |
+| ORM                     | Spring Data JPA + Hibernate 7.2.0                     | LOCKED  |
+| JWT library             | JJWT 0.12.6                                           | LOCKED  |
+| DTO mapping             | MapStruct 1.6.3                                       | LOCKED  |
+| Auth strategy           | Hybrid: Refresh (HttpOnly Cookie) + Access (Memory)   | LOCKED  |
+| Frontend framework      | React 19.2 + Next.js 16.2.4 (App Router)              | LOCKED  |
+| Frontend language       | TypeScript                                            | LOCKED  |
+| Component library       | MUI v9 (Stitch designs converted, NOT Tailwind)       | LOCKED  |
+| Data fetching           | TanStack Query v5 + Axios v1                          | LOCKED  |
+| Route protection file   | src/proxy.ts (Next.js 16 -- NOT middleware.ts)        | LOCKED  |
+| API success format      | Raw data, no wrapper                                  | LOCKED  |
+| API error format        | Coded error object + fieldErrors for validation       | LOCKED  |
+| Pagination              | Offset (Spring Pageable) -- page/size/totalElements   | LOCKED  |
+| Mobile client           | Out of scope                                          | LOCKED  |
+| Data Scraper backend    | Deferred -- UI design only in current phase           | LOCKED  |
+| Pending company role    | PENDING_COMPANY_USER -- only /application/status      | LOCKED  |
+| Company apply flow      | PUBLIC form -> creates user+application -> PENDING    | LOCKED  |
+| Messaging               | No internal system -- "Mesaj Gönder" = mailto: link   | LOCKED  |
+| COMPANY_USER redirect   | Login -> directly /company/manage (no dashboard)      | LOCKED  |
+| Two main public areas   | /companies + /materials (not a unified /search)       | LOCKED  |
+| UI design source        | Stitch HTML files in /stitch_sanayi_marketi_*/        | LOCKED  |
+| Color system            | MD3 tokens in src/utils/colors.ts                     | LOCKED  |
+| Fonts                   | Manrope (headlines) + Inter (body) via next/font      | LOCKED  |
 
 ---
 
-Document version: 4.0
+Document version: 5.0
 Date: April 17, 2026
-Status: ACTIVE -- Auth foundation complete, core pages next
+Status: ACTIVE -- Design system complete, remaining pages in progress

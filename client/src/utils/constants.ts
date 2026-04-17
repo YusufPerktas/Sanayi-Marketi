@@ -2,13 +2,18 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://loca
 
 export const ROUTES = {
   HOME: '/',
-  SEARCH: '/search',
   LOGIN: '/login',
   REGISTER: '/register',
+
+  COMPANIES: '/companies',
   COMPANY_DETAIL: (id: number | string) => `/companies/${id}`,
+  MATERIALS: '/materials',
+  MATERIAL_DETAIL: (id: number | string) => `/materials/${id}`,
+  COMPANY_APPLY: '/company-apply',
 
   DASHBOARD: '/dashboard',
   FAVORITES: '/favorites',
+  APPLICATION_STATUS: '/application/status',
 
   COMPANY_MANAGE: '/company/manage',
   COMPANY_EDIT: '/company/edit',
@@ -24,6 +29,7 @@ export const ROUTES = {
 
 export const USER_ROLES = {
   BASIC_USER: 'BASIC_USER',
+  PENDING_COMPANY_USER: 'PENDING_COMPANY_USER',
   COMPANY_USER: 'COMPANY_USER',
   ADMIN: 'ADMIN',
 } as const;

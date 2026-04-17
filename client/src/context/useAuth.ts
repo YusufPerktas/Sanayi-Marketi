@@ -6,5 +6,8 @@ export function useAuth() {
   if (!ctx) {
     throw new Error('useAuth must be used inside AuthProvider');
   }
-  return ctx;
+  return {
+    ...ctx,
+    isAuthenticated: ctx.user !== null,
+  };
 }
