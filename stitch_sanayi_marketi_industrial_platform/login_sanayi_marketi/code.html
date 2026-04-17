@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+
+<html class="light" lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Giriş Yap - Sanayi Marketi</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;family=Manrope:wght@400;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary": "#ffffff",
+                      "tertiary-fixed-dim": "#6bd8cb",
+                      "secondary-fixed-dim": "#b8c4ff",
+                      "on-surface": "#111c2d",
+                      "tertiary": "#006058",
+                      "primary-container": "#2563eb",
+                      "inverse-surface": "#263143",
+                      "surface-container-highest": "#d8e3fb",
+                      "on-tertiary-container": "#b3fff3",
+                      "surface-container": "#e7eeff",
+                      "on-surface-variant": "#434655",
+                      "surface-bright": "#f9f9ff",
+                      "on-tertiary": "#ffffff",
+                      "tertiary-container": "#007b71",
+                      "outline-variant": "#c3c6d7",
+                      "on-tertiary-fixed": "#00201d",
+                      "error": "#ba1a1a",
+                      "outline": "#737686",
+                      "secondary": "#3755c3",
+                      "surface-container-high": "#dee8ff",
+                      "primary": "#004ac6",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "surface-container-low": "#f0f3ff",
+                      "secondary-fixed": "#dde1ff",
+                      "inverse-on-surface": "#ecf1ff",
+                      "on-error-container": "#93000a",
+                      "on-tertiary-fixed-variant": "#005049",
+                      "surface-container-lowest": "#ffffff",
+                      "error-container": "#ffdad6",
+                      "surface-variant": "#d8e3fb",
+                      "on-secondary-fixed": "#001453",
+                      "tertiary-fixed": "#89f5e7",
+                      "surface-dim": "#cfdaf2",
+                      "on-secondary-container": "#00217a",
+                      "on-secondary-fixed-variant": "#173bab",
+                      "surface-tint": "#0053db",
+                      "on-background": "#111c2d",
+                      "surface": "#f9f9ff",
+                      "background": "#f9f9ff",
+                      "on-error": "#ffffff",
+                      "secondary-container": "#708cfd",
+                      "on-secondary": "#ffffff",
+                      "on-primary-container": "#eeefff",
+                      "inverse-primary": "#b4c5ff",
+                      "primary-fixed": "#dbe1ff",
+                      "on-primary-fixed": "#00174b",
+                      "on-primary-fixed-variant": "#003ea8"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "1rem",
+                      "md": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {},
+              "fontFamily": {
+                      "headline": [
+                              "Manrope", "sans-serif"
+                      ],
+                      "body": [
+                              "Inter", "sans-serif"
+                      ],
+                      "label": [
+                              "Inter", "sans-serif"
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-surface-container-low min-h-screen flex items-center justify-center font-body text-on-surface p-4 relative overflow-hidden">
+<!-- Ambient background element for depth -->
+<div class="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-surface-container to-transparent opacity-50 -z-10"></div>
+<!-- Main Authentication Card -->
+<main class="bg-surface-container-lowest w-full max-w-md p-8 sm:p-12 rounded-lg shadow-[0_20px_40px_rgba(17,28,45,0.06)] relative z-10">
+<!-- Brand & Header -->
+<div class="text-center mb-10">
+<h1 class="font-headline font-black text-2xl text-on-surface tracking-tight mb-2">Sanayi Marketi</h1>
+<h2 class="font-headline font-bold text-[1.75rem] text-primary tracking-tight">Giriş Yap</h2>
+</div>
+<!-- Login Form -->
+<form action="#" class="flex flex-col gap-6">
+<!-- Email Input Group -->
+<div class="flex flex-col gap-2">
+<label class="font-label text-sm font-medium text-on-surface-variant uppercase tracking-wider" for="email">E-posta Adresi</label>
+<div class="relative flex items-center">
+<span aria-hidden="true" class="material-symbols-outlined absolute left-4 text-outline">mail</span>
+<input class="w-full bg-surface-bright text-on-surface font-body text-base pl-12 pr-4 py-4 rounded-md border border-outline-variant/15 focus:outline-none focus:ring-0 focus:border-primary/50 transition-colors placeholder:text-outline/70" id="email" name="email" placeholder="ornek@firma.com" required="" type="email"/>
+</div>
+</div>
+<!-- Password Input Group -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center">
+<label class="font-label text-sm font-medium text-on-surface-variant uppercase tracking-wider" for="password">Şifre</label>
+<a class="font-label text-sm font-medium text-primary hover:text-primary-container transition-colors" href="#">Şifremi unuttum</a>
+</div>
+<div class="relative flex items-center">
+<span aria-hidden="true" class="material-symbols-outlined absolute left-4 text-outline">lock</span>
+<input class="w-full bg-surface-bright text-on-surface font-body text-base pl-12 pr-12 py-4 rounded-md border border-outline-variant/15 focus:outline-none focus:ring-0 focus:border-primary/50 transition-colors placeholder:text-outline/70" id="password" name="password" placeholder="••••••••" required="" type="password"/>
+<button aria-label="Şifreyi Göster/Gizle" class="absolute right-4 text-outline hover:text-on-surface transition-colors focus:outline-none" type="button">
+<span aria-hidden="true" class="material-symbols-outlined">visibility_off</span>
+</button>
+</div>
+</div>
+<!-- Primary Action Button -->
+<button class="w-full mt-4 bg-gradient-to-br from-primary to-primary-container text-white font-headline font-bold text-lg py-4 rounded-md hover:shadow-[0_8px_16px_rgba(0,74,198,0.2)] hover:-translate-y-0.5 transition-all active:translate-y-0" type="submit">
+                Giriş Yap
+            </button>
+</form>
+<!-- Secondary Action / Registration Link -->
+<div class="mt-8 text-center border-t border-outline-variant/15 pt-6">
+<p class="font-body text-sm text-on-surface-variant">
+                Hesabınız yok mu? 
+                <a class="font-bold text-primary hover:text-primary-container hover:underline transition-colors ml-1" href="#">Kayıt olun</a>
+</p>
+</div>
+</main>
+</body></html>

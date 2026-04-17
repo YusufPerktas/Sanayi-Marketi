@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+
+<html lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Scraper Control - Sanayi Marketi</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed-dim": "#6bd8cb",
+                    "secondary-fixed-dim": "#b8c4ff",
+                    "on-surface": "#111c2d",
+                    "tertiary": "#006058",
+                    "primary-container": "#2563eb",
+                    "inverse-surface": "#263143",
+                    "surface-container-highest": "#d8e3fb",
+                    "on-tertiary-container": "#b3fff3",
+                    "surface-container": "#e7eeff",
+                    "on-surface-variant": "#434655",
+                    "surface-bright": "#f9f9ff",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-container": "#007b71",
+                    "outline-variant": "#c3c6d7",
+                    "on-tertiary-fixed": "#00201d",
+                    "error": "#ba1a1a",
+                    "outline": "#737686",
+                    "secondary": "#3755c3",
+                    "surface-container-high": "#dee8ff",
+                    "primary": "#004ac6",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "surface-container-low": "#f0f3ff",
+                    "secondary-fixed": "#dde1ff",
+                    "inverse-on-surface": "#ecf1ff",
+                    "on-error-container": "#93000a",
+                    "on-tertiary-fixed-variant": "#005049",
+                    "surface-container-lowest": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "surface-variant": "#d8e3fb",
+                    "on-secondary-fixed": "#001453",
+                    "tertiary-fixed": "#89f5e7",
+                    "surface-dim": "#cfdaf2",
+                    "on-secondary-container": "#00217a",
+                    "on-secondary-fixed-variant": "#173bab",
+                    "surface-tint": "#0053db",
+                    "on-background": "#111c2d",
+                    "surface": "#f9f9ff",
+                    "background": "#f9f9ff",
+                    "on-error": "#ffffff",
+                    "secondary-container": "#708cfd",
+                    "on-secondary": "#ffffff",
+                    "on-primary-container": "#eeefff",
+                    "inverse-primary": "#b4c5ff",
+                    "primary-fixed": "#dbe1ff",
+                    "on-primary-fixed": "#00174b",
+                    "on-primary-fixed-variant": "#003ea8"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope", "sans-serif"],
+                    "body": ["Inter", "sans-serif"],
+                    "label": ["Inter", "sans-serif"]
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-surface text-on-surface font-body antialiased min-h-screen flex selection:bg-primary-container selection:text-on-primary">
+<!-- Admin SideNavBar Shell -->
+<aside class="bg-[#111c2d] dark:bg-black h-screen w-64 fixed left-0 top-0 no-line tonal-shift shadow-2xl flex flex-col gap-2 p-4 z-50">
+<!-- Header -->
+<div class="px-3 py-6 flex flex-col gap-1 mb-4">
+<h1 class="font-['Manrope'] text-white font-bold text-xl tracking-tight">Yönetim Paneli</h1>
+<p class="font-['Inter'] text-sm text-[#dee8ff] opacity-80">Sistem Yöneticisi</p>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-1 font-['Inter'] text-sm">
+<!-- Inactive -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-all scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">analytics</span>
+<span>Genel Bakış</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-all scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">assignment_ind</span>
+<span>Başvurular</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-all scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">factory</span>
+<span>Firmalar</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-all scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">category</span>
+<span>Kategoriler</span>
+</a>
+<!-- Active State (Sistem / Scraper aligns here logically) -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-md bg-[#004ac6] text-white scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings_suggest</span>
+<span class="font-medium">Sistem</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 flex-1 p-10 md:p-14 max-w-7xl">
+<!-- Page Header -->
+<header class="mb-12">
+<h2 class="text-[2.75rem] leading-none font-headline font-extrabold text-on-surface tracking-tight mb-4">Veri Toplayıcı Kontrolü</h2>
+<p class="text-on-surface-variant font-body text-lg max-w-2xl leading-relaxed">Otomatik sistem tarama ve endüstriyel veri senkronizasyon araçları.</p>
+</header>
+<!-- Informational Banner -->
+<div class="bg-surface-container-low rounded-xl p-5 mb-10 flex items-start gap-4">
+<span class="material-symbols-outlined text-outline mt-0.5" style="font-variation-settings: 'FILL' 1;">info</span>
+<p class="text-on-surface font-body text-base leading-relaxed">Bu panel şu an yalnızca görüntüleme amaçlıdır. Veritabanı koruma protokolleri gereği canlı sistem bağlantısı devre dışı bırakılmıştır.</p>
+</div>
+<!-- Dashboard Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Column 1: Status & Info -->
+<div class="lg:col-span-4 flex flex-col gap-8">
+<!-- Status Card -->
+<div class="bg-surface-container-lowest rounded-[1rem] p-8 shadow-[0_20px_40px_rgba(17,28,45,0.06)] flex flex-col h-full">
+<div class="flex-1">
+<h3 class="text-xl font-headline font-bold text-on-surface mb-8">Bağlantı Durumu</h3>
+<div class="flex items-center gap-4 mb-6">
+<div class="relative flex items-center justify-center w-6 h-6">
+<div class="absolute w-full h-full bg-outline/20 rounded-full"></div>
+<div class="w-3 h-3 rounded-full bg-outline"></div>
+</div>
+<span class="font-body text-on-surface font-semibold text-lg">Bağlı Değil</span>
+</div>
+<p class="text-sm font-body text-on-surface-variant leading-relaxed">Toplayıcı motor (Engine v2.4) şu anda bekleme modunda veya ağ erişimi kısıtlı.</p>
+</div>
+<div class="mt-8 bg-surface-container-low p-5 rounded-xl">
+<span class="block text-xs font-label text-on-surface-variant uppercase tracking-wider mb-2 font-semibold">Son Başarılı Tarama</span>
+<span class="font-body text-on-surface font-medium block">14 Ekim 2023</span>
+<span class="font-body text-on-surface-variant text-sm block mt-1">Süre: 02:14:35</span>
+</div>
+</div>
+</div>
+<!-- Column 2: Controls -->
+<div class="lg:col-span-8 flex flex-col gap-8">
+<!-- Control Panel Card -->
+<div class="bg-surface-container-lowest rounded-[1rem] p-8 shadow-[0_20px_40px_rgba(17,28,45,0.06)]">
+<h3 class="text-xl font-headline font-bold text-on-surface mb-8">Görev Yönetimi</h3>
+<div class="flex flex-col gap-4">
+<!-- Primary Action Row -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-surface-container-low p-6 rounded-xl gap-6">
+<div>
+<h4 class="font-body font-bold text-on-surface text-lg mb-1">Kapsamlı Sistem Taraması</h4>
+<p class="text-sm font-body text-on-surface-variant max-w-md leading-relaxed">Tüm üretici kataloglarını ve kategori ağaçlarını sıfırdan tarayarak mevcut veritabanını günceller.</p>
+</div>
+<button class="shrink-0 bg-surface-variant text-outline font-body font-bold px-8 py-4 rounded-xl cursor-not-allowed flex items-center gap-3 transition-colors" disabled="">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">play_circle</span>
+                                Taramayı Başlat
+                            </button>
+</div>
+<!-- Secondary Action Row -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-surface p-6 rounded-xl gap-6">
+<div>
+<h4 class="font-body font-bold text-outline text-lg mb-1">Fark Senkronizasyonu</h4>
+<p class="text-sm font-body text-outline max-w-md leading-relaxed">Yalnızca son taramadan bu yana değişen veya yeni eklenen kayıtları hızlıca sisteme çeker.</p>
+</div>
+<button class="shrink-0 bg-transparent border border-outline-variant/30 text-outline-variant font-body font-bold px-8 py-4 rounded-xl cursor-not-allowed flex items-center gap-3" disabled="">
+<span class="material-symbols-outlined text-lg">sync</span>
+                                Hızlı Senkronize
+                            </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Full Width: Terminal Output -->
+<div class="lg:col-span-12">
+<div class="bg-inverse-surface rounded-[1rem] p-6 shadow-[0_20px_40px_rgba(17,28,45,0.15)] flex flex-col h-[400px]">
+<div class="flex items-center justify-between mb-6 pb-4 border-b border-white/5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-outline-variant text-lg">terminal</span>
+<h3 class="text-sm font-label text-inverse-on-surface font-semibold uppercase tracking-widest">Sistem Çıktısı (Read-Only)</h3>
+</div>
+<div class="flex gap-2">
+<div class="w-3 h-3 rounded-full bg-outline-variant/20"></div>
+<div class="w-3 h-3 rounded-full bg-outline-variant/20"></div>
+<div class="w-3 h-3 rounded-full bg-outline-variant/20"></div>
+</div>
+</div>
+<div class="flex-1 bg-black/20 rounded-lg p-5 overflow-hidden">
+<textarea class="w-full h-full bg-transparent text-outline-variant font-mono text-sm leading-relaxed resize-none focus:outline-none focus:ring-0 border-none p-0 scrollbar-hide selection:bg-surface selection:text-on-surface" placeholder="[SİSTEM] Başlatılıyor...
+[BİLGİ] Veri toplayıcı arayüzü salt okunur modda yüklendi.
+[UYARI] Canlı ağ bağlantısı aktif değil. Komut yürütme engellendi.
+[SİSTEM] Bekleniyor..." readonly=""></textarea>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

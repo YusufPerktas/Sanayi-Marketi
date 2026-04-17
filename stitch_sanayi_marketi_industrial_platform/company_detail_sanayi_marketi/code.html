@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+
+<html class="light" lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Company Detail - Sanayi Marketi</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed-dim": "#6bd8cb",
+                    "secondary-fixed-dim": "#b8c4ff",
+                    "on-surface": "#111c2d",
+                    "tertiary": "#006058",
+                    "primary-container": "#2563eb",
+                    "inverse-surface": "#263143",
+                    "surface-container-highest": "#d8e3fb",
+                    "on-tertiary-container": "#b3fff3",
+                    "surface-container": "#e7eeff",
+                    "on-surface-variant": "#434655",
+                    "surface-bright": "#f9f9ff",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-container": "#007b71",
+                    "outline-variant": "#c3c6d7",
+                    "on-tertiary-fixed": "#00201d",
+                    "error": "#ba1a1a",
+                    "outline": "#737686",
+                    "secondary": "#3755c3",
+                    "surface-container-high": "#dee8ff",
+                    "primary": "#004ac6",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "surface-container-low": "#f0f3ff",
+                    "secondary-fixed": "#dde1ff",
+                    "inverse-on-surface": "#ecf1ff",
+                    "on-error-container": "#93000a",
+                    "on-tertiary-fixed-variant": "#005049",
+                    "surface-container-lowest": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "surface-variant": "#d8e3fb",
+                    "on-secondary-fixed": "#001453",
+                    "tertiary-fixed": "#89f5e7",
+                    "surface-dim": "#cfdaf2",
+                    "on-secondary-container": "#00217a",
+                    "on-secondary-fixed-variant": "#173bab",
+                    "surface-tint": "#0053db",
+                    "on-background": "#111c2d",
+                    "surface": "#f9f9ff",
+                    "background": "#f9f9ff",
+                    "on-error": "#ffffff",
+                    "secondary-container": "#708cfd",
+                    "on-secondary": "#ffffff",
+                    "on-primary-container": "#eeefff",
+                    "inverse-primary": "#b4c5ff",
+                    "primary-fixed": "#dbe1ff",
+                    "on-primary-fixed": "#00174b",
+                    "on-primary-fixed-variant": "#003ea8"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {},
+            "fontFamily": {
+                    "headline": [
+                            "Manrope"
+                    ],
+                    "body": [
+                            "Inter"
+                    ],
+                    "label": [
+                            "Inter"
+                    ]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f9f9ff; color: #111c2d; }
+        h1, h2, h3, h4, h5, h6, .font-headline { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="bg-[#f9f9ff]/80 dark:bg-slate-950/80 font-['Manrope'] font-bold tracking-tight docked full-width top-0 sticky backdrop-blur-xl no-line tonal-shift bg-[#f0f3ff] dark:bg-slate-900 shadow-[0_20px_40px_rgba(17,28,45,0.06)] z-50">
+<div class="flex justify-between items-center w-full px-8 py-4 max-w-[1440px] mx-auto">
+<div class="flex items-center gap-8">
+<a class="text-2xl font-black text-[#111c2d] dark:text-white" href="#">Sanayi Marketi</a>
+<nav class="hidden md:flex gap-6">
+<a class="text-[#111c2d] opacity-70 hover:text-[#2563eb] transition-colors scale-95 duration-200" href="#">Kategoriler</a>
+<a class="text-[#004ac6] border-b-2 border-[#004ac6] pb-1 hover:text-[#2563eb] transition-colors scale-95 duration-200" href="#">Üreticiler</a>
+<a class="text-[#111c2d] opacity-70 hover:text-[#2563eb] transition-colors scale-95 duration-200" href="#">Hakkımızda</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline-variant">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant/15 rounded-md text-sm font-body text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/20 w-64" placeholder="Ara..." type="text"/>
+</div>
+<a class="text-[#004ac6] dark:text-blue-400 font-bold hover:text-[#2563eb] transition-colors" href="#">Giriş Yap</a>
+<a class="px-4 py-2 bg-gradient-to-br from-primary to-primary-container text-white rounded-md font-bold shadow-[0_20px_40px_rgba(17,28,45,0.06)] hover:opacity-90 transition-opacity" href="#">Kayıt Ol</a>
+</div>
+</div>
+</header>
+<main class="flex-grow w-full max-w-[1440px] mx-auto px-8 py-12 flex flex-col lg:flex-row gap-10">
+<!-- Left Content Area -->
+<div class="flex-1 flex flex-col gap-10">
+<!-- Company Header -->
+<section class="bg-surface-container-lowest rounded-lg p-10 flex flex-col gap-6 relative" style="box-shadow: 0 20px 40px rgba(17, 28, 45, 0.06);">
+<div class="absolute top-10 right-10 flex gap-3">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-surface-container-highest text-tertiary font-label text-xs uppercase tracking-wider font-semibold">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+                        Aktif
+                    </span>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-primary-fixed text-primary font-label text-xs uppercase tracking-wider font-semibold">
+                        Üretici
+                    </span>
+</div>
+<div class="flex items-start gap-8">
+<div class="w-32 h-32 rounded-md bg-surface-container-low border border-outline-variant/15 overflow-hidden flex-shrink-0 flex items-center justify-center">
+<!-- Placeholder for company logo -->
+<span class="material-symbols-outlined text-4xl text-outline">factory</span>
+<img alt="Company Logo" class="w-full h-full object-cover hidden" data-alt="minimalist industrial logo for a manufacturing company, sleek geometric design, dark blue background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSUCiSleTCpYwL30pCpYRZo-KqrXQX0l3Oi9Kvc9fmoXTEuEnQ2cd4-NS2KlQlAiqk3UAus0F45pgP2V64Ru940wQ9ZOcbZMaD4w7niJtNo-fNKB7HkM1aH8-hOmOQuorlB7GWYAj0OZNf6UziuFMQ2FXa0ssDRVV3dR4acXOSL3YyL6J3uDvjhG1EWj303O0In9idURM29cVHwuRI-aiRMDxWom1kBkicgYm_j0FwesuwTKCqX1ofo1W4PUlHXJgJkQas5fJBimk"/>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-3">
+<h1 class="font-headline text-4xl font-bold tracking-tight text-on-surface">Borusan Boru Sanayi A.Ş.</h1>
+<span class="material-symbols-outlined text-primary" title="Doğrulanmış Profil">verified</span>
+</div>
+<p class="font-body text-lg text-on-surface-variant flex items-center gap-2 mt-1">
+<span class="material-symbols-outlined text-lg">location_on</span>
+                            Gemlik, Bursa
+                        </p>
+</div>
+</div>
+<!-- Tab Navigation -->
+<div class="flex gap-8 border-b border-outline-variant/15 mt-4">
+<button class="pb-4 font-headline font-bold text-primary border-b-2 border-primary relative">
+                        Genel Bilgiler
+                    </button>
+<button class="pb-4 font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">
+                        Malzemeler &amp; Fiyatlar
+                    </button>
+<button class="pb-4 font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">
+                        Katalog
+                    </button>
+<button class="pb-4 font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">
+                        Konum
+                    </button>
+</div>
+</section>
+<!-- Genel Bilgiler Content -->
+<section class="flex flex-col gap-8">
+<!-- Description -->
+<div class="bg-surface-container-lowest rounded-lg p-8 flex flex-col gap-4" style="box-shadow: 0 20px 40px rgba(17, 28, 45, 0.06);">
+<h2 class="font-body font-bold text-xl text-on-surface">Hakkımızda</h2>
+<p class="font-body text-base text-on-surface-variant leading-relaxed">
+                        Borusan Boru, 1958 yılından bu yana çelik boru sektöründe faaliyet gösteren, yüksek teknoloji ile üretim yapan köklü bir sanayi kuruluşudur. İnşaat, enerji, otomotiv ve makine sektörlerine yönelik geniş bir ürün yelpazesi sunan firmamız, uluslararası kalite standartlarında üretim yapmaktadır. Ar-Ge çalışmalarına verdiğimiz önemle sektördeki öncü konumumuzu koruyor ve sürdürülebilir üretim süreçlerini benimsiyoruz.
+                    </p>
+</div>
+<!-- Contact & Address Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Contact Info -->
+<div class="bg-surface-container-low rounded-lg p-8 border border-outline-variant/15 flex flex-col gap-6">
+<h3 class="font-body font-bold text-lg text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">contacts</span>
+                            İletişim Bilgileri
+                        </h3>
+<div class="flex flex-col gap-4">
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors font-body text-base" href="tel:+902245123456">
+<span class="material-symbols-outlined text-outline">call</span>
+                                +90 224 512 34 56
+                            </a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors font-body text-base" href="mailto:info@borusanboru.com">
+<span class="material-symbols-outlined text-outline">mail</span>
+                                info@borusanboru.com
+                            </a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors font-body text-base" href="https://www.borusanboru.com" rel="noopener noreferrer" target="_blank">
+<span class="material-symbols-outlined text-outline">language</span>
+                                www.borusanboru.com
+                            </a>
+</div>
+</div>
+<!-- Address Info -->
+<div class="bg-surface-container-low rounded-lg p-8 border border-outline-variant/15 flex flex-col gap-6">
+<h3 class="font-body font-bold text-lg text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">business</span>
+                            Adres
+                        </h3>
+<p class="font-body text-base text-on-surface-variant leading-relaxed">
+                            Organize Sanayi Bölgesi,<br/>
+                            Sanayi Caddesi No: 42<br/>
+                            Gemlik, Bursa<br/>
+                            Türkiye
+                        </p>
+</div>
+</div>
+<!-- Hidden Tabs Content Placeholders (for structural understanding) -->
+<!-- Malzemeler Tab -->
+<div class="hidden bg-surface-container-lowest rounded-lg overflow-hidden" style="box-shadow: 0 20px 40px rgba(17, 28, 45, 0.06);">
+<div class="p-6 border-b border-outline-variant/15 flex justify-between items-center bg-surface-container-low">
+<h2 class="font-body font-bold text-xl text-on-surface">Malzeme Fiyat Listesi</h2>
+</div>
+<table class="w-full text-left font-body text-sm border-collapse">
+<thead>
+<tr class="border-b border-outline-variant/15 text-on-surface-variant">
+<th class="p-4 font-semibold w-1/2">Malzeme Adı</th>
+<th class="p-4 font-semibold w-1/4">Rolü</th>
+<th class="p-4 font-semibold w-1/4 text-right">Fiyat (TL)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b border-outline-variant/15 hover:bg-surface-container-low/50 transition-colors">
+<td class="p-4 text-on-surface">Dikişsiz Çelik Çekme Boru (Ø 50mm)</td>
+<td class="p-4"><span class="inline-flex items-center px-2 py-0.5 rounded bg-primary-fixed text-primary font-label text-[10px] uppercase font-semibold">Üretici</span></td>
+<td class="p-4 text-right font-medium text-on-surface">1,250 ₺</td>
+</tr>
+<tr class="border-b border-outline-variant/15 bg-surface-container-low/30 hover:bg-surface-container-low/50 transition-colors">
+<td class="p-4 text-on-surface">Galvanizli Profil (40x40x2mm)</td>
+<td class="p-4"><span class="inline-flex items-center px-2 py-0.5 rounded bg-secondary-fixed text-secondary font-label text-[10px] uppercase font-semibold">Her İkisi</span></td>
+<td class="p-4 text-right font-medium text-on-surface">320 ₺</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Katalog Tab -->
+<div class="hidden bg-surface-container-lowest rounded-lg p-8 flex flex-col gap-6 items-center justify-center text-center py-20" style="box-shadow: 0 20px 40px rgba(17, 28, 45, 0.06);">
+<div class="w-16 h-16 rounded-full bg-surface-container-low flex items-center justify-center mb-2">
+<span class="material-symbols-outlined text-3xl text-primary">picture_as_pdf</span>
+</div>
+<h3 class="font-body font-bold text-xl text-on-surface">Ürün Kataloğu 2024</h3>
+<p class="font-body text-sm text-on-surface-variant max-w-md">Tüm teknik spesifikasyonları ve ölçü tablolarını içeren güncel ürün kataloğumuzu indirebilirsiniz.</p>
+<button class="mt-4 px-6 py-3 bg-gradient-to-br from-primary to-primary-container text-white rounded-md font-bold flex items-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined">download</span>
+                        İndir (Borusan_Katalog_2024.pdf)
+                    </button>
+</div>
+<!-- Konum Tab -->
+<div class="hidden bg-surface-container-lowest rounded-lg p-2 overflow-hidden" style="box-shadow: 0 20px 40px rgba(17, 28, 45, 0.06);">
+<div class="w-full h-96 bg-surface-container-low rounded-md flex items-center justify-center relative overflow-hidden">
+<img alt="Map View" class="w-full h-full object-cover opacity-80" data-alt="clean minimalistic digital map interface showing industrial area, soft blue tones, detailed street lines" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVugn02G_pjHJUptLCuPA_ZXgyrfkMze6yrrKUV9S2kX3AbLASJ6aqZn6gTuaCmsFpJiIfle-J7L8QpgzxBsYjUZDJyvrIQJWcheYS0DxW84C-SbYTMp9jUi_abdxSgexUiMBA9nycZPTkDygtm1HcWGGhpik2h0WPC_d9XSfH9YbqhfUi0H3QeKVbDd4f3svlbmrfSQ9GSqc-pGkc1S6bNCYav34YfjyHSUg2jqesBeFq-RQ87UoTtAgWtm-C3_3nSj-oiHicS-I"/>
+<div class="absolute inset-0 bg-primary/5"></div>
+<div class="absolute flex flex-col items-center">
+<span class="material-symbols-outlined text-error text-4xl" style="font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Sidebar -->
+<aside class="w-full lg:w-[340px] flex-shrink-0 flex flex-col gap-6">
+<!-- Action Buttons -->
+<div class="bg-surface-container-lowest rounded-lg p-6 flex flex-col gap-4" style="box-shadow: 0 20px 40px rgba(17, 28, 45, 0.06);">
+<button class="w-full px-4 py-3 bg-gradient-to-br from-primary to-primary-container text-white rounded-md font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined">mail</span>
+                    Mesaj Gönder
+                </button>
+<div class="flex gap-3">
+<button class="flex-1 px-4 py-3 bg-surface text-on-surface border border-outline-variant/15 rounded-md font-bold flex items-center justify-center gap-2 hover:bg-surface-container-low transition-colors text-sm">
+<span class="material-symbols-outlined text-outline">favorite</span>
+                        Favorile
+                    </button>
+<button class="flex-1 px-4 py-3 bg-surface text-on-surface border border-outline-variant/15 rounded-md font-bold flex items-center justify-center gap-2 hover:bg-surface-container-low transition-colors text-sm">
+<span class="material-symbols-outlined text-outline">compare_arrows</span>
+                        Karşılaştır
+                    </button>
+</div>
+</div>
+<!-- Meta Info Card -->
+<div class="bg-surface-container-lowest rounded-lg p-6 flex flex-col gap-4" style="box-shadow: 0 20px 40px rgba(17, 28, 45, 0.06);">
+<h3 class="font-body font-bold text-base text-on-surface border-b border-outline-variant/15 pb-3">Firma Bilgileri</h3>
+<div class="flex flex-col gap-3">
+<div class="flex justify-between items-center text-sm font-body">
+<span class="text-on-surface-variant">Kuruluş Yılı</span>
+<span class="font-semibold text-on-surface">1958</span>
+</div>
+<div class="flex justify-between items-center text-sm font-body">
+<span class="text-on-surface-variant">Çalışan Sayısı</span>
+<span class="font-semibold text-on-surface">500 - 1000</span>
+</div>
+<div class="flex justify-between items-center text-sm font-body">
+<span class="text-on-surface-variant">Kayıt Tarihi</span>
+<span class="font-semibold text-on-surface">12.04.2023</span>
+</div>
+<div class="flex justify-between items-center text-sm font-body">
+<span class="text-on-surface-variant">Sertifikalar</span>
+<span class="font-semibold text-on-surface text-right">ISO 9001<br/>TSE K 118</span>
+</div>
+</div>
+</div>
+</aside>
+</main>
+<!-- Footer -->
+<footer class="bg-[#111c2d] dark:bg-black w-full py-12 mt-auto border-t border-white/10">
+<div class="flex flex-col items-center justify-center space-y-6 px-4 max-w-[1440px] mx-auto">
+<h2 class="font-['Manrope'] font-bold text-white text-2xl">Sanayi Marketi</h2>
+<nav class="flex flex-wrap justify-center gap-6">
+<a class="font-['Inter'] text-sm leading-relaxed text-slate-400 hover:text-[#dee8ff] transition-colors" href="#">Hizmet Şartları</a>
+<a class="font-['Inter'] text-sm leading-relaxed text-slate-400 hover:text-[#dee8ff] transition-colors" href="#">Gizlilik Politikası</a>
+<a class="font-['Inter'] text-sm leading-relaxed text-slate-400 hover:text-[#dee8ff] transition-colors" href="#">İletişim</a>
+<a class="font-['Inter'] text-sm leading-relaxed text-slate-400 hover:text-[#dee8ff] transition-colors" href="#">SSS</a>
+</nav>
+<p class="font-['Inter'] text-sm leading-relaxed text-slate-400 mt-8">© 2024 Sanayi Marketi - Endüstriyel Çözümler Merkezi</p>
+</div>
+</footer>
+</body></html>

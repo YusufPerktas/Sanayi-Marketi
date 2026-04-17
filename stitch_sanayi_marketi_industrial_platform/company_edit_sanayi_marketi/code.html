@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html class="light" lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Firma Bilgilerini Düzenle - Sanayi Marketi</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#6bd8cb",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "on-surface": "#111c2d",
+                        "tertiary": "#006058",
+                        "primary-container": "#2563eb",
+                        "inverse-surface": "#263143",
+                        "surface-container-highest": "#d8e3fb",
+                        "on-tertiary-container": "#b3fff3",
+                        "surface-container": "#e7eeff",
+                        "on-surface-variant": "#434655",
+                        "surface-bright": "#f9f9ff",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-container": "#007b71",
+                        "outline-variant": "#c3c6d7",
+                        "on-tertiary-fixed": "#00201d",
+                        "error": "#ba1a1a",
+                        "outline": "#737686",
+                        "secondary": "#3755c3",
+                        "surface-container-high": "#dee8ff",
+                        "primary": "#004ac6",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-container-low": "#f0f3ff",
+                        "secondary-fixed": "#dde1ff",
+                        "inverse-on-surface": "#ecf1ff",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed-variant": "#005049",
+                        "surface-container-lowest": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#d8e3fb",
+                        "on-secondary-fixed": "#001453",
+                        "tertiary-fixed": "#89f5e7",
+                        "surface-dim": "#cfdaf2",
+                        "on-secondary-container": "#00217a",
+                        "on-secondary-fixed-variant": "#173bab",
+                        "surface-tint": "#0053db",
+                        "on-background": "#111c2d",
+                        "surface": "#f9f9ff",
+                        "background": "#f9f9ff",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#708cfd",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#eeefff",
+                        "inverse-primary": "#b4c5ff",
+                        "primary-fixed": "#dbe1ff",
+                        "on-primary-fixed": "#00174b",
+                        "on-primary-fixed-variant": "#003ea8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "1rem",
+                        "md": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: theme('colors.surface'); color: theme('colors.on-surface'); }
+        h1, h2, h3, h4, h5, h6, .font-headline { font-family: 'Manrope', sans-serif; }
+        .gradient-btn { background: linear-gradient(135deg, theme('colors.primary'), theme('colors.primary-container')); }
+        .ghost-border { border: 1px solid rgba(195, 198, 215, 0.15); }
+        .input-field { @apply w-full bg-surface-container-lowest border border-outline-variant/30 rounded-md px-4 py-3 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all; }
+        .form-label { @apply block text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-wide; }
+    </style>
+</head>
+<body class="flex min-h-screen">
+<!-- SideNavBar (from JSON) -->
+<nav class="bg-[#f0f3ff] dark:bg-slate-900 font-['Inter'] text-sm font-medium h-screen w-72 fixed left-0 top-0 border-r border-[#111c2d]/15 flex flex-col p-6 space-y-4 z-50">
+<div class="mb-8">
+<h1 class="font-['Manrope'] font-bold text-[#111c2d] text-xl">Sanayi Marketi</h1>
+<p class="text-xs text-[#004ac6] mt-1">Kurumsal Panel</p>
+</div>
+<button class="gradient-btn text-white w-full py-3 rounded-md font-bold mb-6 hover:opacity-90 transition-opacity">
+            Yeni İlan Oluştur
+        </button>
+<div class="flex-1 flex flex-col space-y-2">
+<a class="flex items-center px-4 py-3 text-[#111c2d] hover:bg-[#dee8ff]/50 cursor-pointer active:opacity-80 rounded-r-lg hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined mr-3 text-lg" data-icon="dashboard">dashboard</span>
+                Panelim
+            </a>
+<a class="flex items-center px-4 py-3 text-[#111c2d] hover:bg-[#dee8ff]/50 cursor-pointer active:opacity-80 rounded-r-lg hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined mr-3 text-lg" data-icon="inventory_2">inventory_2</span>
+                İlanlarım
+            </a>
+<a class="flex items-center px-4 py-3 text-[#111c2d] hover:bg-[#dee8ff]/50 cursor-pointer active:opacity-80 rounded-r-lg hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined mr-3 text-lg" data-icon="request_quote">request_quote</span>
+                Teklifler
+            </a>
+<a class="flex items-center px-4 py-3 text-[#111c2d] hover:bg-[#dee8ff]/50 cursor-pointer active:opacity-80 rounded-r-lg hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined mr-3 text-lg" data-icon="favorite">favorite</span>
+                Favoriler
+            </a>
+<a class="flex items-center px-4 py-3 text-[#111c2d] hover:bg-[#dee8ff]/50 cursor-pointer active:opacity-80 rounded-r-lg hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined mr-3 text-lg" data-icon="mail">mail</span>
+                Mesajlar
+            </a>
+<a class="flex items-center px-4 py-3 bg-[#dee8ff] text-[#004ac6] font-bold rounded-r-lg cursor-pointer active:opacity-80 transition-transform" href="#">
+<span class="material-symbols-outlined mr-3 text-lg" data-icon="settings" data-weight="fill" style="font-variation-settings: 'FILL' 1;">settings</span>
+                Ayarlar
+            </a>
+</div>
+<div class="mt-auto pt-6 border-t border-outline-variant/20">
+<div class="flex items-center">
+<img alt="Kullanıcı Profili" class="w-10 h-10 rounded-full object-cover" data-alt="professional headshot of a man in business attire against a neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_NxpsziUX_tDcF3Hs56N_pXfJcEdQMddV9VR2C230k3WI4p7638WyWBJSsw7SI-hmKXRe92g2J0rb7H7RzLg8TvtKshEzsbVrWRzwsPBHD4uUxyd0f2MtRVbBjtDFPx4RRdO1ioxqaWJpdcPMGMSM8tTOx1DcMEvEP2hOylEX0VPJKH4hJ3pnVChapflFqCKW50kr9Fzdl5DsJZt9fKJ-EPNT0gCKSEIyoQ2ccQ5bfxvGxuvVuG4rZFerqXb8zRpSTkW66ParhD8"/>
+<div class="ml-3">
+<p class="text-sm font-bold text-on-surface">Ahmet Yılmaz</p>
+<p class="text-xs text-on-surface-variant">Firma Yetkilisi</p>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="ml-72 flex-1 p-10 bg-surface">
+<!-- Header -->
+<header class="mb-10 flex justify-between items-end">
+<div>
+<div class="flex items-center text-sm text-on-surface-variant mb-2">
+<a class="hover:text-primary transition-colors" href="#">Ayarlar</a>
+<span class="material-symbols-outlined text-sm mx-2">chevron_right</span>
+<span class="font-medium text-on-surface">Firma Bilgilerini Düzenle</span>
+</div>
+<h2 class="font-headline text-3xl font-bold text-on-surface tracking-tight">Firma Profili</h2>
+<p class="text-on-surface-variant mt-2 max-w-2xl">Müşterilerinizin sizi daha iyi tanıması ve ulaşabilmesi için firma bilgilerinizi güncel tutun.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-6 py-2.5 rounded-md border border-outline-variant/50 text-on-surface font-bold hover:bg-surface-container-low transition-colors">
+                    İptal Et
+                </button>
+<button class="gradient-btn px-6 py-2.5 rounded-md text-white font-bold shadow-[0_10px_20px_rgba(0,74,198,0.15)] hover:shadow-[0_15px_25px_rgba(0,74,198,0.2)] transition-all">
+                    Değişiklikleri Kaydet
+                </button>
+</div>
+</header>
+<!-- Form Layout (Bento-ish asymmetric grid) -->
+<div class="grid grid-cols-12 gap-8">
+<!-- Left Column: Core Info & Contact -->
+<div class="col-span-12 lg:col-span-7 flex flex-col gap-8">
+<!-- Temel Bilgiler Section -->
+<section class="bg-surface-container-low rounded-lg p-8 relative overflow-hidden">
+<h3 class="font-headline text-xl font-bold mb-6 flex items-center text-on-surface">
+<span class="material-symbols-outlined mr-2 text-primary">storefront</span>
+                        Temel Bilgiler
+                    </h3>
+<div class="space-y-6 relative z-10">
+<div>
+<label class="form-label">Firma Adı (Resmi Ünvan)</label>
+<input class="input-field" placeholder="Tam şirket ünvanını giriniz" type="text" value="Sanayi Çözümleri A.Ş."/>
+</div>
+<div>
+<label class="form-label">Kısa Açıklama / Slogan</label>
+<input class="input-field" placeholder="Firmanızı kısaca özetleyin" type="text" value="Endüstriyel ekipman tedariğinde güvenilir ortağınız."/>
+</div>
+<div>
+<label class="form-label">Hakkımızda (Detaylı Açıklama)</label>
+<textarea class="input-field min-h-[160px] resize-y" placeholder="Firmanızın tarihçesi, vizyonu ve misyonu hakkında detaylı bilgi verin...">1998 yılından bu yana sanayi sektöründe öncü firmalardan biri olarak, yüksek kaliteli CNC tezgahları ve yedek parça tedariği sağlamaktayız. Müşteri memnuniyetini her zaman ön planda tutarak, yenilikçi çözümler sunuyoruz.</textarea>
+</div>
+</div>
+</section>
+<!-- İletişim Section -->
+<section class="bg-surface-container-low rounded-lg p-8">
+<h3 class="font-headline text-xl font-bold mb-6 flex items-center text-on-surface">
+<span class="material-symbols-outlined mr-2 text-primary">call</span>
+                        İletişim Bilgileri
+                    </h3>
+<div class="grid grid-cols-2 gap-6">
+<div>
+<label class="form-label">Telefon Numarası</label>
+<input class="input-field" placeholder="+90 5XX XXX XX XX" type="tel" value="+90 212 555 0123"/>
+</div>
+<div>
+<label class="form-label">İkincil Telefon (Opsiyonel)</label>
+<input class="input-field" placeholder="+90 5XX XXX XX XX" type="tel"/>
+</div>
+<div class="col-span-2">
+<label class="form-label">E-posta Adresi</label>
+<input class="input-field" placeholder="iletisim@firma.com" type="email" value="info@sanayicozumleri.com"/>
+</div>
+<div class="col-span-2">
+<label class="form-label">Web Sitesi</label>
+<div class="flex">
+<span class="inline-flex items-center px-4 rounded-l-md border border-r-0 border-outline-variant/30 bg-surface-container-lowest text-on-surface-variant text-sm">
+                                    https://
+                                </span>
+<input class="input-field rounded-l-none" placeholder="www.firmaniz.com" type="url" value="www.sanayicozumleri.com"/>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Location -->
+<div class="col-span-12 lg:col-span-5 flex flex-col gap-8">
+<!-- Adres Section -->
+<section class="bg-surface-container-low rounded-lg p-8">
+<h3 class="font-headline text-xl font-bold mb-6 flex items-center text-on-surface">
+<span class="material-symbols-outlined mr-2 text-primary">location_on</span>
+                        Açık Adres
+                    </h3>
+<div class="space-y-6">
+<div class="grid grid-cols-2 gap-6">
+<div>
+<label class="form-label">Ülke</label>
+<select class="input-field bg-white appearance-none">
+<option>Türkiye</option>
+</select>
+</div>
+<div>
+<label class="form-label">Şehir</label>
+<select class="input-field bg-white appearance-none">
+<option>İstanbul</option>
+<option>Ankara</option>
+<option>İzmir</option>
+<option>Bursa</option>
+</select>
+</div>
+</div>
+<div>
+<label class="form-label">İlçe</label>
+<select class="input-field bg-white appearance-none">
+<option>Dudullu OSB</option>
+<option>Ümraniye</option>
+<option>Ataşehir</option>
+</select>
+</div>
+<div>
+<label class="form-label">Tam Adres</label>
+<textarea class="input-field min-h-[100px] resize-none" placeholder="Mahalle, sokak, bina ve kapı numarası">Dudullu Organize Sanayi Bölgesi, 3. Cadde No: 45, Ümraniye</textarea>
+</div>
+</div>
+</section>
+<!-- Harita Konumu Section -->
+<section class="bg-surface-container-low rounded-lg p-8">
+<h3 class="font-headline text-xl font-bold mb-6 flex items-center text-on-surface">
+<span class="material-symbols-outlined mr-2 text-primary">map</span>
+                        Harita Konumu
+                    </h3>
+<div class="space-y-6">
+<!-- Simulated Map Area -->
+<div class="w-full h-48 bg-surface-container-lowest rounded-md border border-outline-variant/30 overflow-hidden relative">
+<img alt="Harita Görünümü" class="w-full h-full object-cover opacity-80" data-alt="clean minimal digital map interface showing city streets and a red location pin indicator" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQnmYc0llhxdz63_8Qku0o9_xQBpf7-wcY40BxjUHDabxlaio6Ml1OsztaYiMLOvtonepNmN355MJEbLn_Y-DOfSa2KE4gs3KgN94QpIUaJ1l51soCsKRYQ1k6wp-2Ng1hosaILisaIqb2pZ8u02TRvtbf4hjQE9ifoZuooYRXuK_CZSszTz0_gHkP_Yi6qivzq6Ymbh8a2xC6dEHL4sW_YKfEyCrBWNM5_IaVNxdvEKMU3UHkmqw0aP0AvJNT169J5v1hc4h4yD4"/>
+<div class="absolute inset-0 bg-primary/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-4xl text-error drop-shadow-md" data-weight="fill" style="font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-6">
+<div>
+<label class="form-label">Enlem (Latitude)</label>
+<input class="input-field text-sm font-mono" placeholder="Örn: 41.0082" type="text" value="41.0118"/>
+</div>
+<div>
+<label class="form-label">Boylam (Longitude)</label>
+<input class="input-field text-sm font-mono" placeholder="Örn: 28.9784" type="text" value="29.1770"/>
+</div>
+</div>
+<div>
+<label class="form-label">Google Maps Embed URL (Opsiyonel)</label>
+<input class="input-field text-sm text-on-surface-variant" placeholder="&lt;iframe src='...'&gt;&lt;/iframe&gt;" type="url"/>
+<p class="text-xs text-on-surface-variant mt-2">Firmanızın sayfasına harita yerleştirmek için iframe kodunu yapıştırın.</p>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+</body></html>

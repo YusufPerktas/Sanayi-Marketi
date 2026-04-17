@@ -433,85 +433,107 @@ Admin (/api/admin):  [TODO]
 
 ---
 
-FRONTEND ARCHITECTURE  [LOCKED — NOT STARTED]
+FRONTEND ARCHITECTURE  [LOCKED — IN PROGRESS]
 
 Stack:
-- React + Next.js (App Router)
-- Material UI (MUI)
-- React Query (TanStack Query) + Axios
+- React 19.2 + Next.js 16.2.4 (App Router)  [LOCKED]
+- Material UI (MUI) v9                        [LOCKED]
+- TanStack Query v5 + Axios v1               [LOCKED]
+- TypeScript                                  [LOCKED]
 - Auth: in-memory access token via React Context (AuthContext)
+
+IMPORTANT — Next.js 16 breaking changes (affects all future work):
+- Route protection file: src/proxy.ts  (NOT middleware.ts -- renamed in v16)
+  Exported function must be named "proxy", not "middleware"
+- params / searchParams in page/layout are Promises -- must be awaited:
+    export default async function Page(props: PageProps<'/companies/[id]'>) {
+      const { id } = await props.params
+    }
+- Turbopack is default (no flag needed)
+
+IMPORTANT -- MUI v9 breaking change:
+- System props (mb, mt, fontWeight, textAlign, color, gap etc.) are NOT valid
+  directly on components. Always use sx prop:
+    WRONG: <Typography fontWeight={700} mb={2}>
+    RIGHT: <Typography sx={{ fontWeight: 700, mb: 2 }}>
 
 Auth flow (frontend side):
 1. POST /api/auth/login -> receive accessToken in body
 2. Store accessToken in AuthContext (memory only -- never localStorage)
 3. Axios request interceptor: attach Authorization: Bearer <token> header
 4. Axios response interceptor: on 401 -> call /api/auth/refresh -> retry request
-5. Next.js middleware: check auth state -> redirect if unauthorized
+   (queue logic: concurrent 401s are held until refresh completes, then retried)
+5. proxy.ts: refresh_token cookie presence -> redirect if missing on protected routes
 6. Logout: call /api/auth/logout -> clear AuthContext -> redirect to home
+7. Page refresh recovery: AuthContext mounts -> calls /api/auth/refresh -> restores session
 
-Folder structure:
+Folder structure (TypeScript -- .tsx/.ts):
 /client/
 +-- public/
 +-- src/
 |   +-- app/
 |   |   +-- (public)/
-|   |   |   +-- page.jsx              <- Home / search landing (SSR)
-|   |   |   +-- search/page.jsx       <- Search results (CSR)
+|   |   |   +-- page.tsx              <- Home / search landing  [DONE]
+|   |   |   +-- search/page.tsx       <- Search results (CSR)   [TODO]
 |   |   |   +-- companies/
-|   |   |   |   +-- [id]/page.jsx     <- Company detail (SSR -- SEO)
-|   |   |   +-- login/page.jsx
-|   |   |   +-- register/page.jsx
+|   |   |   |   +-- [id]/page.tsx     <- Company detail (SSR -- SEO)  [TODO]
+|   |   |   +-- login/page.tsx        [DONE]
+|   |   |   +-- register/page.tsx     [DONE]
 |   |   +-- (protected)/
-|   |   |   +-- dashboard/page.jsx    <- Role-specific dashboard (CSR)
-|   |   |   +-- favorites/page.jsx    <- (CSR)
+|   |   |   +-- dashboard/page.tsx    <- Role-specific dashboard  [DONE -- placeholder]
+|   |   |   +-- favorites/page.tsx    [TODO]
 |   |   |   +-- company/
-|   |   |   |   +-- manage/page.jsx
-|   |   |   |   +-- edit/page.jsx
-|   |   |   |   +-- materials/page.jsx
-|   |   |   |   +-- catalog/page.jsx
+|   |   |   |   +-- manage/page.tsx   [TODO]
+|   |   |   |   +-- edit/page.tsx     [TODO]
+|   |   |   |   +-- materials/page.tsx [TODO]
+|   |   |   |   +-- catalog/page.tsx  [TODO]
 |   |   |   +-- admin/
-|   |   |       +-- page.jsx
-|   |   |       +-- approvals/page.jsx
-|   |   |       +-- duplicates/page.jsx
-|   |   |       +-- scraper/page.jsx  <- UI only (backend deferred)
-|   |   |       +-- statistics/page.jsx
-|   |   +-- layout.jsx
-|   |   +-- not-found.jsx
+|   |   |       +-- page.tsx          [TODO]
+|   |   |       +-- approvals/page.tsx [TODO]
+|   |   |       +-- duplicates/page.tsx [TODO]
+|   |   |       +-- scraper/page.tsx  <- UI only (backend deferred) [TODO]
+|   |   |       +-- statistics/page.tsx [TODO]
+|   |   +-- layout.tsx                [DONE]
+|   |   +-- not-found.tsx             [DONE]
 |   +-- components/
-|   |   +-- layout/   (MainLayout, AuthLayout, AdminLayout)
-|   |   +-- auth/     (LoginForm, RegisterForm, RouteGuard)
-|   |   +-- company/  (CompanyCard, CompanyList, CompanyDetail, CompanyForm)
-|   |   +-- material/ (MaterialSearch, MaterialCard, MaterialList)
-|   |   +-- favorite/ (FavoriteButton, FavoritesList)
-|   |   +-- admin/    (ApprovalPanel, DuplicateResolver, ScraperControl)
-|   |   +-- shared/   (Pagination, LoadingSpinner, ErrorAlert, ConfirmDialog)
+|   |   +-- layout/
+|   |   |   +-- Providers.tsx         <- MUI + QueryClient + Auth providers  [DONE]
+|   |   |   +-- MainLayout.tsx        <- Navbar + footer wrapper  [TODO]
+|   |   +-- auth/     (LoginForm, RegisterForm, RouteGuard)  [TODO]
+|   |   +-- company/  (CompanyCard, CompanyList, CompanyDetail, CompanyForm)  [TODO]
+|   |   +-- material/ (MaterialSearch, MaterialCard, MaterialList)  [TODO]
+|   |   +-- favorite/ (FavoriteButton, FavoritesList)  [TODO]
+|   |   +-- admin/    (ApprovalPanel, DuplicateResolver, ScraperControl)  [TODO]
+|   |   +-- shared/   (Pagination, LoadingSpinner, ErrorAlert, ConfirmDialog)  [TODO]
 |   +-- services/
 |   |   +-- api/
-|   |   |   +-- client.js             <- Axios instance + interceptors
-|   |   |   +-- config.js
-|   |   +-- auth.service.js
-|   |   +-- company.service.js
-|   |   +-- material.service.js
-|   |   +-- favorite.service.js
-|   |   +-- companyApplication.service.js
+|   |   |   +-- client.ts             <- Axios instance + interceptors  [DONE]
+|   |   |   +-- config.ts             [DONE]
+|   |   +-- auth.service.ts           [DONE]
+|   |   +-- company.service.ts        [TODO]
+|   |   +-- material.service.ts       [TODO]
+|   |   +-- favorite.service.ts       [TODO]
+|   |   +-- companyApplication.service.ts [TODO]
 |   +-- context/
-|   |   +-- AuthContext.jsx
-|   |   +-- useAuth.js
+|   |   +-- AuthContext.tsx           [DONE]
+|   |   +-- useAuth.ts                [DONE]
 |   +-- hooks/
 |   +-- utils/
-|   |   +-- constants.js
-|   |   +-- validators.js
-|   |   +-- formatters.js
-|   +-- middleware.js
+|   |   +-- constants.ts              [DONE]
+|   |   +-- validators.ts             [DONE]
+|   |   +-- formatters.ts             [DONE]
+|   +-- proxy.ts                      <- Route protection (Next.js 16)  [DONE]
 +-- package.json
-+-- next.config.js
-+-- .env.local
++-- next.config.ts
++-- .env.local                        <- NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
 
-Route protection (Next.js middleware):
+Route protection (proxy.ts):
   Public   -> /  /search  /companies/:id  /login  /register
   Auth     -> /dashboard  /favorites
   Company  -> /company/*
   Admin    -> /admin/*
+  Strategy: refresh_token cookie presence check (access token is memory-only)
+  Role-based guard (COMPANY_USER / ADMIN): handled client-side in components
 
 ---
 
@@ -569,27 +591,51 @@ Backend:      RUNNING (Spring Boot Dashboard, port 8080)
               Known issues logged above (to fix in next phase)
               AdminController + ScraperService: TODO (deferred)
 
-Frontend:     NOT STARTED
-              Implementation starts next
+Frontend:     IN PROGRESS  (started 2026-04-17)
+              Auth foundation: COMPLETE
+                - Next.js 16.2.4 + React 19.2 + TypeScript project created
+                - Axios client + token interceptors + refresh queue: DONE
+                - AuthContext (in-memory token + page-refresh recovery): DONE
+                - proxy.ts route protection: DONE
+                - auth.service.ts (login/register/refresh/logout): DONE
+                - Login page + Register page: DONE
+                - Home page + Dashboard placeholder: DONE
+                - TypeScript: 0 errors
+              End-to-end auth test with backend: PENDING
+              Remaining pages/components: TODO (see folder structure above)
 
 Data Scraper: DEFERRED
 Mobile:       OUT OF SCOPE
 
 ---
 
-NEXT PHASE: Frontend Setup & Auth Implementation
+COMPLETED PHASE: Frontend Setup & Auth Implementation  [DONE 2026-04-17]
+
+  1. [DONE] Create Next.js 16 + TypeScript project in /client folder
+  2. [DONE] Install dependencies: MUI v9, TanStack Query v5, Axios
+  3. [DONE] Set up folder structure
+  4. [DONE] AuthContext (in-memory access token + page-refresh recovery)
+  5. [DONE] Axios client + interceptors (Bearer token attach, 401 refresh, queue)
+  6. [DONE] Login page + Register page
+  7. [DONE] proxy.ts route protection (Next.js 16 -- NOT middleware.ts)
+  8. [PENDING] Test full auth flow end-to-end with running backend
+
+---
+
+NEXT PHASE: Auth Test + Core Pages
 
 Steps:
-  1. Create Next.js project in /client folder
-  2. Install dependencies: MUI, React Query, Axios
-  3. Set up folder structure as defined above
-  4. Implement AuthContext (in-memory access token)
-  5. Implement Axios client with interceptors (attach token, refresh on 401)
-  6. Implement auth pages: Login, Register
-  7. Implement Next.js middleware for route protection
-  8. Test full auth flow end-to-end with running backend
+  1. Start frontend (npm run dev) + verify backend is running on 8080
+  2. Test full auth flow: register -> login -> role redirect -> refresh -> logout
+  3. Implement MainLayout (Navbar with login/logout button, role-aware links)
+  4. Implement company list page (/search or home) with pagination
+  5. Implement company detail page (/companies/[id]) -- SSR
+  6. Implement material search
+  7. Implement favorites (BASIC_USER + COMPANY_USER)
+  8. Implement company management pages (COMPANY_USER)
+  9. Implement admin panel pages (ADMIN)
 
-Backend fixes to do IN PARALLEL with frontend (do not block frontend):
+Backend fixes (still pending -- do not block frontend):
   - normalizedName fix in MaterialService
   - Pagination on list endpoints
   - Company update ownership check
@@ -609,9 +655,11 @@ DECISIONS LOG
 | JWT library            | JJWT 0.12.6                                           | LOCKED  |
 | DTO mapping            | MapStruct 1.6.3                                       | LOCKED  |
 | Auth strategy          | Hybrid: Refresh (HttpOnly Cookie) + Access (Memory)   | LOCKED  |
-| Frontend framework     | React + Next.js (App Router)                          | LOCKED  |
-| Component library      | Material UI (MUI)                                     | LOCKED  |
-| Data fetching          | React Query (TanStack) + Axios                        | LOCKED  |
+| Frontend framework     | React 19.2 + Next.js 16.2.4 (App Router)             | LOCKED  |
+| Frontend language      | TypeScript                                            | LOCKED  |
+| Component library      | Material UI (MUI) v9                                  | LOCKED  |
+| Data fetching          | TanStack Query v5 + Axios v1                          | LOCKED  |
+| Route protection file  | src/proxy.ts (Next.js 16 -- NOT middleware.ts)        | LOCKED  |
 | API success format     | Raw data, no wrapper                                  | LOCKED  |
 | API error format       | Coded error object + fieldErrors for validation       | LOCKED  |
 | Pagination             | Offset (Spring Pageable) -- page/size/totalElements   | LOCKED  |
@@ -620,6 +668,6 @@ DECISIONS LOG
 
 ---
 
-Document version: 3.0
-Date: April 6, 2026
-Status: ACTIVE -- Frontend implementation phase beginning
+Document version: 4.0
+Date: April 17, 2026
+Status: ACTIVE -- Auth foundation complete, core pages next

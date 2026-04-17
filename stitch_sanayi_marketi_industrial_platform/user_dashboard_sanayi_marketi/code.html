@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+<html class="light" lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>User Dashboard - Sanayi Marketi</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary": "#ffffff",
+                      "tertiary-fixed-dim": "#6bd8cb",
+                      "secondary-fixed-dim": "#b8c4ff",
+                      "on-surface": "#111c2d",
+                      "tertiary": "#006058",
+                      "primary-container": "#2563eb",
+                      "inverse-surface": "#263143",
+                      "surface-container-highest": "#d8e3fb",
+                      "on-tertiary-container": "#b3fff3",
+                      "surface-container": "#e7eeff",
+                      "on-surface-variant": "#434655",
+                      "surface-bright": "#f9f9ff",
+                      "on-tertiary": "#ffffff",
+                      "tertiary-container": "#007b71",
+                      "outline-variant": "#c3c6d7",
+                      "on-tertiary-fixed": "#00201d",
+                      "error": "#ba1a1a",
+                      "outline": "#737686",
+                      "secondary": "#3755c3",
+                      "surface-container-high": "#dee8ff",
+                      "primary": "#004ac6",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "surface-container-low": "#f0f3ff",
+                      "secondary-fixed": "#dde1ff",
+                      "inverse-on-surface": "#ecf1ff",
+                      "on-error-container": "#93000a",
+                      "on-tertiary-fixed-variant": "#005049",
+                      "surface-container-lowest": "#ffffff",
+                      "error-container": "#ffdad6",
+                      "surface-variant": "#d8e3fb",
+                      "on-secondary-fixed": "#001453",
+                      "tertiary-fixed": "#89f5e7",
+                      "surface-dim": "#cfdaf2",
+                      "on-secondary-container": "#00217a",
+                      "on-secondary-fixed-variant": "#173bab",
+                      "surface-tint": "#0053db",
+                      "on-background": "#111c2d",
+                      "surface": "#f9f9ff",
+                      "background": "#f9f9ff",
+                      "on-error": "#ffffff",
+                      "secondary-container": "#708cfd",
+                      "on-secondary": "#ffffff",
+                      "on-primary-container": "#eeefff",
+                      "inverse-primary": "#b4c5ff",
+                      "primary-fixed": "#dbe1ff",
+                      "on-primary-fixed": "#00174b",
+                      "on-primary-fixed-variant": "#003ea8"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {},
+              "fontFamily": {
+                      "headline": [
+                              "Manrope"
+                      ],
+                      "body": [
+                              "Inter"
+                      ],
+                      "label": [
+                              "Inter"
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f9f9ff; color: #111c2d; }
+        h1, h2, h3, h4, h5, h6, .font-headline { font-family: 'Manrope', sans-serif; }
+        .cloud-shadow { box-shadow: 0 20px 40px rgba(17, 28, 45, 0.06); }
+      </style>
+</head>
+<body class="flex min-h-screen bg-surface">
+<!-- SideNavBar (User Basic - Modified from JSON to fit prompt requirements but keeping JSON styling anchors where possible) -->
+<nav class="h-screen w-72 fixed left-0 top-0 bg-surface-container-low border-r border-on-surface/15 flex flex-col p-6 space-y-4 z-20">
+<!-- Header -->
+<div class="flex items-center gap-4 mb-8 px-2">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary font-headline font-bold text-xl shrink-0">
+                UE
+            </div>
+<div>
+<h2 class="font-headline font-bold text-on-surface text-lg leading-tight">Umut Erdem</h2>
+<p class="font-body text-on-surface-variant text-sm">Standart Üye</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 space-y-2">
+<!-- Active: Panelim -->
+<a class="flex items-center gap-3 px-4 py-3 bg-surface-container-high text-primary font-body font-bold text-sm rounded-r-lg group cursor-pointer active:opacity-80 transition-transform hover:translate-x-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+                Panelim
+            </a>
+<!-- Inactive -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface font-body font-medium text-sm hover:bg-surface-container-high/50 rounded-r-lg group cursor-pointer active:opacity-80 transition-transform hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">favorite</span>
+                Favori Firmalar
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface font-body font-medium text-sm hover:bg-surface-container-high/50 rounded-r-lg group cursor-pointer active:opacity-80 transition-transform hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+                Favori Malzemeler
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface font-body font-medium text-sm hover:bg-surface-container-high/50 rounded-r-lg group cursor-pointer active:opacity-80 transition-transform hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Hesap Ayarları
+            </a>
+</div>
+<!-- Bottom Action -->
+<div class="mt-auto">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-error font-body font-medium text-sm transition-colors cursor-pointer" href="#">
+<span class="material-symbols-outlined">logout</span>
+                Çıkış Yap
+            </a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="ml-72 flex-1 flex flex-col min-h-screen">
+<!-- TopNavBar (Simplified for Dashboard context, pulling from JSON styling) -->
+<header class="flex justify-between items-center w-full px-8 py-4 max-w-[1440px] mx-auto docked full-width top-0 sticky backdrop-blur-xl bg-surface/80 no-line tonal-shift shadow-[0_20px_40px_rgba(17,28,45,0.06)] z-10">
+<div class="flex items-center gap-2">
+<span class="text-2xl font-black text-on-surface font-headline tracking-tight">Sanayi Marketi</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative">
+<span class="material-symbols-outlined text-on-surface opacity-70 cursor-pointer hover:text-primary transition-colors">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
+</div>
+<a class="text-on-surface opacity-70 hover:text-primary transition-colors font-body text-sm font-medium flex items-center gap-2" href="/">
+<span class="material-symbols-outlined text-sm">storefront</span>
+                    Markete Dön
+                </a>
+</div>
+</header>
+<!-- Dashboard Content Canvas -->
+<div class="p-10 max-w-[1440px] mx-auto w-full flex-1">
+<!-- Welcome Header -->
+<div class="mb-12">
+<h1 class="font-headline font-bold text-4xl text-on-surface tracking-tight mb-2">Hoş Geldiniz, Umut.</h1>
+<p class="font-body text-on-surface-variant text-lg">Platformdaki endüstriyel takip özetiniz.</p>
+</div>
+<!-- Quick Stats (Bento Grid Style) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+<!-- Stat Card 1 -->
+<div class="bg-surface-container-low rounded-lg p-6 flex items-center gap-6 relative overflow-hidden group">
+<div class="w-16 h-16 rounded-md bg-surface-container-highest flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1;">factory</span>
+</div>
+<div>
+<h3 class="font-body font-bold text-on-surface-variant text-sm uppercase tracking-wider mb-1">Favori Firma</h3>
+<p class="font-headline font-bold text-4xl text-on-surface">3</p>
+</div>
+<!-- Decorative background element -->
+<span class="material-symbols-outlined absolute -right-6 -bottom-6 text-[120px] text-surface-container-high opacity-50 group-hover:scale-110 transition-transform duration-500 pointer-events-none">factory</span>
+</div>
+<!-- Stat Card 2 -->
+<div class="bg-surface-container-low rounded-lg p-6 flex items-center gap-6 relative overflow-hidden group">
+<div class="w-16 h-16 rounded-md bg-surface-container-highest flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-tertiary text-3xl" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+</div>
+<div>
+<h3 class="font-body font-bold text-on-surface-variant text-sm uppercase tracking-wider mb-1">Favori Malzeme</h3>
+<p class="font-headline font-bold text-4xl text-on-surface">5</p>
+</div>
+<!-- Decorative background element -->
+<span class="material-symbols-outlined absolute -right-6 -bottom-6 text-[120px] text-surface-container-high opacity-50 group-hover:scale-110 transition-transform duration-500 pointer-events-none">inventory_2</span>
+</div>
+</div>
+<!-- Preview Section: Recent Favorites -->
+<div class="space-y-8">
+<div class="flex justify-between items-end border-b border-outline-variant/15 pb-4">
+<h2 class="font-headline font-bold text-2xl text-on-surface">Son Eklenen Favoriler</h2>
+<a class="font-body text-sm font-medium text-primary hover:text-primary-container transition-colors flex items-center gap-1" href="#">
+                        Tümünü Gör <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+<!-- Firm Card Preview -->
+<div class="bg-surface-container-lowest rounded-lg cloud-shadow p-6 relative border border-outline-variant/15 flex flex-col h-full">
+<div class="absolute top-4 right-4">
+<button class="text-error hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+</div>
+<div class="flex items-center gap-4 mb-4">
+<div class="w-12 h-12 bg-surface-container-low rounded-md flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">precision_manufacturing</span>
+</div>
+<div>
+<h3 class="font-body font-bold text-lg text-on-surface">Teknik Makina A.Ş.</h3>
+<span class="inline-block px-2 py-0.5 mt-1 bg-primary-fixed text-primary font-label text-xs uppercase tracking-wide rounded">Üretici</span>
+</div>
+</div>
+<p class="font-body text-on-surface-variant text-sm mb-6 flex-1">CNC işleme ve özel parça imalatı konusunda uzmanlaşmış endüstriyel çözüm ortağı.</p>
+<a class="text-center py-2 px-4 border border-outline-variant/15 text-on-surface font-body font-bold text-sm rounded-md hover:bg-surface-container-low transition-colors mt-auto" href="#">Firmayı İncele</a>
+</div>
+<!-- Material Card Preview 1 -->
+<div class="bg-surface-container-lowest rounded-lg cloud-shadow p-6 relative border border-outline-variant/15 flex flex-col h-full">
+<div class="absolute top-4 right-4 z-10">
+<button class="text-error hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+</div>
+<div class="h-32 bg-surface-container-low rounded-md mb-4 flex items-center justify-center overflow-hidden relative">
+<img alt="Industrial aluminum beams stacked in a brightly lit warehouse setting" class="w-full h-full object-cover opacity-80 mix-blend-multiply" data-alt="Industrial aluminum beams stacked in a brightly lit warehouse setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBiUCIpjVzPn-Tk-hDEe-1I6lHtPhEqPOpHWCRyTZz8Nz5FQAhIak_pdk5X4s_kTR_PDeZUpfV6fj2vi2fYB7F7etWRaySWYwD6Mp76q9Wy1FRi5Vr57-3DM_eNSeDQSR9JaCqln-IndwE2qnbWTxKK0s083L5HaML9ydvNzbzJX15sHxStCPZ1W0uC9Cn_uOq3k1W9557P5hjOuh0vUPaPx1XRu4YxQPxqMNiKUtg6CupRAaAPIcBvkGhtoxYyvaDbp6z8UX0fUJ4"/>
+</div>
+<h3 class="font-body font-bold text-lg text-on-surface mb-1">Alüminyum Profil 45x45</h3>
+<p class="font-body text-on-surface-variant text-sm mb-4 flex-1">Alaşım 6063 T6, Eloksal kaplamalı standart seri profil.</p>
+<a class="text-center py-2 px-4 border border-outline-variant/15 text-on-surface font-body font-bold text-sm rounded-md hover:bg-surface-container-low transition-colors mt-auto" href="#">Ürüne Git</a>
+</div>
+<!-- Material Card Preview 2 -->
+<div class="bg-surface-container-lowest rounded-lg cloud-shadow p-6 relative border border-outline-variant/15 flex flex-col h-full">
+<div class="absolute top-4 right-4 z-10">
+<button class="text-error hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+</div>
+<div class="h-32 bg-surface-container-low rounded-md mb-4 flex items-center justify-center overflow-hidden relative">
+<img alt="Close-up of heavy duty industrial steel bearings on a clean metallic surface" class="w-full h-full object-cover opacity-80 mix-blend-multiply" data-alt="Close-up of heavy duty industrial steel bearings on a clean metallic surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuADt99m1Cnx1-uPGdR6h9xx7kKjBYyyxPgC3lnDmljPztHrfaMu5DP9VoObr5KmKqcRUFflWvlpyDFRcg5fwDgNrnbGAqsE97esqwxHT-VxghLGDYn0n2GpH_X8Zm8FVNCEseG4FBykXSEq9DyF1Pwh8m2Rky9f3UNBNNMkdAayupL_5GNYAmsuQDXhaHmmkq__ESfPQuVWVj8sAQtR-4xSudyhyqeb2AMtGEe0CHwLXW-xGQ280MorbRlZ91seJe0xZKh5_SDufMg"/>
+</div>
+<h3 class="font-body font-bold text-lg text-on-surface mb-1">Rulman SKF 6204</h3>
+<p class="font-body text-on-surface-variant text-sm mb-4 flex-1">Sabit bilyalı rulman, yüksek devir dayanımlı endüstriyel kalite.</p>
+<a class="text-center py-2 px-4 border border-outline-variant/15 text-on-surface font-body font-bold text-sm rounded-md hover:bg-surface-container-low transition-colors mt-auto" href="#">Ürüne Git</a>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

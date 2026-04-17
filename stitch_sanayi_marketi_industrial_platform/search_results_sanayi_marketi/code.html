@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+
+<html lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Arama Sonuçları - Sanayi Marketi</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;family=Manrope:wght@400;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#6bd8cb",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "on-surface": "#111c2d",
+                        "tertiary": "#006058",
+                        "primary-container": "#2563eb",
+                        "inverse-surface": "#263143",
+                        "surface-container-highest": "#d8e3fb",
+                        "on-tertiary-container": "#b3fff3",
+                        "surface-container": "#e7eeff",
+                        "on-surface-variant": "#434655",
+                        "surface-bright": "#f9f9ff",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-container": "#007b71",
+                        "outline-variant": "#c3c6d7",
+                        "on-tertiary-fixed": "#00201d",
+                        "error": "#ba1a1a",
+                        "outline": "#737686",
+                        "secondary": "#3755c3",
+                        "surface-container-high": "#dee8ff",
+                        "primary": "#004ac6",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-container-low": "#f0f3ff",
+                        "secondary-fixed": "#dde1ff",
+                        "inverse-on-surface": "#ecf1ff",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed-variant": "#005049",
+                        "surface-container-lowest": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#d8e3fb",
+                        "on-secondary-fixed": "#001453",
+                        "tertiary-fixed": "#89f5e7",
+                        "surface-dim": "#cfdaf2",
+                        "on-secondary-container": "#00217a",
+                        "on-secondary-fixed-variant": "#173bab",
+                        "surface-tint": "#0053db",
+                        "on-background": "#111c2d",
+                        "surface": "#f9f9ff",
+                        "background": "#f9f9ff",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#708cfd",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#eeefff",
+                        "inverse-primary": "#b4c5ff",
+                        "primary-fixed": "#dbe1ff",
+                        "on-primary-fixed": "#00174b",
+                        "on-primary-fixed-variant": "#003ea8"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, h4, h5, h6, .font-headline { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+<!-- TopNavBar (Shared Component) -->
+<nav class="docked full-width top-0 sticky backdrop-blur-xl bg-[#f9f9ff]/80 dark:bg-slate-950/80 no-line tonal-shift bg-[#f0f3ff] dark:bg-slate-900 shadow-[0_20px_40px_rgba(17,28,45,0.06)] z-50">
+<div class="flex justify-between items-center w-full px-8 py-4 max-w-[1440px] mx-auto">
+<div class="flex items-center gap-12">
+<a class="text-2xl font-black text-[#111c2d] dark:text-white font-headline" href="#">Sanayi Marketi</a>
+<div class="hidden md:flex gap-8">
+<a class="text-[#111c2d] opacity-70 hover:text-[#2563eb] transition-colors font-['Manrope'] font-bold tracking-tight" href="#">Kategoriler</a>
+<!-- Active State Logic: 'Üreticiler' is the closest match for a 'Firmalar' (Companies) search -->
+<a class="text-[#004ac6] border-b-2 border-[#004ac6] pb-1 hover:text-[#2563eb] transition-colors font-['Manrope'] font-bold tracking-tight" href="#">Üreticiler</a>
+<a class="text-[#111c2d] opacity-70 hover:text-[#2563eb] transition-colors font-['Manrope'] font-bold tracking-tight" href="#">Hakkımızda</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-[#004ac6] dark:text-blue-400 font-['Manrope'] font-bold tracking-tight hover:text-[#2563eb] transition-colors scale-95 duration-200">Giriş Yap</button>
+<button class="bg-[#004ac6] text-white px-5 py-2.5 rounded-lg font-['Manrope'] font-bold tracking-tight hover:bg-[#2563eb] transition-colors scale-95 duration-200">Kayıt Ol</button>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex flex-col md:flex-row max-w-[1440px] mx-auto w-full px-8 py-12 gap-12 flex-1">
+<!-- Left Sidebar Filters -->
+<aside class="w-full md:w-72 shrink-0 flex flex-col gap-8">
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_20px_40px_rgba(17,28,45,0.03)] flex flex-col gap-8 border border-outline-variant/15">
+<div>
+<h3 class="font-label text-xs text-on-surface-variant font-bold uppercase tracking-widest mb-4">Şehir Seçimi</h3>
+<div class="relative">
+<select class="w-full appearance-none bg-surface-container-low text-on-surface font-body text-sm py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary border-none cursor-pointer">
+<option value="">Tüm Şehirler</option>
+<option value="istanbul">İstanbul</option>
+<option value="ankara">Ankara</option>
+<option value="izmir">İzmir</option>
+<option value="bursa">Bursa</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+</div>
+</div>
+<div>
+<h3 class="font-label text-xs text-on-surface-variant font-bold uppercase tracking-widest mb-4">Malzeme Tipi</h3>
+<div class="flex flex-col gap-3">
+<label class="flex items-center gap-3 cursor-pointer group">
+<div class="w-5 h-5 rounded border border-outline-variant flex items-center justify-center group-hover:border-primary transition-colors bg-surface-container-lowest">
+<span class="material-symbols-outlined text-[16px] text-primary opacity-0">check</span>
+</div>
+<span class="text-sm font-body text-on-surface group-hover:text-primary transition-colors">Çelik</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<div class="w-5 h-5 rounded border-none bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px] text-on-primary">check</span>
+</div>
+<span class="text-sm font-body text-on-surface font-medium">Alüminyum</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<div class="w-5 h-5 rounded border border-outline-variant flex items-center justify-center group-hover:border-primary transition-colors bg-surface-container-lowest">
+<span class="material-symbols-outlined text-[16px] text-primary opacity-0">check</span>
+</div>
+<span class="text-sm font-body text-on-surface group-hover:text-primary transition-colors">Plastik &amp; Polimer</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<div class="w-5 h-5 rounded border border-outline-variant flex items-center justify-center group-hover:border-primary transition-colors bg-surface-container-lowest">
+<span class="material-symbols-outlined text-[16px] text-primary opacity-0">check</span>
+</div>
+<span class="text-sm font-body text-on-surface group-hover:text-primary transition-colors">Kompozit</span>
+</label>
+</div>
+</div>
+<div>
+<h3 class="font-label text-xs text-on-surface-variant font-bold uppercase tracking-widest mb-4">Firma Durumu</h3>
+<label class="flex items-center justify-between cursor-pointer group">
+<span class="text-sm font-body text-on-surface group-hover:text-primary transition-colors">Sadece Aktif Firmalar</span>
+<div class="relative">
+<input checked="" class="sr-only" type="checkbox"/>
+<div class="block bg-primary w-10 h-6 rounded-full transition-colors"></div>
+<div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform translate-x-4"></div>
+</div>
+</label>
+</div>
+<div class="pt-6 mt-2 border-t border-outline-variant/15">
+<h3 class="font-label text-xs text-on-surface-variant font-bold uppercase tracking-widest mb-4">Sıralama</h3>
+<div class="relative">
+<select class="w-full appearance-none bg-surface-container-low text-on-surface font-body text-sm py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary border-none cursor-pointer">
+<option value="relevance">En İlgili</option>
+<option value="name_asc">İsme Göre (A-Z)</option>
+<option value="newest">En Yeni Katılanlar</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">sort</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Results Area -->
+<section class="flex-1 flex flex-col min-w-0">
+<!-- Header & Tabs -->
+<div class="flex flex-col gap-6 mb-8">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<h1 class="font-headline text-4xl font-extrabold text-on-surface tracking-tight">Arama Sonuçları</h1>
+<div class="bg-surface-container-low p-1.5 rounded-lg inline-flex">
+<button class="bg-surface-container-highest text-primary font-bold text-sm px-6 py-2.5 rounded-md shadow-[0_2px_10px_rgba(17,28,45,0.05)] transition-all">Firmalar</button>
+<button class="text-on-surface-variant hover:text-on-surface font-medium text-sm px-6 py-2.5 rounded-md transition-all">Malzemeler</button>
+</div>
+</div>
+<p class="font-headline text-lg font-bold text-on-surface-variant">150 firma bulundu</p>
+</div>
+<!-- Cards List -->
+<div class="flex flex-col gap-6">
+<!-- Card 1 -->
+<article class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_10px_30px_rgba(17,28,45,0.03)] border border-outline-variant/15 flex flex-col md:flex-row gap-6 relative group transition-all hover:shadow-[0_20px_40px_rgba(17,28,45,0.06)]">
+<button aria-label="Favorilere ekle" class="absolute top-6 right-6 text-outline hover:text-error transition-colors">
+<span class="material-symbols-outlined text-[24px]">favorite</span>
+</button>
+<div class="w-24 h-24 bg-surface-container rounded-lg shrink-0 overflow-hidden flex items-center justify-center border border-outline-variant/15">
+<img alt="Mega Metal A.Ş. Logo" class="w-full h-full object-cover" data-alt="Minimalist abstract geometric M logo in industrial blue tones on clean white background, architectural feel" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJt_Xfm6na1LEVZbn3F6_uxnRN1VESvkQ_uKxOrnwRFUU-cY8tcdWLV1kGVJIzCU5essQQiTv-giAMfuiEOug64gvLC1FRcX3pr2zUAYv2tlEfb5Qpgt0FFQN8e-dAVBg8jhkLS-u-_XVLscuqwxsK_2el7VBoSU5QdknsGStZWhKHi6crZsvcONase2pGXUTZS6zBUAUEllC8Z5ldEzCyEbh1MJnSRV0a8ZANZwZpfG_SKvGK819pBONUnOH8l4nn2ZVFlEms28c"/>
+</div>
+<div class="flex-1 flex flex-col justify-center">
+<div class="flex items-center gap-3 mb-2">
+<h2 class="font-headline text-xl font-bold text-on-surface">Mega Metal A.Ş.</h2>
+<span class="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Üretici</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant text-sm mb-4">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span>Gebze, Kocaeli</span>
+</div>
+<p class="font-body text-sm text-on-surface-variant leading-relaxed mb-5 max-w-2xl">
+                            Endüstriyel alüminyum ekstrüzyon profilleri ve hassas talaşlı imalat konularında 20 yıllık tecrübe ile otomotiv ve havacılık sektörlerine hizmet vermektedir.
+                        </p>
+<div class="flex flex-wrap items-center gap-2 mt-auto">
+<span class="bg-surface-container-high text-on-surface text-xs font-medium px-3 py-1.5 rounded-md">Alüminyum</span>
+<span class="bg-surface-container-high text-on-surface text-xs font-medium px-3 py-1.5 rounded-md">Talaşlı İmalat</span>
+<span class="bg-surface-container-high text-on-surface text-xs font-medium px-3 py-1.5 rounded-md">Ekstrüzyon</span>
+</div>
+</div>
+<div class="flex md:flex-col items-end justify-between md:justify-end shrink-0 mt-4 md:mt-0">
+<button class="bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold text-sm px-6 py-3 rounded-lg shadow-lg shadow-primary/20 hover:scale-105 transition-transform flex items-center gap-2">
+                            Profili Gör
+                            <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_10px_30px_rgba(17,28,45,0.03)] border border-outline-variant/15 flex flex-col md:flex-row gap-6 relative group transition-all hover:shadow-[0_20px_40px_rgba(17,28,45,0.06)]">
+<button aria-label="Favorilere ekle" class="absolute top-6 right-6 text-outline hover:text-error transition-colors">
+<span class="material-symbols-outlined text-[24px]">favorite</span>
+</button>
+<div class="w-24 h-24 bg-surface-container rounded-lg shrink-0 overflow-hidden flex items-center justify-center border border-outline-variant/15">
+<img alt="Polimer Plastik Logo" class="w-full h-full object-cover" data-alt="Clean bold P lettermark logo in deep navy blue on soft gray background, industrial aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7en2nNBkEoKpozr0YfYSUCgQe3g47ZtLx6qAsJoABU5hf_m5RUZAjjXifmj6YNherOx3ZoNbXV3tzI04YMQir8JipnqaK4-_VvIdScTUmMNDJHrg88tcula9Wq1f9LV_TtPAg2aCI74SPZz8cYJbhus4w24wVphIM1A9WVKn6vWYKncLWjGlzWhY0Yn0k3c4WilWCdjNe3t0YbQ1SnkCLQRgDIBOI40-50NQDSWaZmA408yC8jgAyVgDFj39j6RxJMRp1dZk7K5g"/>
+</div>
+<div class="flex-1 flex flex-col justify-center">
+<div class="flex items-center gap-3 mb-2">
+<h2 class="font-headline text-xl font-bold text-on-surface">Polimer Plastik Sanayi</h2>
+<span class="bg-tertiary/10 text-tertiary text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Satıcı</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant text-sm mb-4">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span>Nilüfer, Bursa</span>
+</div>
+<p class="font-body text-sm text-on-surface-variant leading-relaxed mb-5 max-w-2xl">
+                            Yüksek performanslı mühendislik plastikleri, PTFE, POM ve PEEK malzemelerinin toptan tedariği ve özel kesim hizmetleri.
+                        </p>
+<div class="flex flex-wrap items-center gap-2 mt-auto">
+<span class="bg-surface-container-high text-on-surface text-xs font-medium px-3 py-1.5 rounded-md">Polimer</span>
+<span class="bg-surface-container-high text-on-surface text-xs font-medium px-3 py-1.5 rounded-md">Mühendislik Plastikleri</span>
+<span class="bg-surface-container-high text-on-surface text-xs font-medium px-3 py-1.5 rounded-md">Hammadde</span>
+</div>
+</div>
+<div class="flex md:flex-col items-end justify-between md:justify-end shrink-0 mt-4 md:mt-0">
+<button class="bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold text-sm px-6 py-3 rounded-lg shadow-lg shadow-primary/20 hover:scale-105 transition-transform flex items-center gap-2">
+                            Profili Gör
+                            <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_10px_30px_rgba(17,28,45,0.03)] border border-outline-variant/15 flex flex-col md:flex-row gap-6 relative group transition-all hover:shadow-[0_20px_40px_rgba(17,28,45,0.06)]">
+<button aria-label="Favorilere ekle" class="absolute top-6 right-6 text-error transition-colors">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+<div class="w-24 h-24 bg-surface-container rounded-lg shrink-0 overflow-hidden flex items-center justify-center border border-outline-variant/15">
+<img alt="Çelik Döküm Ltd." class="w-full h-full object-cover" data-alt="Heavy industrial steel forge logo icon, strong typography, dark blue and gray colors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuByzBaxQdv0Kq0a8AElA_XpAIcqCbshC5nr90_FB2TXOeabYAvE2ivWypWVxhD2NdoOI7fg53RuA27xTeGGfmGTPvZghsaxTzaCrjZWsGy3NDTxpZMCwgnZpSuoZ8YJMCVjUrdyxF5m3GfAL0qWJC891E6VYnil7JXHenKUXuHIPp84sn8eZ5q-BFQHaGRy7R121AHBuQwiydIqvz7DxoXEiR6A2jimd58vbwhIi59VGRHKs2Xw3vDcvO3Nc3ljTrZCN2_WGqxRfYw"/>
+</div>
+<div class="flex-1 flex flex-col justify-center">
+<div class="flex items-center gap-3 mb-2">
+<h2 class="font-headline text-xl font-bold text-on-surface">Kuzey Çelik Döküm</h2>
+<span class="bg-secondary/10 text-secondary text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Her İkisi</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant text-sm mb-4">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span>Ostim, Ankara</span>
+</div>
+<p class="font-body text-sm text-on-surface-variant leading-relaxed mb-5 max-w-2xl">
+                            Karbon çeliği, paslanmaz çelik ve alaşımlı çelik döküm parçalarının üretimi, ısıl işlemi ve yüzey pürüzlülüğü optimizasyonu.
+                        </p>
+<div class="flex flex-wrap items-center gap-2 mt-auto">
+<span class="bg-surface-container-high text-on-surface text-xs font-medium px-3 py-1.5 rounded-md">Çelik</span>
+<span class="bg-surface-container-high text-on-surface text-xs font-medium px-3 py-1.5 rounded-md">Döküm</span>
+<span class="bg-surface-container-high text-on-surface text-xs font-medium px-3 py-1.5 rounded-md">Isıl İşlem</span>
+</div>
+</div>
+<div class="flex md:flex-col items-end justify-between md:justify-end shrink-0 mt-4 md:mt-0">
+<button class="bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold text-sm px-6 py-3 rounded-lg shadow-lg shadow-primary/20 hover:scale-105 transition-transform flex items-center gap-2">
+                            Profili Gör
+                            <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</article>
+</div>
+<!-- Pagination -->
+<div class="mt-12 flex justify-between items-center bg-surface-container-low rounded-xl p-4 px-6 border border-outline-variant/15">
+<button class="text-on-surface-variant hover:text-primary font-bold text-sm flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-[20px]">arrow_back</span>
+                    Önceki
+                </button>
+<div class="flex items-center gap-2">
+<button class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm bg-gradient-to-br from-primary to-primary-container text-on-primary shadow-lg shadow-primary/20">1</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm text-on-surface hover:bg-surface-container-high transition-colors">2</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm text-on-surface hover:bg-surface-container-high transition-colors">3</button>
+<span class="w-10 h-10 flex items-center justify-center text-on-surface-variant">...</span>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm text-on-surface hover:bg-surface-container-high transition-colors">8</button>
+</div>
+<button class="text-on-surface hover:text-primary font-bold text-sm flex items-center gap-2 transition-colors">
+                    Sonraki
+                    <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</div>
+</section>
+</main>
+<!-- Footer (Shared Component) -->
+<footer class="w-full py-12 mt-auto bg-[#111c2d] dark:bg-black border-t border-white/10 flat">
+<div class="flex flex-col items-center justify-center space-y-6 px-4 max-w-[1440px] mx-auto">
+<div class="font-['Manrope'] font-bold text-white text-xl">Sanayi Marketi</div>
+<div class="flex flex-wrap justify-center gap-8">
+<a class="font-['Inter'] text-sm leading-relaxed text-slate-400 hover:text-[#dee8ff] opacity-100 transition-colors" href="#">Hizmet Şartları</a>
+<a class="font-['Inter'] text-sm leading-relaxed text-slate-400 hover:text-[#dee8ff] opacity-100 transition-colors" href="#">Gizlilik Politikası</a>
+<a class="font-['Inter'] text-sm leading-relaxed text-slate-400 hover:text-[#dee8ff] opacity-100 transition-colors" href="#">İletişim</a>
+<a class="font-['Inter'] text-sm leading-relaxed text-slate-400 hover:text-[#dee8ff] opacity-100 transition-colors" href="#">SSS</a>
+</div>
+<div class="font-['Inter'] text-sm leading-relaxed text-slate-400 mt-8">
+                © 2024 Sanayi Marketi - Endüstriyel Çözümler Merkezi
+            </div>
+</div>
+</footer>
+</body></html>

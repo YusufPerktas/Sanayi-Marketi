@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html class="light" lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sanayi Marketi - Yöneticisi Paneli</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#6bd8cb",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "on-surface": "#111c2d",
+                        "tertiary": "#006058",
+                        "primary-container": "#2563eb",
+                        "inverse-surface": "#263143",
+                        "surface-container-highest": "#d8e3fb",
+                        "on-tertiary-container": "#b3fff3",
+                        "surface-container": "#e7eeff",
+                        "on-surface-variant": "#434655",
+                        "surface-bright": "#f9f9ff",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-container": "#007b71",
+                        "outline-variant": "#c3c6d7",
+                        "on-tertiary-fixed": "#00201d",
+                        "error": "#ba1a1a",
+                        "outline": "#737686",
+                        "secondary": "#3755c3",
+                        "surface-container-high": "#dee8ff",
+                        "primary": "#004ac6",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-container-low": "#f0f3ff",
+                        "secondary-fixed": "#dde1ff",
+                        "inverse-on-surface": "#ecf1ff",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed-variant": "#005049",
+                        "surface-container-lowest": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#d8e3fb",
+                        "on-secondary-fixed": "#001453",
+                        "tertiary-fixed": "#89f5e7",
+                        "surface-dim": "#cfdaf2",
+                        "on-secondary-container": "#00217a",
+                        "on-secondary-fixed-variant": "#173bab",
+                        "surface-tint": "#0053db",
+                        "on-background": "#111c2d",
+                        "surface": "#f9f9ff",
+                        "background": "#f9f9ff",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#708cfd",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#eeefff",
+                        "inverse-primary": "#b4c5ff",
+                        "primary-fixed": "#dbe1ff",
+                        "on-primary-fixed": "#00174b",
+                        "on-primary-fixed-variant": "#003ea8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "md": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": [
+                            "Manrope"
+                        ],
+                        "body": [
+                            "Inter"
+                        ],
+                        "label": [
+                            "Inter"
+                        ]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: theme('colors.surface');
+            color: theme('colors.on-surface');
+        }
+        h1, h2, h3, h4, h5, h6, .font-headline {
+            font-family: 'Manrope', sans-serif;
+        }
+        .bg-primary-gradient {
+            background: linear-gradient(135deg, theme('colors.primary'), theme('colors.primary-container'));
+        }
+        .cloud-shadow {
+            box-shadow: 0 20px 40px rgba(17, 28, 45, 0.06);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased min-h-screen flex overflow-hidden">
+<!-- SideNavBar (Predicted) -->
+<nav class="h-screen w-72 fixed left-0 top-0 bg-[#f0f3ff] dark:bg-slate-900 border-r border-[#111c2d]/15 z-40 flex flex-col p-6 space-y-4">
+<!-- Header -->
+<div class="flex items-center gap-4 mb-8 px-2">
+<div class="w-12 h-12 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed font-headline font-bold text-xl">
+                Y
+            </div>
+<div>
+<h2 class="font-['Manrope'] font-bold text-[#111c2d] text-lg leading-tight">Yıldız Makina</h2>
+<p class="font-['Inter'] text-sm font-medium text-outline">Kurumsal Panel</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<div class="flex flex-col gap-1 flex-1">
+<a class="flex items-center gap-3 px-4 py-3 bg-[#dee8ff] text-[#004ac6] font-bold rounded-r-lg font-['Inter'] text-sm font-medium transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+                Panelim
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#111c2d] hover:bg-[#dee8ff]/50 hover:translate-x-1 transition-transform font-['Inter'] text-sm font-medium cursor-pointer active:opacity-80 rounded-r-lg" href="#">
+<span class="material-symbols-outlined">business</span>
+                Firma Bilgileri
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#111c2d] hover:bg-[#dee8ff]/50 hover:translate-x-1 transition-transform font-['Inter'] text-sm font-medium cursor-pointer active:opacity-80 rounded-r-lg" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+                Malzemeler
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#111c2d] hover:bg-[#dee8ff]/50 hover:translate-x-1 transition-transform font-['Inter'] text-sm font-medium cursor-pointer active:opacity-80 rounded-r-lg" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+                Katalog
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#111c2d] hover:bg-[#dee8ff]/50 hover:translate-x-1 transition-transform font-['Inter'] text-sm font-medium cursor-pointer active:opacity-80 rounded-r-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Hesap Ayarları
+            </a>
+</div>
+<!-- CTA -->
+<div class="mt-auto">
+<button class="w-full bg-primary-gradient text-white font-body font-bold py-3 px-4 rounded-md shadow-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg">add</span>
+                Yeni İlan Oluştur
+            </button>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="ml-72 flex-1 flex flex-col h-screen overflow-y-auto">
+<!-- TopNavBar (Predicted - Adapted for Dashboard) -->
+<header class="docked full-width top-0 sticky backdrop-blur-xl bg-[#f9f9ff]/80 dark:bg-slate-950/80 no-line tonal-shift z-30 shadow-[0_20px_40px_rgba(17,28,45,0.06)] px-8 py-4 flex justify-between items-center border-b border-outline-variant/15">
+<div class="flex items-center gap-4">
+<h1 class="text-2xl font-black text-[#111c2d] dark:text-white font-['Manrope'] tracking-tight">Sanayi Marketi</h1>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative">
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary transition-colors">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
+</div>
+<div class="flex items-center gap-3 border-l border-outline-variant/30 pl-6">
+<div class="text-right">
+<p class="font-body text-sm font-semibold text-on-surface">Ahmet Yılmaz</p>
+<p class="font-body text-xs text-outline">Firma Yöneticisi</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container-high border border-outline-variant/20 overflow-hidden">
+<img alt="Profile" class="w-full h-full object-cover" data-alt="professional headshot of a middle-aged man in a business setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7CU1JshhLXVWTQv3W8oS-Giop6ZbhvGBcCGKVVhzi_FodZ1yeKyH8lsGqyoLwO6htNP4N12cUG5-XjU59pErug57kjwPm0EAgOpVApQ58iVM09zgdTfNtXQ0iyyHnh7OdG-XU1yp2j8gSqGn_8xgipbq9O1U8uK34OFvUl70amS6G38qVUK1C4cX3pevbX7xQzEkPJe_qhGKtJtlx1L4Pu4ynKvWvarLT3EgjNqT0gCh_j7Ah8smFwOZ9jC0C3SWk3GP-qA0JTGs"/>
+</div>
+</div>
+</div>
+</header>
+<div class="p-8 max-w-[1440px] mx-auto w-full flex-1">
+<!-- Warning Banner (INACTIVE Status) -->
+<div class="bg-error-container text-on-error-container px-6 py-4 rounded-lg mb-8 flex items-start gap-4 border border-error/20">
+<span class="material-symbols-outlined text-error mt-0.5" style="font-variation-settings: 'FILL' 1;">warning</span>
+<div>
+<h3 class="font-body font-bold text-base mb-1">Firma başvurunuz inceleniyor.</h3>
+<p class="font-body text-sm opacity-90">Profiliniz onaylanana kadar ilan veremez veya teklif sunamazsınız. İnceleme süreci genellikle 24-48 saat sürmektedir.</p>
+</div>
+</div>
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+<div>
+<div class="flex items-center gap-4 mb-2">
+<h2 class="font-headline font-extrabold text-3xl tracking-tight text-on-surface">Yıldız Makina A.Ş.</h2>
+<span class="bg-surface-dim text-tertiary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider bg-opacity-10 border border-tertiary/20">
+                            Beklemede
+                        </span>
+</div>
+<p class="font-body text-outline flex items-center gap-2 text-sm">
+<span class="material-symbols-outlined text-sm">update</span>
+                        Son güncelleme: 2 saat önce
+                    </p>
+</div>
+<button class="bg-surface text-primary border border-outline-variant/30 font-body font-bold py-2.5 px-5 rounded-md hover:bg-surface-container-low transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">visibility</span>
+                    Profili Görüntüle
+                </button>
+</div>
+<!-- Quick Actions Grid (Bento Style) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant/15 rounded-lg p-6 hover:shadow-[0_20px_40px_rgba(17,28,45,0.06)] transition-all group cursor-pointer relative overflow-hidden flex flex-col">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-[100px] -z-10 group-hover:scale-110 transition-transform"></div>
+<div class="w-12 h-12 bg-primary-fixed text-on-primary-fixed rounded-md flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-2xl">edit_document</span>
+</div>
+<h3 class="font-body font-bold text-lg mb-2 text-on-surface group-hover:text-primary transition-colors">Firma Bilgilerini Düzenle</h3>
+<p class="font-body text-sm text-outline mb-6 leading-relaxed flex-1">İletişim bilgilerinizi, adresinizi ve firma profil detaylarınızı güncelleyin.</p>
+<div class="flex items-center text-primary font-body text-sm font-semibold mt-auto">
+                        Düzenle <span class="material-symbols-outlined text-sm ml-1 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant/15 rounded-lg p-6 hover:shadow-[0_20px_40px_rgba(17,28,45,0.06)] transition-all group cursor-pointer relative overflow-hidden flex flex-col">
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary/5 rounded-bl-[100px] -z-10 group-hover:scale-110 transition-transform"></div>
+<div class="w-12 h-12 bg-secondary-fixed text-on-secondary-fixed rounded-md flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-2xl">category</span>
+</div>
+<h3 class="font-body font-bold text-lg mb-2 text-on-surface group-hover:text-primary transition-colors">Malzeme Ekle / Düzenle</h3>
+<p class="font-body text-sm text-outline mb-6 leading-relaxed flex-1">Ürün envanterinizi yönetin, yeni stok ekleyin veya mevcut olanları güncelleyin.</p>
+<div class="flex items-center text-primary font-body text-sm font-semibold mt-auto">
+                        Yönet <span class="material-symbols-outlined text-sm ml-1 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest border border-outline-variant/15 rounded-lg p-6 hover:shadow-[0_20px_40px_rgba(17,28,45,0.06)] transition-all group cursor-pointer relative overflow-hidden flex flex-col">
+<div class="absolute top-0 right-0 w-32 h-32 bg-tertiary/5 rounded-bl-[100px] -z-10 group-hover:scale-110 transition-transform"></div>
+<div class="w-12 h-12 bg-tertiary-fixed text-on-tertiary-fixed rounded-md flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-2xl">upload_file</span>
+</div>
+<h3 class="font-body font-bold text-lg mb-2 text-on-surface group-hover:text-primary transition-colors">Katalog Yükle</h3>
+<p class="font-body text-sm text-outline mb-6 leading-relaxed flex-1">Kurumsal ürün kataloglarınızı PDF formatında sisteme yükleyin.</p>
+<div class="flex items-center text-primary font-body text-sm font-semibold mt-auto">
+                        Yükle <span class="material-symbols-outlined text-sm ml-1 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</div>
+</div>
+</div>
+<!-- Stats/Overview Section (To fill out the dashboard realistically) -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Activity Log -->
+<div class="lg:col-span-2 bg-surface-container-low rounded-lg p-6">
+<h3 class="font-body font-bold text-lg mb-6 text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-outline">history</span>
+                        Son Aktiviteler
+                    </h3>
+<div class="space-y-6">
+<!-- Item -->
+<div class="flex gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center shrink-0 mt-1">
+<span class="material-symbols-outlined text-primary text-sm">edit</span>
+</div>
+<div>
+<p class="font-body text-sm font-semibold text-on-surface">Firma profili güncellendi</p>
+<p class="font-body text-sm text-outline mt-1">İletişim numarası ve vergi dairesi bilgileri değiştirildi.</p>
+<p class="font-body text-xs text-outline/70 mt-2">Bugün, 10:45</p>
+</div>
+</div>
+<!-- Item -->
+<div class="flex gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center shrink-0 mt-1">
+<span class="material-symbols-outlined text-tertiary text-sm">how_to_reg</span>
+</div>
+<div>
+<p class="font-body text-sm font-semibold text-on-surface">Kayıt başvurusu oluşturuldu</p>
+<p class="font-body text-sm text-outline mt-1">Sisteme ilk kayıt işlemi tamamlandı ve onaya gönderildi.</p>
+<p class="font-body text-xs text-outline/70 mt-2">Dün, 14:20</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Completeness Widget -->
+<div class="bg-surface-container-lowest border border-outline-variant/15 rounded-lg p-6 flex flex-col justify-between">
+<div>
+<h3 class="font-body font-bold text-lg mb-2 text-on-surface">Profil Doluluğu</h3>
+<p class="font-body text-sm text-outline mb-6">Müşterilerin size güvenmesi için profilinizi %100 doldurun.</p>
+<div class="mb-4">
+<div class="flex justify-between text-sm font-body font-bold mb-2">
+<span class="text-on-surface">İlerleme</span>
+<span class="text-primary">60%</span>
+</div>
+<div class="w-full h-2 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary-gradient w-[60%] rounded-full"></div>
+</div>
+</div>
+<ul class="space-y-3 font-body text-sm">
+<li class="flex items-center gap-2 text-tertiary">
+<span class="material-symbols-outlined text-sm">check_circle</span> Temel Bilgiler
+                            </li>
+<li class="flex items-center gap-2 text-tertiary">
+<span class="material-symbols-outlined text-sm">check_circle</span> Vergi Levhası
+                            </li>
+<li class="flex items-center gap-2 text-outline">
+<span class="material-symbols-outlined text-sm">radio_button_unchecked</span> Sertifikalar
+                            </li>
+<li class="flex items-center gap-2 text-outline">
+<span class="material-symbols-outlined text-sm">radio_button_unchecked</span> Ürün Kataloğu
+                            </li>
+</ul>
+</div>
+<button class="mt-6 w-full text-center text-primary font-body font-bold text-sm hover:underline">
+                        Eksikleri Tamamla
+                    </button>
+</div>
+</div>
+</div>
+</main>
+</body></html>
