@@ -77,7 +77,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           login(data.accessToken, data.userId, data.role);
         }
       } catch {
-        // Refresh başarısız → kullanıcı oturum açmamış, normal durum
+        // Refresh başarısız → stale cookie'yi temizle
+        try {
+          const { default: apiClient } = await import('@/services/api/client');
+          await apiClient.post('/api/auth/logout');
+        } catch {
+          // Cookie temizleme de başarısız olursa sessizce geç
+        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }

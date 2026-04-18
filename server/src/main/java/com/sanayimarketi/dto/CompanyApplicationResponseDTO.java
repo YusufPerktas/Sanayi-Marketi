@@ -22,6 +22,13 @@ public class CompanyApplicationResponseDTO {
     private Long targetCompanyId;
     private String targetCompanyName;
     private String proposedCompanyName;
+    private String description;
+    private String phone;
+    private String companyEmail;
+    private String website;
+    private String city;
+    private String district;
+    private String fullAddress;
     private CompanyApplicationStatus status;
     private String rejectionReason;
     private LocalDateTime createdAt;

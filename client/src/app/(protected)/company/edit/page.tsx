@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Box,
@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import { AxiosError } from 'axios';
+import { useQuery } from '@tanstack/react-query';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { companyService } from '@/services/company.service';
 import { colors } from '@/utils/colors';
@@ -50,21 +51,38 @@ export default function CompanyEditPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // In production: fetch company data on mount and pre-fill form.
-  // Needs GET /api/company-users/me or similar endpoint.
+  const { data: company } = useQuery({
+    queryKey: ['my-company'],
+    queryFn: () => companyService.getMe(),
+  });
+
+  useEffect(() => {
+    if (company) {
+      setForm({
+        companyName: company.companyName ?? '',
+        description: company.description ?? '',
+        phone: company.phone ?? '',
+        email: company.email ?? '',
+        website: company.website ?? '',
+        city: company.city ?? '',
+        district: company.district ?? '',
+        fullAddress: company.fullAddress ?? '',
+        googleMapsEmbedUrl: company.googleMapsEmbedUrl ?? '',
+      });
+    }
+  }, [company]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
+    if (!company) return;
     setSaving(true);
     setError(null);
     setFieldErrors({});
     try {
-      // Placeholder company ID — in production, retrieved from AuthContext or company-users/me
-      const companyId = 1;
       const payload = Object.fromEntries(
         Object.entries(form).filter(([, v]) => v.trim() !== ''),
       );
-      await companyService.update(companyId, payload);
+      await companyService.update(company.id, payload);
       setSuccess(true);
     } catch (err) {
       const axiosError = err as AxiosError<ApiError>;

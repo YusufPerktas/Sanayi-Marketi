@@ -35,7 +35,6 @@ import { companyService, CompanyMaterial } from '@/services/company.service';
 import { materialService } from '@/services/material.service';
 import { colors } from '@/utils/colors';
 
-const MY_COMPANY_ID = 1; // Placeholder — needs backend endpoint to get company ID
 
 const ROLE_OPTIONS = [
   { value: 'PRODUCER', label: 'Üretici' },
@@ -59,9 +58,16 @@ export default function CompanyMaterialsPage() {
   const [form, setForm] = useState({ materialName: '', role: 'PRODUCER', price: '' });
   const [snack, setSnack] = useState<string | null>(null);
 
+  const { data: myCompany } = useQuery({
+    queryKey: ['my-company'],
+    queryFn: () => companyService.getMe(),
+  });
+  const companyId = myCompany?.id;
+
   const { data: materials, isLoading } = useQuery({
-    queryKey: ['company-materials', MY_COMPANY_ID],
-    queryFn: () => companyService.getMaterials(MY_COMPANY_ID),
+    queryKey: ['company-materials', companyId],
+    queryFn: () => companyService.getMaterials(companyId!),
+    enabled: !!companyId,
   });
 
   const { data: searchResults } = useQuery({
@@ -71,28 +77,28 @@ export default function CompanyMaterialsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (materialId: number) => companyService.deleteMaterial(MY_COMPANY_ID, materialId),
+    mutationFn: (id: number) => companyService.deleteMaterial(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['company-materials', MY_COMPANY_ID] });
+      qc.invalidateQueries({ queryKey: ['company-materials', companyId] });
       setSnack('Malzeme silindi');
     },
   });
 
   const addMutation = useMutation({
     mutationFn: (data: { materialId: number; role: 'PRODUCER' | 'SELLER' | 'BOTH'; price?: number }) =>
-      companyService.addMaterial(MY_COMPANY_ID, data),
+      companyService.addMaterial(companyId!, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['company-materials', MY_COMPANY_ID] });
+      qc.invalidateQueries({ queryKey: ['company-materials', companyId] });
       setModalMode(null);
       setSnack('Malzeme eklendi');
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ materialId, data }: { materialId: number; data: { role?: 'PRODUCER' | 'SELLER' | 'BOTH'; price?: number } }) =>
-      companyService.updateMaterial(MY_COMPANY_ID, materialId, data),
+    mutationFn: ({ id, data }: { id: number; data: { role?: 'PRODUCER' | 'SELLER' | 'BOTH'; price?: number } }) =>
+      companyService.updateMaterial(id, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['company-materials', MY_COMPANY_ID] });
+      qc.invalidateQueries({ queryKey: ['company-materials', companyId] });
       setModalMode(null);
       setSnack('Malzeme güncellendi');
     },
@@ -114,11 +120,10 @@ export default function CompanyMaterialsPage() {
     const price = form.price ? parseFloat(form.price) : undefined;
     if (modalMode === 'edit' && editTarget) {
       updateMutation.mutate({
-        materialId: editTarget.materialId,
+        id: editTarget.id,
         data: { role: form.role as 'PRODUCER' | 'SELLER' | 'BOTH', price },
       });
     }
-    // Add mode: user must select from searchResults
   }
 
   function handleAddFromSearch(m: { id: number; name: string }) {
@@ -208,7 +213,7 @@ export default function CompanyMaterialsPage() {
                       </IconButton>
                       <IconButton
                         size="small"
-                        onClick={() => deleteMutation.mutate(m.materialId)}
+                        onClick={() => deleteMutation.mutate(m.id)}
                         disabled={deleteMutation.isPending}
                         sx={{ color: colors.error }}
                       >

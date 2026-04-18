@@ -62,7 +62,7 @@ public class AuthController {
         User user = userService.registerUser(
                 request.getEmail(),
                 request.getPassword(),
-                request.getRole()
+                UserRole.BASIC_USER
         );
 
         // Generate tokens
@@ -110,7 +110,14 @@ public class AuthController {
                 user.getId(),
                 request.getApplicationType(),
                 request.getTargetCompanyId(),
-                request.getProposedCompanyName()
+                request.getProposedCompanyName(),
+                request.getDescription(),
+                request.getPhone(),
+                request.getCompanyEmail(),
+                request.getWebsite(),
+                request.getCity(),
+                request.getDistrict(),
+                request.getFullAddress()
         );
 
         String accessToken = jwtService.generateAccessToken(user);

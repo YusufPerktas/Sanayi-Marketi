@@ -27,7 +27,10 @@ public class CompanyApplicationService {
 
     @Transactional
     public CompanyApplication submitApplication(Long userId, CompanyApplicationType type,
-                                                  Long targetCompanyId, String proposedName) {
+                                                  Long targetCompanyId, String proposedName,
+                                                  String description, String phone,
+                                                  String companyEmail, String website,
+                                                  String city, String district, String fullAddress) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
 
@@ -42,10 +45,21 @@ public class CompanyApplicationService {
                 .applicationType(type)
                 .targetCompany(targetCompany)
                 .proposedCompanyName(proposedName)
+                .description(description)
+                .phone(phone)
+                .companyEmail(companyEmail)
+                .website(website)
+                .city(city)
+                .district(district)
+                .fullAddress(fullAddress)
                 .status(CompanyApplicationStatus.PENDING)
                 .build();
 
         return applicationRepository.save(application);
+    }
+
+    public List<CompanyApplication> getAllApplications() {
+        return applicationRepository.findAll();
     }
 
     public List<CompanyApplication> getPendingApplications() {
@@ -84,6 +98,37 @@ public class CompanyApplicationService {
         application.setStatus(CompanyApplicationStatus.REJECTED);
         application.setRejectionReason(reason);
         return applicationRepository.save(application);
+    }
+
+    @Transactional
+    public CompanyApplication reapply(Long userId, String proposedName, String description,
+                                       String phone, String companyEmail, String website,
+                                       String city, String district, String fullAddress) {
+        CompanyApplication last = applicationRepository.findTopByUserIdOrderByCreatedAtDesc(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("CompanyApplication", userId));
+
+        if (last.getStatus() != CompanyApplicationStatus.REJECTED) {
+            throw new IllegalStateException("Reapplication is only allowed after a rejected application");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+
+        CompanyApplication newApp = CompanyApplication.builder()
+                .user(user)
+                .applicationType(CompanyApplicationType.MANUAL_NEW)
+                .proposedCompanyName(proposedName)
+                .description(description)
+                .phone(phone)
+                .companyEmail(companyEmail)
+                .website(website)
+                .city(city)
+                .district(district)
+                .fullAddress(fullAddress)
+                .status(CompanyApplicationStatus.PENDING)
+                .build();
+
+        return applicationRepository.save(newApp);
     }
 
     public Optional<CompanyApplication> getLatestApplicationByUserId(Long userId) {

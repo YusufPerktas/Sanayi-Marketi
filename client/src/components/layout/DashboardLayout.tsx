@@ -17,7 +17,6 @@ import Inventory2Icon from '@mui/icons-material/Inventory2';
 import BusinessIcon from '@mui/icons-material/Business';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import CategoryIcon from '@mui/icons-material/Category';
-import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import NotificationsIcon from '@mui/icons-material/Notifications';
@@ -37,7 +36,6 @@ const USER_NAV: NavItem[] = [
   { label: 'Panelim', href: ROUTES.DASHBOARD, icon: <DashboardIcon /> },
   { label: 'Favori Firmalar', href: ROUTES.FAVORITES + '?tab=companies', icon: <FavoriteIcon /> },
   { label: 'Favori Materyaller', href: ROUTES.FAVORITES + '?tab=materials', icon: <Inventory2Icon /> },
-  { label: 'Hesap Ayarları', href: '#', icon: <SettingsIcon /> },
 ];
 
 const COMPANY_NAV: NavItem[] = [
@@ -45,7 +43,6 @@ const COMPANY_NAV: NavItem[] = [
   { label: 'Firma Bilgileri', href: ROUTES.COMPANY_EDIT, icon: <BusinessIcon /> },
   { label: 'Malzemeler', href: ROUTES.COMPANY_MATERIALS, icon: <CategoryIcon /> },
   { label: 'Katalog', href: ROUTES.COMPANY_CATALOG, icon: <MenuBookIcon /> },
-  { label: 'Hesap Ayarları', href: '#', icon: <SettingsIcon /> },
 ];
 
 interface DashboardLayoutProps {
@@ -56,7 +53,15 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children, variant = 'user' }: DashboardLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, isLoading, logout } = useAuth();
+
+  React.useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace(`${ROUTES.LOGIN}?redirect=${encodeURIComponent(pathname)}`);
+    }
+  }, [isLoading, user, router, pathname]);
+
+  if (isLoading || !user) return null;
 
   const navItems = variant === 'company' ? COMPANY_NAV : USER_NAV;
   const initials = user?.role ? user.role.charAt(0) : 'U';
@@ -162,6 +167,8 @@ export default function DashboardLayout({ children, variant = 'user' }: Dashboar
         {/* Bottom Actions */}
         {variant === 'company' && (
           <Box
+            component={Link}
+            href={ROUTES.COMPANY_MATERIALS}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -176,11 +183,12 @@ export default function DashboardLayout({ children, variant = 'user' }: Dashboar
               fontSize: '0.875rem',
               cursor: 'pointer',
               justifyContent: 'center',
+              textDecoration: 'none',
               '& svg': { fontSize: '1.1rem' },
             }}
           >
             <AddIcon />
-            Yeni İlan Oluştur
+            Malzeme Ekle
           </Box>
         )}
 

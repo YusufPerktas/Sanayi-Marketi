@@ -31,12 +31,41 @@ public class CompanyApplicationController {
                 userId,
                 request.getType(),
                 request.getTargetCompanyId(),
-                request.getProposedCompanyName()
+                request.getProposedCompanyName(),
+                null, null, null, null, null, null, null
         );
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(applicationMapper.toResponseDTO(application));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<CompanyApplicationResponseDTO>> getAllApplications() {
+        List<CompanyApplicationResponseDTO> applications = applicationService.getAllApplications()
+                .stream()
+                .map(applicationMapper::toResponseDTO)
+                .toList();
+        return ResponseEntity.ok(applications);
+    }
+
+    @PostMapping("/reapply")
+    public ResponseEntity<CompanyApplicationResponseDTO> reapply(
+            @RequestBody Map<String, String> body,
+            @RequestAttribute("userId") Long userId) {
+
+        CompanyApplication application = applicationService.reapply(
+                userId,
+                body.get("proposedCompanyName"),
+                body.get("description"),
+                body.get("phone"),
+                body.get("companyEmail"),
+                body.get("website"),
+                body.get("city"),
+                body.get("district"),
+                body.get("fullAddress")
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(applicationMapper.toResponseDTO(application));
     }
 
     @GetMapping("/mine")

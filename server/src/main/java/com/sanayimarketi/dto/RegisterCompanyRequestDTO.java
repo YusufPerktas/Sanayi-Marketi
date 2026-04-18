@@ -23,5 +23,19 @@ public class RegisterCompanyRequestDTO {
 
     private String proposedCompanyName;
 
+    private String description;
+
+    private String phone;
+
+    private String companyEmail;
+
+    private String website;
+
+    private String city;
+
+    private String district;
+
+    private String fullAddress;
+
     private Long targetCompanyId;
 }

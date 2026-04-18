@@ -51,6 +51,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/companies/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/materials/**").permitAll()
                         // Admin-only endpoints
+                        .requestMatchers(HttpMethod.GET, "/api/company-applications").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/company-applications/pending").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/company-applications/*/approve").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/company-applications/*/reject").hasRole("ADMIN")

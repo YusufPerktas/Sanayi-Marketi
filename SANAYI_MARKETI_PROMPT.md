@@ -386,29 +386,33 @@ userId extraction pattern (used in controllers):
 API ENDPOINTS
 
 Auth (/api/auth):
-  POST   /register    -> 201 + { accessToken, userId, role } + Set-Cookie: refresh_token
-  POST   /login       -> 200 + { accessToken, userId, role } + Set-Cookie: refresh_token
-  POST   /refresh     -> 200 + { accessToken, userId, role } (reads refresh_token cookie)
-  POST   /logout      -> 200 + { message: "Logged out successfully" } (clears cookie)
+  POST   /register              -> 201 + { accessToken, userId, role } + Set-Cookie: refresh_token
+  POST   /register-company      -> 201 + { accessToken, userId, role } (atomic: User + CompanyApplication)
+  POST   /login                 -> 200 + { accessToken, userId, role } + Set-Cookie: refresh_token
+  POST   /refresh               -> 200 + { accessToken, userId, role } (reads refresh_token cookie)
+  POST   /logout                -> 200 + { message: "Logged out successfully" } (clears cookie)
 
 Companies (/api/companies):
   GET    /                      -> List all companies (paginated, filterable)
   GET    /{id}                  -> Company detail
   GET    /search?name=...       -> Fuzzy search by name
-  PUT    /{id}                  -> Update company (COMPANY_USER -> own only)
-  POST   /                      -> Submit new company application
+  PUT    /{id}                  -> Update company (COMPANY_USER -> own only, ownership checked)
 
-Company Materials (/api/companies/{companyId}/materials):
-  GET    /                      -> List company's materials
-  POST   /                      -> Add material (COMPANY_USER -> own only)
-  PUT    /{materialId}          -> Update price/role (COMPANY_USER -> own only)
-  DELETE /{materialId}          -> Remove material (COMPANY_USER -> own only)
+Company Users (/api/company-users):
+  GET    /me                    -> Returns Company for authenticated COMPANY_USER (via CompanyUser join)
+
+Company Materials (/api/materials/companies/...):
+  NOTE: Material endpoints live under /api/materials, NOT /api/companies
+  GET    /companies/{companyId}          -> List company's materials
+  POST   /companies/{companyId}          -> Add material to company (COMPANY_USER -> own only)
+  PUT    /companies/materials/{id}       -> Update price/role by CompanyMaterial row ID
+  DELETE /companies/materials/{id}       -> Remove material by CompanyMaterial row ID
 
 Materials (/api/materials):
   GET    /                      -> List materials (paginated)
   GET    /{id}                  -> Material detail + hierarchy
   GET    /search?name=...       -> Search materials
-  GET    /{id}/companies        -> Companies offering this material
+  GET    /{id}/suppliers        -> Companies offering this material (sorted by price)
 
 Favorites (/api/favorites):
   GET    /companies             -> User's favorite companies
@@ -419,11 +423,13 @@ Favorites (/api/favorites):
   DELETE /materials/{id}        -> Remove material from favorites
 
 Company Applications (/api/company-applications):
-  POST   /                      -> Submit application (COMPANY_USER)
-  GET    /                      -> List applications (ADMIN)
-  GET    /{id}                  -> Application detail
-  PUT    /{id}/approve          -> Approve (ADMIN)
-  PUT    /{id}/reject           -> Reject (ADMIN)
+  POST   /                      -> Submit application (legacy -- unused by current frontend)
+  POST   /reapply               -> Re-apply after rejection (PENDING_COMPANY_USER, creates new PENDING record)
+  GET    /                      -> List ALL applications (ADMIN only)
+  GET    /mine                  -> Latest application for authenticated user
+  GET    /pending               -> Pending applications only (ADMIN only)
+  PUT    /{id}/approve          -> Approve -> upgrades user role to COMPANY_USER (ADMIN only)
+  PUT    /{id}/reject           -> Reject with optional reason string (ADMIN only)
 
 Admin (/api/admin):  [TODO]
   POST   /companies/{id1}/{id2}/merge -> Merge duplicate companies
@@ -675,81 +681,107 @@ CURRENT PROJECT STATE
 
 Database:     COMPLETE & LOCKED
               PostgreSQL 18, schema: db.sql
+              Manual migrations applied:
+                ALTER TABLE company_applications ADD COLUMN rejection_reason TEXT;
+                ALTER TABLE company_applications ADD COLUMN IF NOT EXISTS description TEXT;
+                ALTER TABLE company_applications ADD COLUMN IF NOT EXISTS company_email VARCHAR(255);
+                ALTER TABLE company_applications ADD COLUMN IF NOT EXISTS website VARCHAR(255);
+                ALTER TABLE company_applications ADD COLUMN IF NOT EXISTS district VARCHAR(100);
+                ALTER TABLE company_applications ADD COLUMN IF NOT EXISTS full_address TEXT;
+              NOTE: Run these in pgAdmin before starting backend if not already applied.
 
 Backend:      RUNNING (Spring Boot Dashboard, port 8080)
               JWT Security: COMPLETE
               AdminController + ScraperService: DEFERRED
 
-              CRITICAL bugs (frontend blocked until fixed):
-                1. PENDING_COMPANY_USER missing from UserRole enum
-                   File: entity/enums/UserRole.java
-                   Fix:  Add PENDING_COMPANY_USER to the enum
+              All fixes COMPLETE as of 2026-04-18:
+                1. PENDING_COMPANY_USER added to UserRole enum                [DONE]
+                2. POST /api/auth/register-company endpoint added             [DONE]
+                3. CompanyApplicationController path fixed                    [DONE]
+                4. rejectApplication() accepts + persists reason              [DONE]
+                5. approveApplication() upgrades role to COMPANY_USER         [DONE]
+                6. GET /api/company-users/me endpoint added                   [DONE]
+                7. normalizedName set in MaterialService                      [DONE]
+                8. Pagination added to getAllCompanies + getAllMaterials       [DONE]
+                9. Company updateCompany() has ownership check                [DONE]
+                10. AdminInitializer.java: seeds admin@sanayimarketi.com      [DONE]
+                    Credentials: ADMIN_CREDENTIALS.md
+                11. RegisterRequestDTO: role field removed                    [DONE]
+                12. GlobalExceptionHandler: errors -> fieldErrors             [DONE]
+                13. GET /api/company-applications/mine added                  [DONE]
+                14. POST /api/company-applications/reapply added              [DONE]
+                    -- Checks last application is REJECTED before creating new PENDING
+                15. CompanyApplication entity expanded with new fields:       [DONE]
+                    description, phone, companyEmail, website, city, district, fullAddress
+                    Mapper + DTO + Service updated accordingly
 
-                2. POST /api/auth/register-company endpoint does not exist
-                   Frontend /company-apply calls this; currently gets 404
-                   Fix:  New endpoint in AuthController -- atomically create User
-                         (role=PENDING_COMPANY_USER) + CompanyApplication in one @Transactional
+              KNOWN PENDING (backend):
+                - Catalog upload: no endpoint exists for POST /api/companies/{id}/catalog
+                  Frontend catalog page simulates upload; must be implemented before catalog works
 
-                3. CompanyApplicationController path mismatch
-                   Controller uses @RequestMapping("/api/applications")
-                   Frontend calls /api/company-applications
-                   Fix:  Change @RequestMapping to "/api/company-applications"
-
-                4. rejectApplication() ignores rejection reason
-                   Frontend sends { reason: "..." } body; backend signature has no reason param
-                   Fix:  Add String reason param to rejectApplication(Long id, String reason)
-                         and persist it on the CompanyApplication entity
-
-              IMPORTANT gaps (feature incomplete):
-                5. GET /api/company-users/me endpoint does not exist
-                   CompanyUser entity + CompanyUserRepository exist but no controller/service uses them
-                   /company/manage, /company/edit, /company/materials cannot fetch the logged-in
-                   user's company -- pages use placeholder (hardcoded null) until this is added
-                   Fix:  New endpoint: read userId from @RequestAttribute, query company_users table,
-                         return Company data
-
-                6. approveApplication() does not upgrade user role
-                   Sets status=APPROVED but user remains PENDING_COMPANY_USER forever
-                   Fix:  After approval, set user.role = COMPANY_USER and save
-
-                7. normalizedName never set in MaterialService
-                   createMaterial() and updateMaterial() do not set normalizedName
-                   searchMaterials() queries normalizedName -> always returns empty results
-                   Fix:  Add material.setNormalizedName(name.toLowerCase().trim()) in both methods
-
-              Minor (non-blocking):
-                8. No pagination on getAllCompanies() / getAllMaterials() -- returns full table
-                   Fix:  Add Pageable parameter to service + repository methods
-                9. Company updateCompany() has no ownership check -- any COMPANY_USER can edit any firm
-                   Fix:  Compare JWT userId against company_users.user_id before allowing update
-
-Frontend:     COMPLETE (2026-04-17)
+Frontend:     COMPLETE + UPDATED (2026-04-18)
               Foundation:    Next.js 16.2.4 + React 19.2 + TypeScript, Axios, AuthContext, proxy.ts
               Design system: MUI theme, Manrope + Inter fonts, MD3 color tokens (colors.ts),
                              MainLayout, DashboardLayout, AdminLayout
               Services:      auth, company, material, favorite, companyApplication
-              All pages:     DONE (20 pages, 0 TypeScript errors)
+
+              All pages DONE (21 pages -- /admin/companies added):
                 - /                    home -- hero search + featured companies
-                - /login               role-based redirect after login
+                - /login               3-tab UI: Kullanıcı / Firma / Yönetici
                 - /register            BASIC_USER registration
                 - /companies           list + search + city filter + pagination
                 - /companies/[id]      detail tabs (Genel/Malzemeler/Katalog/Konum) + mailto
                 - /materials           list + search + pagination
                 - /materials/[id]      detail + sellers list
-                - /company-apply       PUBLIC form (graceful 404 until backend ready)
+                - /company-apply       PUBLIC -- 3 sections (Hesap/Firma/Konum)
+                                       fields: email, password, companyName, description,
+                                               phone, companyEmail, website, city, district
+                                       phone: Turkish auto-mask + validation
+                                       city: Select dropdown (81 Turkish cities)
+                                       FIXED: sends applicationType=MANUAL_NEW, aligns with backend DTO
                 - /dashboard           user dashboard -- favorites stats + CTA
                 - /favorites           favorite companies & materials with remove
                 - /application/status  PENDING / APPROVED / REJECTED status card
-                - /company/manage      company overview + quick actions + completeness widget
-                - /company/edit        company info edit form
-                - /company/materials   material table + add/edit/delete
-                - /company/catalog     drag-and-drop catalog upload (upload API pending)
+                                       REJECTED: shows rejection reason + full ReapplyForm
+                                       ReapplyForm: pre-fills all previous fields, posts to /reapply
+                - /company/manage      FIXED: fetches real company via GET /api/company-users/me
+                                       "Profili Görüntüle" links to /companies/{id}
+                                       "Son güncelleme" shows real createdAt date
+                - /company/edit        FIXED: pre-fills form with current company data
+                                       uses real company ID from getMe(); NOT hardcoded
+                - /company/materials   FIXED: uses real company ID from getMe()
+                                       FIXED: material API paths corrected (see company.service.ts)
+                                       FIXED: delete/update use CompanyMaterial row ID, not materialId
+                - /company/catalog     drag-and-drop upload UI (upload API backend pending)
                 - /admin               overview + recent applications table
-                - /admin/approvals     approve/reject with reason dialog (real API)
+                - /admin/approvals     FIXED: expandable rows show ALL application fields:
+                                         login email, phone, firm email, website, city+district, description
+                                         "Girilmedi" shown for empty optional fields
+                - /admin/companies     company list + search + status chip + "Görüntüle" link
                 - /admin/duplicates    side-by-side comparison + merge/deactivate (mock data)
                 - /admin/scraper       scraper UI only (backend deferred)
-                - /admin/statistics    stats cards + city distribution + popular materials (mock)
-              proxy.ts:      COMPLETE -- auth prefix matching fixed, /company-apply is public
+                - /admin/statistics    real data: company count, material count,
+                                       application breakdown + approval rate, city distribution
+
+              DashboardLayout changes:
+                - "Hesap Ayarları" REMOVED from nav (page does not exist; decision deferred)
+                - "Yeni İlan Oluştur" renamed "Malzeme Ekle", now links to /company/materials
+
+              company.service.ts changes:
+                - Added getMe() -> GET /api/company-users/me
+                - Added id field to CompanyMaterial interface
+                - Fixed getMaterials: /api/companies/{id}/materials -> /api/materials/companies/{id}
+                - Fixed addMaterial: same path fix
+                - Fixed updateMaterial: /api/materials/companies/materials/{id} (row ID, no companyId)
+                - Fixed deleteMaterial: same (row ID only)
+
+              KNOWN PENDING (frontend):
+                - /company/catalog: upload is simulated; no real API call until backend endpoint added
+                - /admin/duplicates: mock data only; merge/deactivate not wired to real API
+                - /admin/scraper: UI only (backend deferred)
+                - Hesap Ayarları: page not implemented; decision deferred
+
+              proxy.ts:      COMPLETE
 
 Data Scraper: DEFERRED
 Mobile:       OUT OF SCOPE
@@ -763,21 +795,32 @@ Phase 2: Frontend Setup & Auth           [DONE 2026-04-17]
 Phase 3: Design System & Layout          [DONE 2026-04-17]
 Phase 4: All Frontend Pages              [DONE 2026-04-17]
   - 20 pages, 4 services, proxy.ts updated, 0 TypeScript errors
+Phase 5: Backend Bug Fixes               [DONE 2026-04-18]
+  - All 9 bugs fixed, admin account seeded, ValidationErrorResponse aligned
+Phase 6: Company Application Flow + Firm Panel Fixes  [DONE 2026-04-18]
+  - /company-apply submit fixed (applicationType, field alignment)
+  - CompanyApplication entity expanded (description, phone, companyEmail, website, city, district, fullAddress)
+  - Re-apply flow implemented end-to-end
+  - Admin approvals shows all submitted fields
+  - Firm panel (manage/edit/materials) wired to real API, hardcoded IDs removed
+  - Material API paths corrected throughout
 
 ---
 
-NEXT PHASE: Backend Fixes
+NEXT SESSION: End-to-end testing + pending items
 
-Priority order (top = most blocking):
-  1. Add PENDING_COMPANY_USER to UserRole enum
-  2. POST /api/auth/register-company endpoint (atomic User + CompanyApplication)
-  3. Fix CompanyApplicationController path -> /api/company-applications
-  4. Add rejection reason to rejectApplication()
-  5. Approve: upgrade user role PENDING_COMPANY_USER -> COMPANY_USER
-  6. GET /api/company-users/me endpoint (for company management pages)
-  7. normalizedName fix in MaterialService (for material search)
-  8. Pagination on list endpoints
-  9. Company update ownership check
+Priority order:
+  1. Run DB migrations in pgAdmin (5 new columns on company_applications -- see DATABASE section)
+     Then restart backend and verify it starts without error
+  2. End-to-end test: /company-apply (all fields) -> PENDING_COMPANY_USER -> /application/status
+  3. End-to-end test: admin approve -> COMPANY_USER -> /company/manage (data loads correctly)
+  4. End-to-end test: admin reject + reason -> /application/status shows reason -> re-apply form works
+  5. End-to-end test: /company/edit pre-fills + saves correctly
+  6. End-to-end test: /company/materials add/edit/delete works with real company
+  7. Implement catalog upload backend endpoint (POST /api/companies/{id}/catalog)
+  8. Decide on "Hesap Ayarları" page (deferred)
+  9. /admin/duplicates: wire merge/deactivate to real API
+  10. Address remaining mock data in /admin/duplicates
 
 ---
 
@@ -809,9 +852,17 @@ DECISIONS LOG
 | UI design source        | Stitch HTML files in /stitch_sanayi_marketi_*/        | LOCKED  |
 | Color system            | MD3 tokens in src/utils/colors.ts                     | LOCKED  |
 | Fonts                   | Manrope (headlines) + Inter (body) via next/font      | LOCKED  |
+| Company apply fields    | city + district only (no fullAddress in apply forms)  | LOCKED  |
+|                         | Reason: fullAddress editable post-approval via /company/edit | |
+| Re-apply flow           | POST /reapply -- new PENDING record, old stays in DB  | LOCKED  |
+| Material API path       | /api/materials/companies/{id} (NOT /api/companies/*)  | LOCKED  |
+| CompanyMaterial update  | Uses row ID (CompanyMaterial.id), not materialId      | LOCKED  |
+| Hesap Ayarları page     | DEFERRED -- no page yet, removed from nav             | PENDING |
+| Catalog upload backend  | PENDING -- frontend UI exists, backend endpoint TODO  | PENDING |
+| Admin duplicates API    | PENDING -- UI exists, merge/deactivate not wired      | PENDING |
 
 ---
 
-Document version: 5.0
-Date: April 17, 2026
-Status: ACTIVE -- Design system complete, remaining pages in progress
+Document version: 7.0
+Date: April 18, 2026
+Status: ACTIVE -- Firm panel fully wired, re-apply flow complete, DB migration needed before next run

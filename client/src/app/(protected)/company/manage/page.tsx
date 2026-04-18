@@ -59,10 +59,7 @@ export default function CompanyManagePage() {
   // For now, we use a placeholder query that would need the company ID.
   const { data: company, isLoading } = useQuery<Company | null>({
     queryKey: ['my-company'],
-    queryFn: async () => {
-      // Placeholder — backend needs GET /api/company-users/me endpoint
-      return null;
-    },
+    queryFn: () => companyService.getMe(),
   });
 
   const completeness = company
@@ -98,16 +95,20 @@ export default function CompanyManagePage() {
             </Typography>
           </Box>
           <Typography sx={{ color: colors.outline, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            Son güncelleme: Yükleniyor...
+            {company ? `Oluşturulma: ${new Date(company.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}` : 'Yükleniyor...'}
           </Typography>
         </Box>
-        <Button
-          variant="outlined"
-          startIcon={<VisibilityIcon />}
-          sx={{ borderColor: 'rgba(195,198,215,0.3)', color: colors.primary }}
-        >
-          Profili Görüntüle
-        </Button>
+        {company && (
+          <Button
+            component={Link}
+            href={`/companies/${company.id}`}
+            variant="outlined"
+            startIcon={<VisibilityIcon />}
+            sx={{ borderColor: 'rgba(195,198,215,0.3)', color: colors.primary }}
+          >
+            Profili Görüntüle
+          </Button>
+        )}
       </Box>
 
       {/* Quick actions */}

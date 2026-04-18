@@ -30,9 +30,18 @@ const FOOTER_LINKS = [
   { label: 'SSS', href: '#' },
 ];
 
+function getDashboardRoute(role: string | undefined): string {
+  switch (role) {
+    case 'ADMIN': return ROUTES.ADMIN;
+    case 'COMPANY_USER': return ROUTES.COMPANY_MANAGE;
+    case 'PENDING_COMPANY_USER': return ROUTES.APPLICATION_STATUS;
+    default: return ROUTES.DASHBOARD;
+  }
+}
+
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: colors.surface }}>
@@ -102,7 +111,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             {isAuthenticated ? (
               <Button
                 component={Link}
-                href={ROUTES.DASHBOARD}
+                href={getDashboardRoute(user?.role)}
                 variant="contained"
                 size="small"
                 sx={{ px: 2.5, py: 1 }}

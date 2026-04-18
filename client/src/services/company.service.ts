@@ -21,6 +21,7 @@ export interface Company {
 }
 
 export interface CompanyMaterial {
+  id: number;
   companyId: number;
   materialId: number;
   materialName: string;
@@ -59,11 +60,14 @@ export const companyService = {
   getById: (id: number | string) =>
     apiClient.get<Company>(`/api/companies/${id}`).then((r) => r.data),
 
+  getMe: () =>
+    apiClient.get<Company>('/api/company-users/me').then((r) => r.data),
+
   search: (name: string) =>
     apiClient.get<Company[]>('/api/companies/search', { params: { name } }).then((r) => r.data),
 
   getMaterials: (companyId: number | string) =>
-    apiClient.get<CompanyMaterial[]>(`/api/companies/${companyId}/materials`).then((r) => r.data),
+    apiClient.get<CompanyMaterial[]>(`/api/materials/companies/${companyId}`).then((r) => r.data),
 
   update: (id: number | string, data: CompanyUpdateRequest) =>
     apiClient.put<Company>(`/api/companies/${id}`, data).then((r) => r.data),
@@ -73,18 +77,17 @@ export const companyService = {
     data: { materialId: number; role: 'PRODUCER' | 'SELLER' | 'BOTH'; price?: number },
   ) =>
     apiClient
-      .post<CompanyMaterial>(`/api/companies/${companyId}/materials`, data)
+      .post<CompanyMaterial>(`/api/materials/companies/${companyId}`, data)
       .then((r) => r.data),
 
   updateMaterial: (
-    companyId: number | string,
-    materialId: number | string,
+    id: number | string,
     data: { role?: 'PRODUCER' | 'SELLER' | 'BOTH'; price?: number },
   ) =>
     apiClient
-      .put<CompanyMaterial>(`/api/companies/${companyId}/materials/${materialId}`, data)
+      .put<CompanyMaterial>(`/api/materials/companies/materials/${id}`, data)
       .then((r) => r.data),
 
-  deleteMaterial: (companyId: number | string, materialId: number | string) =>
-    apiClient.delete(`/api/companies/${companyId}/materials/${materialId}`),
+  deleteMaterial: (id: number | string) =>
+    apiClient.delete(`/api/materials/companies/materials/${id}`),
 };

@@ -200,6 +200,6 @@ public class GlobalExceptionHandler {
             int status,
             String path,
             String timestamp,
-            Map<String, String> errors
+            Map<String, String> fieldErrors
     ) {}
 }

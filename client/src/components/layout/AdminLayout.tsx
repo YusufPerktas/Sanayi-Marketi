@@ -21,7 +21,7 @@ import { colors } from '@/utils/colors';
 const ADMIN_NAV = [
   { label: 'Genel Bakış', href: ROUTES.ADMIN, icon: <AnalyticsIcon /> },
   { label: 'Başvurular', href: ROUTES.ADMIN_APPROVALS, icon: <AssignmentIndIcon /> },
-  { label: 'Firmalar', href: ROUTES.COMPANIES, icon: <FactoryIcon /> },
+  { label: 'Firmalar', href: ROUTES.ADMIN_COMPANIES, icon: <FactoryIcon /> },
   { label: 'Duplikatlar', href: ROUTES.ADMIN_DUPLICATES, icon: <MergeIcon /> },
   { label: 'Scraper', href: ROUTES.ADMIN_SCRAPER, icon: <SmartToyIcon /> },
   { label: 'İstatistikler', href: ROUTES.ADMIN_STATISTICS, icon: <BarChartIcon /> },
