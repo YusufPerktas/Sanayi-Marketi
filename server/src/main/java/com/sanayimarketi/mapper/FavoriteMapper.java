@@ -1,22 +1,20 @@
 package com.sanayimarketi.mapper;
 
-import com.sanayimarketi.dto.FavoriteCompanyResponseDTO;
+import com.sanayimarketi.dto.CompanyResponseDTO;
 import com.sanayimarketi.dto.FavoriteMaterialResponseDTO;
 import com.sanayimarketi.entity.UserFavoriteCompany;
 import com.sanayimarketi.entity.UserFavoriteMaterial;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class FavoriteMapper {
 
-    public FavoriteCompanyResponseDTO toCompanyResponseDTO(UserFavoriteCompany favorite) {
-        return FavoriteCompanyResponseDTO.builder()
-                .companyId(favorite.getCompany().getId())
-                .companyName(favorite.getCompany().getCompanyName())
-                .city(favorite.getCompany().getCity())
-                .district(favorite.getCompany().getDistrict())
-                .favoritedAt(favorite.getCreatedAt())
-                .build();
+    private final CompanyMapper companyMapper;
+
+    public CompanyResponseDTO toCompanyResponseDTO(UserFavoriteCompany favorite) {
+        return companyMapper.toResponseDTO(favorite.getCompany());
     }
 
     public FavoriteMaterialResponseDTO toMaterialResponseDTO(UserFavoriteMaterial favorite) {

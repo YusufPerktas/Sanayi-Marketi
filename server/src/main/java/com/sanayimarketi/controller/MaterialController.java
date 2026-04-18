@@ -2,6 +2,7 @@ package com.sanayimarketi.controller;
 
 import com.sanayimarketi.dto.CompanyMaterialRequestDTO;
 import com.sanayimarketi.dto.CompanyMaterialResponseDTO;
+import com.sanayimarketi.dto.CompanyMaterialUpdateRequestDTO;
 import com.sanayimarketi.dto.MaterialCreateRequestDTO;
 import com.sanayimarketi.dto.MaterialResponseDTO;
 import com.sanayimarketi.dto.PagedResponseDTO;
@@ -138,7 +139,8 @@ public class MaterialController {
                 companyId,
                 request.getMaterialId(),
                 request.getRole(),
-                request.getPrice()
+                request.getPrice(),
+                request.getUnit()
         );
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(companyMaterialMapper.toResponseDTO(companyMaterial));
@@ -147,11 +149,12 @@ public class MaterialController {
     @PutMapping("/companies/materials/{id}")
     public ResponseEntity<CompanyMaterialResponseDTO> updateCompanyMaterial(
             @PathVariable Long id,
-            @Valid @RequestBody CompanyMaterialRequestDTO request) {
+            @Valid @RequestBody CompanyMaterialUpdateRequestDTO request) {
         CompanyMaterial companyMaterial = companyMaterialService.updateCompanyMaterial(
                 id,
                 request.getRole(),
-                request.getPrice()
+                request.getPrice(),
+                request.getUnit()
         );
         return ResponseEntity.ok(companyMaterialMapper.toResponseDTO(companyMaterial));
     }

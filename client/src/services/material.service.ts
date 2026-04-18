@@ -1,18 +1,26 @@
 import apiClient from './api/client';
-import type { PageResponse, Company } from './company.service';
+import type { PageResponse } from './company.service';
 
 export interface Material {
   id: number;
-  name: string;
+  materialName: string;
   normalizedName: string;
   parentMaterialId: number | null;
-  createdAt: string;
+  parentMaterialName: string | null;
 }
 
 export interface MaterialCompany {
-  company: Company;
+  id: number;
+  companyId: number;
+  companyName: string;
+  companyCity: string | null;
+  companyDistrict: string | null;
+  companyLogoUrl: string | null;
+  materialId: number;
+  materialName: string;
   role: 'PRODUCER' | 'SELLER' | 'BOTH';
   price: number | null;
+  unit: string | null;
 }
 
 export const materialService = {
@@ -25,6 +33,9 @@ export const materialService = {
   search: (name: string) =>
     apiClient.get<Material[]>('/api/materials/search', { params: { name } }).then((r) => r.data),
 
-  getCompanies: (id: number | string) =>
-    apiClient.get<MaterialCompany[]>(`/api/materials/${id}/companies`).then((r) => r.data),
+  getSuppliers: (id: number | string) =>
+    apiClient.get<MaterialCompany[]>(`/api/materials/${id}/suppliers`).then((r) => r.data),
+
+  create: (materialName: string, parentMaterialId?: number) =>
+    apiClient.post<Material>('/api/materials', { materialName, parentMaterialId }).then((r) => r.data),
 };

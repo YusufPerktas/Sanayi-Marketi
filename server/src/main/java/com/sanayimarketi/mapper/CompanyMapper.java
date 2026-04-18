@@ -23,6 +23,7 @@ public class CompanyMapper {
                 .latitude(company.getLatitude())
                 .longitude(company.getLongitude())
                 .googleMapsEmbedUrl(company.getGoogleMapsEmbedUrl())
+                .logoUrl(company.getLogoUrl())
                 .catalogFileUrl(company.getCatalogFileUrl())
                 .catalogFileType(company.getCatalogFileType())
                 .status(company.getStatus())
@@ -44,9 +45,6 @@ public class CompanyMapper {
                 .latitude(dto.getLatitude())
                 .longitude(dto.getLongitude())
                 .googleMapsEmbedUrl(dto.getGoogleMapsEmbedUrl())
-                .catalogFileUrl(dto.getCatalogFileUrl())
-                .catalogFileType(dto.getCatalogFileType())
-                .status(dto.getStatus())
                 .build();
     }
 }

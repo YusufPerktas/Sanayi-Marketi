@@ -18,9 +18,13 @@ public class CompanyMaterialResponseDTO {
     private Long id;
     private Long companyId;
     private String companyName;
+    private String companyCity;
+    private String companyDistrict;
+    private String companyLogoUrl;
     private Long materialId;
     private String materialName;
     private CompanyMaterialRole role;
     private BigDecimal price;
+    private String unit;
     private LocalDateTime createdAt;
 }

@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Box, Button, Container, Typography } from '@mui/material';
 import Link from 'next/link';
@@ -23,8 +25,8 @@ export default function NotFound() {
         <Typography variant="h5">Sayfa bulunamadı</Typography>
         <Button
           variant="contained"
+          component={Link}
           href={ROUTES.HOME}
-          LinkComponent={Link}
           sx={{ mt: 2 }}
         >
           Ana Sayfaya Dön

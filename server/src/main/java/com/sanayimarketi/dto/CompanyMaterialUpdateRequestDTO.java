@@ -14,15 +14,11 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CompanyMaterialRequestDTO {
-
-    @NotNull(message = "Material ID is required")
-    private Long materialId;
+public class CompanyMaterialUpdateRequestDTO {
 
     @NotNull(message = "Role is required")
     private CompanyMaterialRole role;
 
-    @NotNull(message = "Price is required")
     @DecimalMin(value = "0.00", message = "Price must be non-negative")
     private BigDecimal price;
 

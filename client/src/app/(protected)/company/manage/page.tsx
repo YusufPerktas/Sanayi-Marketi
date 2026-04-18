@@ -2,20 +2,23 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Box, Button, CircularProgress, LinearProgress, Typography } from '@mui/material';
+import { Box, Button, LinearProgress, Typography } from '@mui/material';
 import EditDocumentIcon from '@mui/icons-material/EditNote';
 import CategoryIcon from '@mui/icons-material/Category';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import HistoryIcon from '@mui/icons-material/History';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import EditIcon from '@mui/icons-material/Edit';
+import HowToRegIcon from '@mui/icons-material/HowToReg';
+import CategoryIcon2 from '@mui/icons-material/Inventory2';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import ImageIcon from '@mui/icons-material/Image';
 import { useQuery } from '@tanstack/react-query';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { companyService, Company } from '@/services/company.service';
-import { useAuth } from '@/context/useAuth';
 import { ROUTES } from '@/utils/constants';
 import { colors } from '@/utils/colors';
 
@@ -53,27 +56,18 @@ const QUICK_ACTIONS = [
 ];
 
 export default function CompanyManagePage() {
-  const { user } = useAuth();
-
-  // In a real scenario, we'd fetch the company linked to this user via a dedicated endpoint.
-  // For now, we use a placeholder query that would need the company ID.
   const { data: company, isLoading } = useQuery<Company | null>({
     queryKey: ['my-company'],
     queryFn: () => companyService.getMe(),
   });
 
-  const completeness = company
-    ? [
-        !!company.companyName,
-        !!company.phone,
-        !!company.email,
-        !!company.fullAddress,
-        !!company.catalogFileUrl,
-        !!company.description,
-      ].filter(Boolean).length
-    : 2;
-  const maxSteps = 6;
-  const completePct = Math.round((completeness / maxSteps) * 100);
+  const { data: materials } = useQuery({
+    queryKey: ['company-materials', company?.id],
+    queryFn: () => companyService.getMaterials(company!.id),
+    enabled: !!company?.id,
+  });
+
+  const hasMaterials = (materials?.length ?? 0) > 0;
 
   const completenessItems = [
     { label: 'Temel Bilgiler', done: true },
@@ -81,8 +75,12 @@ export default function CompanyManagePage() {
     { label: 'Adres', done: !!company?.fullAddress },
     { label: 'Firma Açıklaması', done: !!company?.description },
     { label: 'Ürün Kataloğu', done: !!company?.catalogFileUrl },
-    { label: 'Malzeme Listesi', done: false },
+    { label: 'Malzeme Listesi', done: hasMaterials },
   ];
+
+  const completeness = completenessItems.filter((i) => i.done).length;
+  const maxSteps = completenessItems.length;
+  const completePct = Math.round((completeness / maxSteps) * 100);
 
   return (
     <DashboardLayout variant="company">
@@ -184,25 +182,7 @@ export default function CompanyManagePage() {
             <HistoryIcon sx={{ color: colors.outline, fontSize: '1.2rem' }} />
             Son Aktiviteler
           </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {[
-              { icon: 'edit', color: colors.primary, title: 'Firma profili oluşturuldu', desc: 'Temel bilgiler kaydedildi.', time: 'Bugün' },
-              { icon: 'how_to_reg', color: colors.tertiary, title: 'Kayıt başvurusu oluşturuldu', desc: 'Sisteme ilk kayıt tamamlandı ve onaya gönderildi.', time: 'Dün' },
-            ].map((item, i) => (
-              <Box key={i} sx={{ display: 'flex', gap: 2.5 }}>
-                <Box sx={{ width: 40, height: 40, borderRadius: '50%', bgcolor: colors.surfaceContainerHighest, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, mt: 0.5 }}>
-                  <Box component="span" className="material-symbols-outlined" sx={{ fontSize: '1rem', color: item.color }}>
-                    {item.icon}
-                  </Box>
-                </Box>
-                <Box>
-                  <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: colors.onSurface }}>{item.title}</Typography>
-                  <Typography sx={{ fontSize: '0.8rem', color: colors.outline, mt: 0.5 }}>{item.desc}</Typography>
-                  <Typography sx={{ fontSize: '0.75rem', color: `${colors.outline}99`, mt: 1 }}>{item.time}</Typography>
-                </Box>
-              </Box>
-            ))}
-          </Box>
+          <ActivityLog company={company} materials={materials ?? []} />
         </Box>
 
         {/* Completeness */}
@@ -241,15 +221,106 @@ export default function CompanyManagePage() {
               </Box>
             ))}
           </Box>
-          <Button
-            component={Link}
-            href={ROUTES.COMPANY_EDIT}
-            sx={{ mt: 3, color: colors.primary, fontWeight: 700, fontSize: '0.875rem' }}
-          >
-            Eksikleri Tamamla
-          </Button>
+          {completePct < 100 && (
+            <Button
+              component={Link}
+              href={ROUTES.COMPANY_EDIT}
+              sx={{ mt: 3, color: colors.primary, fontWeight: 700, fontSize: '0.875rem' }}
+            >
+              Eksikleri Tamamla
+            </Button>
+          )}
         </Box>
       </Box>
     </DashboardLayout>
+  );
+}
+
+function formatDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function ActivityLog({ company, materials }: { company: Company | null | undefined; materials: import('@/services/company.service').CompanyMaterial[] }) {
+  if (!company) return null;
+
+  type ActivityItem = { icon: React.ReactNode; title: string; desc: string; date: Date };
+  const items: ActivityItem[] = [];
+
+  items.push({
+    icon: <HowToRegIcon sx={{ fontSize: '1rem', color: colors.tertiary }} />,
+    title: 'Firma kaydı oluşturuldu',
+    desc: 'Sisteme ilk kayıt tamamlandı ve onaya gönderildi.',
+    date: new Date(company.createdAt),
+  });
+
+  if (company.description || company.phone || company.email || company.fullAddress) {
+    items.push({
+      icon: <EditIcon sx={{ fontSize: '1rem', color: colors.primary }} />,
+      title: 'Firma bilgileri güncellendi',
+      desc: 'İletişim ve profil bilgileri düzenlendi.',
+      date: new Date(company.createdAt),
+    });
+  }
+
+  if (company.logoUrl) {
+    items.push({
+      icon: <ImageIcon sx={{ fontSize: '1rem', color: colors.secondary }} />,
+      title: 'Logo yüklendi',
+      desc: 'Firma logosu sisteme eklendi.',
+      date: new Date(company.createdAt),
+    });
+  }
+
+  if (company.catalogFileUrl) {
+    items.push({
+      icon: <MenuBookIcon sx={{ fontSize: '1rem', color: colors.tertiary }} />,
+      title: 'Ürün kataloğu yüklendi',
+      desc: `${company.catalogFileType ?? 'Dosya'} formatında katalog eklendi.`,
+      date: new Date(company.createdAt),
+    });
+  }
+
+  materials.slice(0, 3).forEach((m) => {
+    items.push({
+      icon: <CategoryIcon2 sx={{ fontSize: '1rem', color: colors.primary }} />,
+      title: `Malzeme eklendi: ${m.materialName}`,
+      desc: `Rol: ${m.role === 'PRODUCER' ? 'Üretici' : m.role === 'SELLER' ? 'Satıcı' : 'Her İkisi'}${m.unit ? ` · ${m.unit}` : ''}`,
+      date: new Date(m.createdAt),
+    });
+  });
+
+  if (materials.length > 3) {
+    items.push({
+      icon: <CategoryIcon2 sx={{ fontSize: '1rem', color: colors.outline }} />,
+      title: `+${materials.length - 3} malzeme daha eklendi`,
+      desc: `Toplam ${materials.length} malzeme listeleniyor.`,
+      date: new Date(materials[3].createdAt),
+    });
+  }
+
+  const sorted = items.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 6);
+
+  if (sorted.length === 0) {
+    return (
+      <Typography sx={{ fontSize: '0.875rem', color: colors.outline }}>Henüz aktivite yok.</Typography>
+    );
+  }
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+      {sorted.map((item, i) => (
+        <Box key={i} sx={{ display: 'flex', gap: 2.5 }}>
+          <Box sx={{ width: 36, height: 36, borderRadius: '50%', bgcolor: colors.surfaceContainerHighest, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {item.icon}
+          </Box>
+          <Box>
+            <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: colors.onSurface }}>{item.title}</Typography>
+            <Typography sx={{ fontSize: '0.8rem', color: colors.outline, mt: 0.3 }}>{item.desc}</Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: `${colors.outline}80`, mt: 0.5 }}>{formatDate(item.date.toISOString())}</Typography>
+          </Box>
+        </Box>
+      ))}
+    </Box>
   );
 }

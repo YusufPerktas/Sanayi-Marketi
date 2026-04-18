@@ -8,6 +8,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { colors } from '@/utils/colors';
+import { companyService } from '@/services/company.service';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const ALLOWED_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 const ALLOWED_EXT = '.pdf, .doc, .docx';
@@ -17,12 +19,33 @@ export default function CompanyCatalogPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [snack, setSnack] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  // Existing catalog from backend (placeholder — replace with useQuery when endpoint is ready)
-  const [existingCatalog] = useState<{ url: string; type: string; name: string } | null>(null);
+  const { data: company, isLoading } = useQuery({
+    queryKey: ['my-company'],
+    queryFn: () => companyService.getMe(),
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: (f: File) => companyService.uploadCatalog(company!.id, f),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-company'] });
+      setSnack('Katalog başarıyla yüklendi');
+      setFile(null);
+    },
+    onError: () => setError('Yükleme sırasında bir hata oluştu. Lütfen tekrar deneyin.'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => companyService.deleteCatalog(company!.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-company'] });
+      setSnack('Katalog silindi');
+    },
+    onError: () => setError('Silme işlemi başarısız. Lütfen tekrar deneyin.'),
+  });
 
   function validateFile(f: File): string | null {
     if (!ALLOWED_TYPES.includes(f.type)) return 'Sadece PDF, DOC veya DOCX dosyaları yüklenebilir.';
@@ -44,20 +67,13 @@ export default function CompanyCatalogPage() {
     if (f) handleSelect(f);
   }
 
-  async function handleUpload() {
-    if (!file) return;
-    setUploading(true);
-    try {
-      // TODO: implement catalog upload API endpoint
-      await new Promise((r) => setTimeout(r, 1500));
-      setSnack('Katalog başarıyla yüklendi');
-      setFile(null);
-    } catch {
-      setError('Yükleme sırasında bir hata oluştu. Lütfen tekrar deneyin.');
-    } finally {
-      setUploading(false);
-    }
-  }
+  const existingCatalog = company?.catalogFileUrl
+    ? {
+        url: `http://localhost:8080${company.catalogFileUrl}`,
+        type: company.catalogFileType ?? '',
+        name: company.catalogFileUrl.substring(company.catalogFileUrl.lastIndexOf('/') + 1),
+      }
+    : null;
 
   return (
     <DashboardLayout variant="company">
@@ -68,6 +84,12 @@ export default function CompanyCatalogPage() {
         <Typography sx={{ color: colors.onSurfaceVariant, mb: 5 }}>
           Firmanızın ürün kataloğunu yükleyin (PDF, DOC veya DOCX)
         </Typography>
+
+        {isLoading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress />
+          </Box>
+        )}
 
         {/* Existing catalog */}
         {existingCatalog && (
@@ -96,7 +118,14 @@ export default function CompanyCatalogPage() {
               <Button startIcon={<DownloadIcon />} component="a" href={existingCatalog.url} target="_blank" variant="outlined" size="small" sx={{ borderColor: 'rgba(195,198,215,0.3)', color: colors.primary }}>
                 İndir
               </Button>
-              <Button startIcon={<DeleteIcon />} color="error" size="small" variant="outlined">
+              <Button
+                startIcon={deleteMutation.isPending ? <CircularProgress size={14} color="inherit" /> : <DeleteIcon />}
+                color="error"
+                size="small"
+                variant="outlined"
+                disabled={deleteMutation.isPending}
+                onClick={() => deleteMutation.mutate()}
+              >
                 Sil
               </Button>
             </Box>
@@ -171,12 +200,12 @@ export default function CompanyCatalogPage() {
           variant="contained"
           fullWidth
           size="large"
-          startIcon={uploading ? <CircularProgress size={18} color="inherit" /> : <UploadFileIcon />}
-          disabled={!file || uploading}
-          onClick={handleUpload}
+          startIcon={uploadMutation.isPending ? <CircularProgress size={18} color="inherit" /> : <UploadFileIcon />}
+          disabled={!file || uploadMutation.isPending || !company}
+          onClick={() => file && uploadMutation.mutate(file)}
           sx={{ py: 1.75 }}
         >
-          {uploading ? 'Yükleniyor...' : 'Kataloğu Yükle'}
+          {uploadMutation.isPending ? 'Yükleniyor...' : 'Kataloğu Yükle'}
         </Button>
 
         <Box sx={{ mt: 3, p: 2.5, bgcolor: colors.surfaceContainerLow, borderRadius: 2 }}>

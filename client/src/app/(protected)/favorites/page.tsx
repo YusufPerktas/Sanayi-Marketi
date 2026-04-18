@@ -146,8 +146,12 @@ export default function FavoritesPage() {
                     <FavoriteIcon fontSize="small" />
                   </IconButton>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Box sx={{ width: 48, height: 48, bgcolor: colors.surfaceContainerLow, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <FactoryIcon sx={{ color: colors.onSurfaceVariant }} />
+                    <Box sx={{ width: 48, height: 48, bgcolor: colors.surfaceContainerLow, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                      {c.logoUrl ? (
+                        <img src={`http://localhost:8080${c.logoUrl}`} alt={c.companyName} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }} />
+                      ) : (
+                        <FactoryIcon sx={{ color: colors.onSurfaceVariant }} />
+                      )}
                     </Box>
                     <Box>
                       <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: colors.onSurface }}>{c.companyName}</Typography>
@@ -219,7 +223,7 @@ export default function FavoritesPage() {
                 <Box sx={{ width: 48, height: 48, bgcolor: colors.surfaceContainerLow, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Inventory2Icon sx={{ color: colors.onSurfaceVariant }} />
                 </Box>
-                <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: colors.onSurface }}>{m.name}</Typography>
+                <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: colors.onSurface }}>{m.materialName}</Typography>
                 <Button
                   component={Link}
                   href={ROUTES.MATERIAL_DETAIL(m.id)}

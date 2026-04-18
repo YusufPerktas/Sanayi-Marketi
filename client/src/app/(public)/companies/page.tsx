@@ -386,7 +386,7 @@ function CompanyCard({
         {isFav ? <FavoriteIcon /> : <FavoriteBorderIcon />}
       </IconButton>
 
-      {/* Logo placeholder */}
+      {/* Logo */}
       <Box
         sx={{
           width: 88,
@@ -398,9 +398,18 @@ function CompanyCard({
           alignItems: 'center',
           justifyContent: 'center',
           border: `1px solid rgba(195,198,215,0.15)`,
+          overflow: 'hidden',
         }}
       >
-        <FactoryIcon sx={{ color: colors.outline, fontSize: '2.5rem' }} />
+        {company.logoUrl ? (
+          <img
+            src={`http://localhost:8080${company.logoUrl}`}
+            alt={company.companyName}
+            style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '6px' }}
+          />
+        ) : (
+          <FactoryIcon sx={{ color: colors.outline, fontSize: '2.5rem' }} />
+        )}
       </Box>
 
       {/* Content */}

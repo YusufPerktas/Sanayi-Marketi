@@ -59,6 +59,9 @@ public class Company {
     @Column(name = "google_maps_embed_url", columnDefinition = "TEXT")
     private String googleMapsEmbedUrl;
 
+    @Column(name = "logo_url", columnDefinition = "TEXT")
+    private String logoUrl;
+
     @Column(name = "catalog_file_url", columnDefinition = "TEXT")
     private String catalogFileUrl;
 

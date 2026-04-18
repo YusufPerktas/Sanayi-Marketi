@@ -109,6 +109,14 @@ export default function CompanyDetailPage() {
 
   const location = [company.district, company.city].filter(Boolean).join(', ');
 
+  function extractMapSrc(value: string | null): string | null {
+    if (!value) return null;
+    if (value.trim().startsWith('http')) return value.trim();
+    const match = value.match(/src=["']([^"']+)["']/);
+    return match ? match[1] : null;
+  }
+  const mapSrc = extractMapSrc(company.googleMapsEmbedUrl);
+
   const TABS: { key: Tab; label: string }[] = [
     { key: 'general', label: 'Genel Bilgiler' },
     { key: 'materials', label: 'Malzemeler & Fiyatlar' },
@@ -154,9 +162,18 @@ export default function CompanyDetailPage() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,
+                    overflow: 'hidden',
                   }}
                 >
-                  <FactoryIcon sx={{ fontSize: '3rem', color: colors.outline }} />
+                  {company.logoUrl ? (
+                    <img
+                      src={`http://localhost:8080${company.logoUrl}`}
+                      alt={company.companyName}
+                      style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '8px' }}
+                    />
+                  ) : (
+                    <FactoryIcon sx={{ fontSize: '3rem', color: colors.outline }} />
+                  )}
                 </Box>
                 <Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1, flexWrap: 'wrap' }}>
@@ -353,7 +370,7 @@ export default function CompanyDetailPage() {
                               />
                             </TableCell>
                             <TableCell align="right" sx={{ fontWeight: 600, color: colors.onSurface }}>
-                              {m.price != null ? `${m.price.toLocaleString('tr-TR')} ₺` : '—'}
+                              {m.price != null ? `${m.price} ₺` : '—'}
                             </TableCell>
                           </TableRow>
                         );
@@ -429,13 +446,13 @@ export default function CompanyDetailPage() {
                   overflow: 'hidden',
                 }}
               >
-                {company.googleMapsEmbedUrl ? (
-                  <Box
-                    component="iframe"
-                    src={company.googleMapsEmbedUrl}
-                    sx={{ width: '100%', height: 400, border: 'none', display: 'block' }}
+                {mapSrc ? (
+                  <iframe
+                    src={mapSrc}
+                    style={{ width: '100%', height: 400, border: 'none', display: 'block' }}
                     loading="lazy"
                     allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
                   />
                 ) : (
                   <Box

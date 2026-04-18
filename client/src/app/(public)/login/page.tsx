@@ -72,6 +72,19 @@ export default function LoginPage() {
   const currentTab = tabs.find((t) => t.key === activeTab)!;
   const accent = tabAccent[activeTab];
 
+  const { user, isLoading } = useAuth();
+
+  React.useEffect(() => {
+    if (isLoading || !user) return;
+    if (redirectTo) { router.replace(redirectTo); return; }
+    switch (user.role) {
+      case USER_ROLES.ADMIN: router.replace(ROUTES.ADMIN); break;
+      case USER_ROLES.COMPANY_USER: router.replace(ROUTES.COMPANY_MANAGE); break;
+      case USER_ROLES.PENDING_COMPANY_USER: router.replace(ROUTES.APPLICATION_STATUS); break;
+      default: router.replace(ROUTES.DASHBOARD);
+    }
+  }, [isLoading, user, redirectTo, router]);
+
   function handleTabChange(tab: LoginTab) {
     setActiveTab(tab);
     setError(null);

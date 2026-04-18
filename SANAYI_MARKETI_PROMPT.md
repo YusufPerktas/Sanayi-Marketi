@@ -197,9 +197,16 @@ Materials
 
 Company-Material Relationship (junction table: company_materials)
 
-Fields: company_id, material_id, role (PRODUCER/SELLER/BOTH), price (>= 0), created_at
+Fields: company_id, material_id, role (PRODUCER/SELLER/BOTH), price DECIMAL(12,2) NOT NULL,
+        unit VARCHAR(50) (e.g. "Ton", "Kg", "m²"), created_at
 Unique constraint: (company_id, material_id)
 No stock quantity tracked. Catalog is company-level, not material-level.
+
+Materials creation policy (LOCKED 2026-04-19 — Option A):
+- Companies can create NEW materials directly (POST /api/materials requires auth only, not ADMIN)
+- Frontend: if search returns 0 results, shows "+ 'X' adıyla yeni malzeme oluştur" button
+- Admin can also create materials via the same endpoint
+- Global pool shared across all companies
 
 ---
 
@@ -680,15 +687,26 @@ Layout components:
 CURRENT PROJECT STATE
 
 Database:     COMPLETE & LOCKED
-              PostgreSQL 18, schema: db.sql
-              Manual migrations applied:
-                ALTER TABLE company_applications ADD COLUMN rejection_reason TEXT;
+              PostgreSQL 18, schema: db.sql (fully up to date as of 2026-04-19)
+              db.sql includes all columns (no separate migrations needed for a fresh install):
+                company_applications: description, phone, company_email, website,
+                                      city, district, full_address, rejection_reason
+                companies: logo_url
+                trigger approve_company_application: copies all application fields to new company
+
+              If upgrading an EXISTING database (not fresh), run these migrations in pgAdmin:
                 ALTER TABLE company_applications ADD COLUMN IF NOT EXISTS description TEXT;
+                ALTER TABLE company_applications ADD COLUMN IF NOT EXISTS phone VARCHAR(20);
                 ALTER TABLE company_applications ADD COLUMN IF NOT EXISTS company_email VARCHAR(255);
                 ALTER TABLE company_applications ADD COLUMN IF NOT EXISTS website VARCHAR(255);
+                ALTER TABLE company_applications ADD COLUMN IF NOT EXISTS city VARCHAR(100);
                 ALTER TABLE company_applications ADD COLUMN IF NOT EXISTS district VARCHAR(100);
                 ALTER TABLE company_applications ADD COLUMN IF NOT EXISTS full_address TEXT;
-              NOTE: Run these in pgAdmin before starting backend if not already applied.
+                ALTER TABLE company_applications ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
+                ALTER TABLE companies ADD COLUMN IF NOT EXISTS logo_url TEXT;
+                -- Also re-run the approve_company_application() trigger from db.sql
+                -- Added 2026-04-19:
+                ALTER TABLE company_materials ADD COLUMN IF NOT EXISTS unit VARCHAR(50);
 
 Backend:      RUNNING (Spring Boot Dashboard, port 8080)
               JWT Security: COMPLETE
@@ -716,10 +734,25 @@ Backend:      RUNNING (Spring Boot Dashboard, port 8080)
                     Mapper + DTO + Service updated accordingly
 
               KNOWN PENDING (backend):
-                - Catalog upload: no endpoint exists for POST /api/companies/{id}/catalog
-                  Frontend catalog page simulates upload; must be implemented before catalog works
+                - Catalog upload: DONE (2026-04-19) — POST /api/companies/{id}/catalog,
+                  DELETE /api/companies/{id}/catalog. Files saved to ${user.home}/sanayi-marketi-uploads/catalogs/
+                  Served via /uploads/catalogs/{companyId}/{filename}
+                - AdminController: DONE (2026-04-19) — POST /api/admin/companies/{primaryId}/merge/{secondaryId},
+                  PUT /api/admin/companies/{id}/status
+                - company_materials.unit: DONE (2026-04-19) — VARCHAR(50), optional
+                  CompanyMaterialRequestDTO: added String unit (optional)
+                  CompanyMaterialUpdateRequestDTO: NEW FILE — separate from Request DTO
+                    role (@NotNull), price (optional, no @NotNull), unit (optional)
+                    Reason: PUT update was failing @NotNull validation on materialId/price
+                  CompanyMaterialResponseDTO: added unit, companyCity, companyDistrict, companyLogoUrl
+                  CompanyMaterialMapper: maps all new fields from company entity
+                  CompanyMaterialService: addMaterialToCompany() + updateCompanyMaterial() accept String unit
+                  MaterialController: passes unit through; update endpoint uses CompanyMaterialUpdateRequestDTO
+                - CompanyService.updateCompany(): FIXED — no longer sets status/catalogFileUrl/catalogFileType
+                  These fields were being set to null (NOT NULL constraint breach on status)
+                  CompanyUpdateRequestDTO: removed status, catalogFileUrl, catalogFileType fields
 
-Frontend:     COMPLETE + UPDATED (2026-04-18)
+Frontend:     COMPLETE + UPDATED (2026-04-19 session 3)
               Foundation:    Next.js 16.2.4 + React 19.2 + TypeScript, Axios, AuthContext, proxy.ts
               Design system: MUI theme, Manrope + Inter fonts, MD3 color tokens (colors.ts),
                              MainLayout, DashboardLayout, AdminLayout
@@ -749,10 +782,22 @@ Frontend:     COMPLETE + UPDATED (2026-04-18)
                                        "Son güncelleme" shows real createdAt date
                 - /company/edit        FIXED: pre-fills form with current company data
                                        uses real company ID from getMe(); NOT hardcoded
-                - /company/materials   FIXED: uses real company ID from getMe()
-                                       FIXED: material API paths corrected (see company.service.ts)
-                                       FIXED: delete/update use CompanyMaterial row ID, not materialId
-                - /company/catalog     drag-and-drop upload UI (upload API backend pending)
+                                       FIXED (2026-04-18): phone masking (05XX XXX XX XX format)
+                                         submitted as raw 11 digits, validated starts with 05
+                                       FIXED (2026-04-18): city field is now Select dropdown
+                                         populated with all 81 TURKISH_CITIES; changing city resets district
+                                       Logo upload/delete section at top of form
+                - /company/materials   REDESIGNED (2026-04-19):
+                                       Add flow: search global pool → click → fill role/unit/price → Ekle
+                                       Option A: if 0 search results, shows "+ 'X' adıyla yeni malzeme oluştur"
+                                         → POST /api/materials → auto-selects the created material
+                                       Unit dropdown: Ton, Kg, Gram, Adet, Paket, Kutu, Metre, m², m³,
+                                                      Litre, Metreküp, cm, mm
+                                       Price shown as "21.500 TL / Ton" format
+                                       Table columns: Malzeme Adı / Rolü / Birim / Liste Fiyatı / İşlemler
+                                       Edit (update): uses CompanyMaterialUpdateRequestDTO — no @NotNull on price/materialId
+                                       Split search state: tableSearch (table filter) vs modalSearch (dialog)
+                - /company/catalog     DONE: real API upload/delete, query key fixed to 'my-company'
                 - /admin               overview + recent applications table
                 - /admin/approvals     FIXED: expandable rows show ALL application fields:
                                          login email, phone, firm email, website, city+district, description
@@ -766,6 +811,9 @@ Frontend:     COMPLETE + UPDATED (2026-04-18)
               DashboardLayout changes:
                 - "Hesap Ayarları" REMOVED from nav (page does not exist; decision deferred)
                 - "Yeni İlan Oluştur" renamed "Malzeme Ekle", now links to /company/materials
+                - Company variant header: shows company logo (if exists) + company name + "Firma Yöneticisi"
+                  Logo absent: BusinessIcon placeholder. Fetches via companyService.getMe() (queryKey: my-company)
+                - User variant header: initial avatar + "Hesabım" + "Standart Üye"
 
               company.service.ts changes:
                 - Added getMe() -> GET /api/company-users/me
@@ -774,12 +822,50 @@ Frontend:     COMPLETE + UPDATED (2026-04-18)
                 - Fixed addMaterial: same path fix
                 - Fixed updateMaterial: /api/materials/companies/materials/{id} (row ID, no companyId)
                 - Fixed deleteMaterial: same (row ID only)
+                - CompanyMaterial interface: added unit: string | null (2026-04-19)
+                - addMaterial + updateMaterial: accept unit?: string param (2026-04-19)
+
+              material.service.ts changes (2026-04-19):
+                - MaterialCompany interface: FLAT (companyId, companyName, companyCity, companyDistrict,
+                  companyLogoUrl, materialId, materialName, role, price, unit)
+                  NOT nested { company: Company } — backend returns flat CompanyMaterialResponseDTO
+                - Added create(materialName) -> POST /api/materials (for Option A)
+
+              /company/manage changes (2026-04-19):
+                - Profile completion: all items check real data (was partially hardcoded)
+                - Malzeme Listesi item: checks materials.length > 0 via real query
+                - Ürün Kataloğu item: checks company.catalogFileUrl (works now — query key unified)
+                - "Eksikleri Tamamla" button: hidden when completePct === 100
+                - Son Aktiviteler: derived from real entity data (company.createdAt, material.createdAt,
+                  presence of logo/catalog/description/phone), sorted newest first — NOT hardcoded
+
+              /companies/[id] changes (2026-04-19):
+                - Google Maps: extractMapSrc() parses both full <iframe> HTML and plain URL
+                - Uses plain <iframe> element (not Box component="iframe")
+                - Suppliers list: uses flat mc.companyCity, mc.companyDistrict, mc.companyId etc.
+                - Price shown as "X TL / Birim" format
+
+              /login changes (2026-04-19):
+                - Added useEffect: redirects already-logged-in users based on role
+                  ADMIN→/admin, COMPANY_USER→/company/manage, PENDING→/application/status, default→/dashboard
+
+              proxy.ts changes (2026-04-19):
+                - Removed role-based redirect when refresh_token present + path === /login
+                - proxy.ts cannot decode JWT to get role; redirect was always wrong for non-BASIC_USER
+
+              not-found.tsx (2026-04-19):
+                - Added 'use client' directive — Server Component cannot pass functions as props to MUI Button
+
+              CRITICAL — Query key consistency:
+                ALL company data queries must use queryKey: ['my-company']
+                catalog page was using ['company-me'] — caused profile completion to show wrong state
+                Rule: never use 'company-me' — always 'my-company'
 
               KNOWN PENDING (frontend):
-                - /company/catalog: upload is simulated; no real API call until backend endpoint added
-                - /admin/duplicates: mock data only; merge/deactivate not wired to real API
+                - /admin/duplicates: pair list is hardcoded mock data; backend duplicate detection deferred
                 - /admin/scraper: UI only (backend deferred)
                 - Hesap Ayarları: page not implemented; decision deferred
+                - materials/[id]: shows parentMaterialId as number, not name (minor cosmetic)
 
               proxy.ts:      COMPLETE
 
@@ -807,20 +893,56 @@ Phase 6: Company Application Flow + Firm Panel Fixes  [DONE 2026-04-18]
 
 ---
 
-NEXT SESSION: End-to-end testing + pending items
+NEXT SESSION: End-to-end testing + remaining items
 
-Priority order:
-  1. Run DB migrations in pgAdmin (5 new columns on company_applications -- see DATABASE section)
+Completed 2026-04-19 (session 3):
+  - company_materials.unit column: backend entity/DTO/service/mapper/controller all updated
+    DB: ALTER TABLE company_materials ADD COLUMN unit VARCHAR(50);
+  - CompanyMaterialUpdateRequestDTO: new separate DTO for PUT update (no @NotNull materialId/price)
+  - CompanyMaterialResponseDTO: added companyCity, companyDistrict, companyLogoUrl
+  - Option A materials: companies can create materials via POST /api/materials (auth only, not admin)
+    Frontend "create new" flow with inline button in search dialog
+  - Company materials page: unit dropdown, formatted price "21.500 TL / Ton", Birim table column
+  - DashboardLayout: company logo + company name in sidebar header
+  - Company manage: real profile completion logic, derived activity log, button hidden at 100%
+  - Catalog page query key fixed: 'company-me' → 'my-company' (all pages now consistent)
+  - Login page: role-based redirect for already-logged-in users
+  - proxy.ts: removed wrong role-based redirect (proxy can't decode JWT)
+  - not-found.tsx: 'use client' added
+  - Google Maps: extractMapSrc() helper, plain <iframe> element
+  - CompanyService.updateCompany(): no longer nullifies status/catalogFileUrl/catalogFileType
+  - material.service.ts: MaterialCompany interface changed to flat fields
+
+Completed 2026-04-19 (session 2):
+  - Company logo: POST/DELETE /api/companies/{id}/logo (files in ~/sanayi-marketi-uploads/logos/)
+    Served via /uploads/logos/{companyId}/{filename}
+    Frontend: /company/edit logo section, /companies list, /companies/[id] header, /favorites
+  - FavoriteController: now returns CompanyResponseDTO (full company data incl. logoUrl, description)
+  - approveApplication() fixed: uses saveAndFlush + post-trigger company update (no more double company creation)
+  - DB migration needed: ALTER TABLE companies ADD COLUMN IF NOT EXISTS logo_url TEXT;
+
+Completed 2026-04-19 (session 1):
+  - Catalog upload backend: POST /api/companies/{id}/catalog + DELETE
+    Files saved to ${user.home}/sanayi-marketi-uploads/catalogs/
+    Served via /uploads/catalogs/{companyId}/{filename}
+    WebConfig.java added for static resource serving
+    multipart config added to application.yml
+  - AdminController: merge + status-change endpoints
+  - Frontend catalog page: real API calls (useQuery + useMutation)
+  - Frontend admin/duplicates: merge/deactivate buttons wired to real API
+
+Priority order (next session):
+  1. Run DB migration if not done: ALTER TABLE company_materials ADD COLUMN IF NOT EXISTS unit VARCHAR(50);
      Then restart backend and verify it starts without error
   2. End-to-end test: /company-apply (all fields) -> PENDING_COMPANY_USER -> /application/status
   3. End-to-end test: admin approve -> COMPANY_USER -> /company/manage (data loads correctly)
   4. End-to-end test: admin reject + reason -> /application/status shows reason -> re-apply form works
   5. End-to-end test: /company/edit pre-fills + saves correctly
-  6. End-to-end test: /company/materials add/edit/delete works with real company
-  7. Implement catalog upload backend endpoint (POST /api/companies/{id}/catalog)
-  8. Decide on "Hesap Ayarları" page (deferred)
-  9. /admin/duplicates: wire merge/deactivate to real API
-  10. Address remaining mock data in /admin/duplicates
+  6. End-to-end test: /company/materials add (search existing + create new) / edit (role+unit+price) / delete
+  7. End-to-end test: /company/catalog upload + delete, profile completion reaches 100%
+  8. materials/[id]: show parentMaterialName instead of parentMaterialId (minor cosmetic fix)
+  9. Decide on "Hesap Ayarları" page (deferred)
+  10. Address remaining mock data in /admin/duplicates (backend duplicate detection deferred)
 
 ---
 
@@ -858,11 +980,23 @@ DECISIONS LOG
 | Material API path       | /api/materials/companies/{id} (NOT /api/companies/*)  | LOCKED  |
 | CompanyMaterial update  | Uses row ID (CompanyMaterial.id), not materialId      | LOCKED  |
 | Hesap Ayarları page     | DEFERRED -- no page yet, removed from nav             | PENDING |
-| Catalog upload backend  | PENDING -- frontend UI exists, backend endpoint TODO  | PENDING |
-| Admin duplicates API    | PENDING -- UI exists, merge/deactivate not wired      | PENDING |
+| Catalog upload backend  | DONE -- POST/DELETE /api/companies/{id}/catalog (2026-04-19) | LOCKED |
+| Admin duplicates API    | DONE -- merge/deactivate wired to real API (2026-04-19)      | LOCKED |
+| Company logo            | DONE -- POST/DELETE /api/companies/{id}/logo (2026-04-19)    | LOCKED |
+| company_materials.unit  | DONE -- unit VARCHAR(50) added (2026-04-19)                  | LOCKED |
+| Materials creation      | Option A -- companies create materials (auth only, not admin) | LOCKED |
+| CompanyMaterial update  | Uses CompanyMaterialUpdateRequestDTO (separate from add DTO)  | LOCKED |
+| Query key consistency   | ALL company queries use 'my-company' (never 'company-me')     | LOCKED |
+| proxy.ts role redirect  | REMOVED -- proxy can't decode JWT; redirect is client-side    | LOCKED |
+| DashboardLayout header  | Company: logo + companyName. User: initial + "Hesabım"        | LOCKED |
+| Profile completion      | Real data checks + "Eksikleri Tamamla" hidden at 100%         | LOCKED |
+| Son Aktiviteler         | Derived from entity timestamps (no activity log table)        | LOCKED |
+| Price display format    | "21.500 TL / Ton" format in materials table + suppliers list  | LOCKED |
 
 ---
 
-Document version: 7.0
-Date: April 18, 2026
-Status: ACTIVE -- Firm panel fully wired, re-apply flow complete, DB migration needed before next run
+Document version: 7.2
+Date: April 19, 2026
+Status: ACTIVE -- Materials + unit fully implemented, profile completion real, all major bugs fixed.
+        DB migration pending: ALTER TABLE company_materials ADD COLUMN IF NOT EXISTS unit VARCHAR(50);
+        Next: end-to-end testing all flows.

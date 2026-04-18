@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Manrope, Inter } from 'next/font/google';
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 import { Providers } from '@/components/layout/Providers';
 
 const manrope = Manrope({
@@ -25,7 +26,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="tr" className={`${manrope.variable} ${inter.variable}`}>
       <body style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
-        <Providers>{children}</Providers>
+        <AppRouterCacheProvider>
+          <Providers>{children}</Providers>
+        </AppRouterCacheProvider>
       </body>
     </html>
   );

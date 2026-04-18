@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -66,5 +67,39 @@ public class CompanyController {
                 .toList();
 
         return ResponseEntity.ok(companies);
+    }
+
+    @PostMapping("/{id}/logo")
+    public ResponseEntity<CompanyResponseDTO> uploadLogo(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file,
+            @RequestAttribute("userId") Long userId) {
+        Company updated = companyService.uploadLogo(id, file, userId);
+        return ResponseEntity.ok(companyMapper.toResponseDTO(updated));
+    }
+
+    @DeleteMapping("/{id}/logo")
+    public ResponseEntity<CompanyResponseDTO> deleteLogo(
+            @PathVariable Long id,
+            @RequestAttribute("userId") Long userId) {
+        Company updated = companyService.deleteLogo(id, userId);
+        return ResponseEntity.ok(companyMapper.toResponseDTO(updated));
+    }
+
+    @PostMapping("/{id}/catalog")
+    public ResponseEntity<CompanyResponseDTO> uploadCatalog(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file,
+            @RequestAttribute("userId") Long userId) {
+        Company updated = companyService.uploadCatalog(id, file, userId);
+        return ResponseEntity.ok(companyMapper.toResponseDTO(updated));
+    }
+
+    @DeleteMapping("/{id}/catalog")
+    public ResponseEntity<CompanyResponseDTO> deleteCatalog(
+            @PathVariable Long id,
+            @RequestAttribute("userId") Long userId) {
+        Company updated = companyService.deleteCatalog(id, userId);
+        return ResponseEntity.ok(companyMapper.toResponseDTO(updated));
     }
 }

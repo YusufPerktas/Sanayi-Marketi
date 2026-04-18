@@ -5,6 +5,12 @@ spring:
   application:
     name: server
 
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 20MB
+      max-request-size: 20MB
+
   datasource:
     url: jdbc:postgresql://localhost:5432/sanayi_marketi_db
     username: postgres
@@ -24,6 +30,14 @@ spring:
     secret: "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970"
     access-token-expiration: 900000
     refresh-token-expiration: 604800000
+
+catalog:
+  upload:
+    dir: ${user.home}/sanayi-marketi-uploads/catalogs
+
+logo:
+  upload:
+    dir: ${user.home}/sanayi-marketi-uploads/logos
 
 logging:
   level:

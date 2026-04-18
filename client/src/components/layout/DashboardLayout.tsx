@@ -8,8 +8,6 @@ import {
   Typography,
   Avatar,
   Divider,
-  IconButton,
-  Badge,
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -19,10 +17,11 @@ import MenuBookIcon from '@mui/icons-material/MenuBook';
 import CategoryIcon from '@mui/icons-material/Category';
 import LogoutIcon from '@mui/icons-material/Logout';
 import StorefrontIcon from '@mui/icons-material/Storefront';
-import NotificationsIcon from '@mui/icons-material/Notifications';
 import AddIcon from '@mui/icons-material/Add';
 import { useAuth } from '@/context/useAuth';
 import { authService } from '@/services/auth.service';
+import { companyService } from '@/services/company.service';
+import { useQuery } from '@tanstack/react-query';
 import { ROUTES, USER_ROLES } from '@/utils/constants';
 import { colors } from '@/utils/colors';
 
@@ -55,6 +54,12 @@ export default function DashboardLayout({ children, variant = 'user' }: Dashboar
   const router = useRouter();
   const { user, isLoading, logout } = useAuth();
 
+  const { data: myCompany } = useQuery({
+    queryKey: ['my-company'],
+    queryFn: () => companyService.getMe(),
+    enabled: variant === 'company' && !!user,
+  });
+
   React.useEffect(() => {
     if (!isLoading && !user) {
       router.replace(`${ROUTES.LOGIN}?redirect=${encodeURIComponent(pathname)}`);
@@ -64,9 +69,8 @@ export default function DashboardLayout({ children, variant = 'user' }: Dashboar
   if (isLoading || !user) return null;
 
   const navItems = variant === 'company' ? COMPANY_NAV : USER_NAV;
-  const initials = user?.role ? user.role.charAt(0) : 'U';
-  const displayName = 'Kullanıcı';
   const roleLabel = variant === 'company' ? 'Firma Yöneticisi' : 'Standart Üye';
+  const displayName = variant === 'company' ? (myCompany?.companyName ?? 'Firma') : 'Hesabım';
 
   async function handleLogout() {
     await authService.logout();
@@ -94,35 +98,60 @@ export default function DashboardLayout({ children, variant = 'user' }: Dashboar
           zIndex: 40,
         }}
       >
-        {/* User Header */}
+        {/* User / Company Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4, px: 0.5 }}>
-          <Avatar
+          <Box
             sx={{
-              bgcolor: colors.surfaceContainerHigh,
-              color: colors.primary,
-              fontFamily: 'var(--font-manrope)',
-              fontWeight: 700,
-              fontSize: '1.1rem',
               width: 48,
               height: 48,
               flexShrink: 0,
+              bgcolor: colors.surfaceContainerHigh,
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              border: `1px solid rgba(195,198,215,0.2)`,
             }}
           >
-            {initials}
-          </Avatar>
-          <Box>
+            {variant === 'company' && myCompany?.logoUrl ? (
+              <img
+                src={`http://localhost:8080${myCompany.logoUrl}`}
+                alt="logo"
+                style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }}
+              />
+            ) : (
+              <Avatar
+                sx={{
+                  bgcolor: 'transparent',
+                  color: colors.primary,
+                  fontFamily: 'var(--font-manrope)',
+                  fontWeight: 700,
+                  fontSize: '1.1rem',
+                  width: 48,
+                  height: 48,
+                }}
+              >
+                {variant === 'company' ? <BusinessIcon sx={{ fontSize: '1.4rem' }} /> : (user?.role?.charAt(0) ?? 'U')}
+              </Avatar>
+            )}
+          </Box>
+          <Box sx={{ minWidth: 0 }}>
             <Typography
               sx={{
                 fontFamily: 'var(--font-manrope)',
                 fontWeight: 700,
                 color: colors.onSurface,
-                fontSize: '1rem',
+                fontSize: '0.95rem',
                 lineHeight: 1.2,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
               }}
             >
               {displayName}
             </Typography>
-            <Typography sx={{ fontSize: '0.8rem', color: colors.outline }}>
+            <Typography sx={{ fontSize: '0.78rem', color: colors.outline }}>
               {roleLabel}
             </Typography>
           </Box>
@@ -266,13 +295,7 @@ export default function DashboardLayout({ children, variant = 'user' }: Dashboar
           >
             Sanayi Marketi
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton size="small" sx={{ color: colors.outline }}>
-              <Badge color="error" variant="dot">
-                <NotificationsIcon />
-              </Badge>
-            </IconButton>
-          </Box>
+          <Box />
         </Box>
 
         {/* Page Content */}

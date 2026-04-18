@@ -24,11 +24,6 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Zaten giriş yapmışken login/register sayfasına gitme
-  if (hasRefreshToken && (pathname === '/login' || pathname === '/register')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-
   // Not: COMPANY_USER / ADMIN rol kontrolü client tarafında RouteGuard
   // bileşeni ile yapılır. Proxy yalnızca temel auth varlığını kontrol eder.
 

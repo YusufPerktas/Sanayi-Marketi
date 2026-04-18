@@ -233,7 +233,7 @@ function MaterialCard({ material }: { material: Material }) {
           fontSize: '1rem',
         }}
       >
-        {material.name}
+        {material.materialName}
       </Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: colors.primary, fontSize: '0.8rem', fontWeight: 600 }}>
         <ArrowForwardIcon sx={{ fontSize: '0.9rem' }} />

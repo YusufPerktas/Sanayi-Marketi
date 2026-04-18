@@ -14,6 +14,7 @@ export interface Company {
   phone: string | null;
   email: string | null;
   website: string | null;
+  logoUrl: string | null;
   catalogFileUrl: string | null;
   catalogFileType: 'PDF' | 'DOC' | 'DOCX' | null;
   status: 'ACTIVE' | 'INACTIVE' | 'MERGED';
@@ -27,6 +28,7 @@ export interface CompanyMaterial {
   materialName: string;
   role: 'PRODUCER' | 'SELLER' | 'BOTH';
   price: number | null;
+  unit: string | null;
   createdAt: string;
 }
 
@@ -74,7 +76,7 @@ export const companyService = {
 
   addMaterial: (
     companyId: number | string,
-    data: { materialId: number; role: 'PRODUCER' | 'SELLER' | 'BOTH'; price?: number },
+    data: { materialId: number; role: 'PRODUCER' | 'SELLER' | 'BOTH'; price?: number; unit?: string },
   ) =>
     apiClient
       .post<CompanyMaterial>(`/api/materials/companies/${companyId}`, data)
@@ -82,7 +84,7 @@ export const companyService = {
 
   updateMaterial: (
     id: number | string,
-    data: { role?: 'PRODUCER' | 'SELLER' | 'BOTH'; price?: number },
+    data: { role?: 'PRODUCER' | 'SELLER' | 'BOTH'; price?: number; unit?: string },
   ) =>
     apiClient
       .put<CompanyMaterial>(`/api/materials/companies/materials/${id}`, data)
@@ -90,4 +92,26 @@ export const companyService = {
 
   deleteMaterial: (id: number | string) =>
     apiClient.delete(`/api/materials/companies/materials/${id}`),
+
+  uploadLogo: (companyId: number | string, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return apiClient.post<Company>(`/api/companies/${companyId}/logo`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data);
+  },
+
+  deleteLogo: (companyId: number | string) =>
+    apiClient.delete<Company>(`/api/companies/${companyId}/logo`).then((r) => r.data),
+
+  uploadCatalog: (companyId: number | string, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return apiClient.post<Company>(`/api/companies/${companyId}/catalog`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data);
+  },
+
+  deleteCatalog: (companyId: number | string) =>
+    apiClient.delete<Company>(`/api/companies/${companyId}/catalog`).then((r) => r.data),
 };

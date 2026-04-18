@@ -39,6 +39,9 @@ public class CompanyMaterial {
     @Column(name = "price", nullable = false, precision = 12, scale = 2)
     private BigDecimal price;
 
+    @Column(name = "unit", length = 50)
+    private String unit;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

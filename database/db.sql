@@ -66,6 +66,8 @@ CREATE TABLE companies (
   longitude DECIMAL(9,6),
   google_maps_embed_url TEXT,
 
+  logo_url TEXT,
+
   catalog_file_url TEXT,
   catalog_file_type VARCHAR(10),
 
@@ -82,6 +84,14 @@ CREATE TABLE company_applications (
 
   target_company_id BIGINT REFERENCES companies(id) ON DELETE SET NULL,
   proposed_company_name VARCHAR(255),
+
+  description TEXT,
+  phone VARCHAR(20),
+  company_email VARCHAR(255),
+  website VARCHAR(255),
+  city VARCHAR(100),
+  district VARCHAR(100),
+  full_address TEXT,
 
   status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
   rejection_reason TEXT,
@@ -194,10 +204,23 @@ RETURNS TRIGGER AS $$
 BEGIN
   IF NEW.status = 'APPROVED' AND OLD.status = 'PENDING' THEN
 
-    -- Create new company if needed
+    -- Create new company with all submitted fields
     IF NEW.application_type IN ('MANUAL_NEW', 'AUTO_IMPORTED') THEN
-      INSERT INTO companies (company_name, status)
-      VALUES (NEW.proposed_company_name, 'ACTIVE')
+      INSERT INTO companies (
+        company_name, description, phone, email, website,
+        city, district, full_address, status
+      )
+      VALUES (
+        NEW.proposed_company_name,
+        NEW.description,
+        NEW.phone,
+        NEW.company_email,
+        NEW.website,
+        NEW.city,
+        NEW.district,
+        NEW.full_address,
+        'ACTIVE'
+      )
       RETURNING id INTO NEW.target_company_id;
     END IF;
 

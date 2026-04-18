@@ -9,6 +9,7 @@ import com.sanayimarketi.entity.enums.UserRole;
 import com.sanayimarketi.exception.ResourceNotFoundException;
 import com.sanayimarketi.repository.CompanyApplicationRepository;
 import com.sanayimarketi.repository.CompanyRepository;
+import com.sanayimarketi.repository.CompanyUserRepository;
 import com.sanayimarketi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class CompanyApplicationService {
     private final CompanyApplicationRepository applicationRepository;
     private final UserRepository userRepository;
     private final CompanyRepository companyRepository;
+    private final CompanyUserRepository companyUserRepository;
 
     @Transactional
     public CompanyApplication submitApplication(Long userId, CompanyApplicationType type,
@@ -76,12 +78,29 @@ public class CompanyApplicationService {
         }
 
         application.setStatus(CompanyApplicationStatus.APPROVED);
-        applicationRepository.save(application);
+        // saveAndFlush ensures the DB trigger fires immediately within this transaction.
+        // The trigger creates the company (MANUAL_NEW) and company_users row.
+        applicationRepository.saveAndFlush(application);
 
-        // Upgrade user role from PENDING_COMPANY_USER to COMPANY_USER
         User user = application.getUser();
         user.setRole(UserRole.COMPANY_USER);
         userRepository.save(user);
+
+        // For MANUAL_NEW/AUTO_IMPORTED: trigger created a bare company (name+status only).
+        // Update it now with the additional fields from the application.
+        if (application.getApplicationType() != CompanyApplicationType.MANUAL_EXISTING) {
+            companyUserRepository.findByUserId(user.getId()).ifPresent(cu -> {
+                Company company = cu.getCompany();
+                if (application.getDescription() != null) company.setDescription(application.getDescription());
+                if (application.getPhone() != null) company.setPhone(application.getPhone());
+                if (application.getCompanyEmail() != null) company.setEmail(application.getCompanyEmail());
+                if (application.getWebsite() != null) company.setWebsite(application.getWebsite());
+                if (application.getCity() != null) company.setCity(application.getCity());
+                if (application.getDistrict() != null) company.setDistrict(application.getDistrict());
+                if (application.getFullAddress() != null) company.setFullAddress(application.getFullAddress());
+                companyRepository.save(company);
+            });
+        }
 
         return application;
     }

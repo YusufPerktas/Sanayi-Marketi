@@ -1,7 +1,5 @@
 package com.sanayimarketi.dto;
 
-import com.sanayimarketi.entity.enums.CatalogFileType;
-import com.sanayimarketi.entity.enums.CompanyStatus;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -48,7 +46,4 @@ public class CompanyUpdateRequestDTO {
     private BigDecimal latitude;
     private BigDecimal longitude;
     private String googleMapsEmbedUrl;
-    private String catalogFileUrl;
-    private CatalogFileType catalogFileType;
-    private CompanyStatus status;
 }

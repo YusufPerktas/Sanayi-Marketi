@@ -29,6 +29,7 @@ public class CompanyResponseDTO {
     private BigDecimal latitude;
     private BigDecimal longitude;
     private String googleMapsEmbedUrl;
+    private String logoUrl;
     private String catalogFileUrl;
     private CatalogFileType catalogFileType;
     private CompanyStatus status;

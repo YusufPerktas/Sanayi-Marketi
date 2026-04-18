@@ -178,7 +178,7 @@ export default function AdminScraperPage() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
                 <Box sx={{ textAlign: 'center' }}>
                   <Typography sx={{ fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: '1.25rem', color: colors.onSurface, lineHeight: 1 }}>
-                    {s.records.toLocaleString('tr-TR')}
+                    {s.records}
                   </Typography>
                   <Typography sx={{ fontSize: '0.7rem', color: colors.outline }}>kayıt</Typography>
                 </Box>

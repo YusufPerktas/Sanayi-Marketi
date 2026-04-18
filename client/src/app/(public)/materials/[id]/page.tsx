@@ -18,7 +18,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import FactoryIcon from '@mui/icons-material/Factory';
 import { useQuery } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
-import { materialService } from '@/services/material.service';
+import { materialService, MaterialCompany } from '@/services/material.service';
 import { ROUTES } from '@/utils/constants';
 import { colors } from '@/utils/colors';
 
@@ -39,7 +39,7 @@ export default function MaterialDetailPage() {
 
   const { data: sellers, isLoading: loadingSellers } = useQuery({
     queryKey: ['material-companies', id],
-    queryFn: () => materialService.getCompanies(id),
+    queryFn: () => materialService.getSuppliers(id),
     enabled: !!id,
   });
 
@@ -80,7 +80,7 @@ export default function MaterialDetailPage() {
             Malzemeler
           </Button>
           <Typography sx={{ color: colors.outline }}>/</Typography>
-          <Typography sx={{ color: colors.onSurfaceVariant }}>{material.name}</Typography>
+          <Typography sx={{ color: colors.onSurfaceVariant }}>{material.materialName}</Typography>
         </Box>
 
         {/* Material header */}
@@ -121,7 +121,7 @@ export default function MaterialDetailPage() {
                 mb: 0.5,
               }}
             >
-              {material.name}
+              {material.materialName}
             </Typography>
             {material.parentMaterialId && (
               <Typography sx={{ fontSize: '0.875rem', color: colors.onSurfaceVariant }}>
@@ -145,7 +145,7 @@ export default function MaterialDetailPage() {
             Bu Malzemeyi Sunan Firmalar
           </Typography>
           <Typography sx={{ color: colors.onSurfaceVariant, fontSize: '0.9rem', mb: 3 }}>
-            {material.name} malzemesini üreten veya satan tedarikçiler
+            {material.materialName} malzemesini üreten veya satan tedarikçiler
           </Typography>
         </Box>
 
@@ -173,12 +173,15 @@ export default function MaterialDetailPage() {
         )}
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          {sellers?.map((mc) => {
+          {sellers?.map((mc: MaterialCompany) => {
             const role = ROLE_CHIP[mc.role] ?? ROLE_CHIP.BOTH;
-            const loc = [mc.company.district, mc.company.city].filter(Boolean).join(', ');
+            const loc = [mc.companyDistrict, mc.companyCity].filter(Boolean).join(', ');
+            const priceLabel = mc.price != null
+              ? `${mc.price} TL${mc.unit ? ` / ${mc.unit}` : ''}`
+              : null;
             return (
               <Box
-                key={mc.company.id}
+                key={mc.id}
                 sx={{
                   bgcolor: colors.surfaceContainerLowest,
                   borderRadius: 3,
@@ -201,14 +204,19 @@ export default function MaterialDetailPage() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,
+                    overflow: 'hidden',
                   }}
                 >
-                  <FactoryIcon sx={{ color: colors.outline }} />
+                  {mc.companyLogoUrl ? (
+                    <img src={`http://localhost:8080${mc.companyLogoUrl}`} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }} />
+                  ) : (
+                    <FactoryIcon sx={{ color: colors.outline }} />
+                  )}
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5, flexWrap: 'wrap' }}>
                     <Typography sx={{ fontFamily: 'var(--font-manrope)', fontWeight: 700, color: colors.onSurface }}>
-                      {mc.company.companyName}
+                      {mc.companyName}
                     </Typography>
                     <Chip
                       label={role.label}
@@ -224,14 +232,14 @@ export default function MaterialDetailPage() {
                   )}
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0, flexWrap: 'wrap' }}>
-                  {mc.price != null && (
+                  {priceLabel && (
                     <Typography sx={{ fontWeight: 700, color: colors.onSurface, fontSize: '1.1rem' }}>
-                      {mc.price.toLocaleString('tr-TR')} ₺
+                      {priceLabel}
                     </Typography>
                   )}
                   <Button
                     component={Link}
-                    href={ROUTES.COMPANY_DETAIL(mc.company.id)}
+                    href={ROUTES.COMPANY_DETAIL(mc.companyId)}
                     variant="contained"
                     endIcon={<ArrowForwardIcon />}
                     size="small"

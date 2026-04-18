@@ -30,7 +30,7 @@ export default function DashboardPage() {
 
   const recentFavs = [
     ...(favCompanies?.slice(0, 2).map((c) => ({ type: 'company' as const, id: c.id, name: c.companyName, href: ROUTES.COMPANY_DETAIL(c.id) })) ?? []),
-    ...(favMaterials?.slice(0, 2).map((m) => ({ type: 'material' as const, id: m.id, name: m.name, href: ROUTES.MATERIAL_DETAIL(m.id) })) ?? []),
+    ...(favMaterials?.slice(0, 2).map((m) => ({ type: 'material' as const, id: m.id, name: m.materialName, href: ROUTES.MATERIAL_DETAIL(m.id) })) ?? []),
   ].slice(0, 3);
 
   return (

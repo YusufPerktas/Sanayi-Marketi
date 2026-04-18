@@ -41,7 +41,7 @@ public class CompanyMaterialService {
     }
 
     @Transactional
-    public CompanyMaterial addMaterialToCompany(Long companyId, Long materialId, CompanyMaterialRole role, BigDecimal price) {
+    public CompanyMaterial addMaterialToCompany(Long companyId, Long materialId, CompanyMaterialRole role, BigDecimal price, String unit) {
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Company", companyId));
 
@@ -57,16 +57,18 @@ public class CompanyMaterialService {
                 .material(material)
                 .role(role)
                 .price(price)
+                .unit(unit)
                 .build();
 
         return companyMaterialRepository.save(companyMaterial);
     }
 
     @Transactional
-    public CompanyMaterial updateCompanyMaterial(Long id, CompanyMaterialRole role, BigDecimal price) {
+    public CompanyMaterial updateCompanyMaterial(Long id, CompanyMaterialRole role, BigDecimal price, String unit) {
         CompanyMaterial companyMaterial = getCompanyMaterialById(id);
         companyMaterial.setRole(role);
         companyMaterial.setPrice(price);
+        companyMaterial.setUnit(unit);
         return companyMaterialRepository.save(companyMaterial);
     }
 
