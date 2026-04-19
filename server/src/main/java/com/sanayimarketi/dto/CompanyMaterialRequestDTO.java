@@ -22,7 +22,6 @@ public class CompanyMaterialRequestDTO {
     @NotNull(message = "Role is required")
     private CompanyMaterialRole role;
 
-    @NotNull(message = "Price is required")
     @DecimalMin(value = "0.00", message = "Price must be non-negative")
     private BigDecimal price;
 

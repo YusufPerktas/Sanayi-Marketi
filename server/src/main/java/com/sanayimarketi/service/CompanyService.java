@@ -35,8 +35,13 @@ public class CompanyService {
     @Value("${logo.upload.dir}")
     private String logoUploadDir;
 
-    public Page<Company> getAllCompanies(Pageable pageable) {
-        return companyRepository.findAll(pageable);
+    public Page<Company> getAllCompanies(String name, String city, Pageable pageable) {
+        String n = (name != null && !name.isBlank()) ? name.trim() : null;
+        String c = (city != null && !city.isBlank()) ? city.trim() : null;
+        if (n == null && c == null) {
+            return companyRepository.findAll(pageable);
+        }
+        return companyRepository.findFiltered(n, c, pageable);
     }
 
     public List<Company> getCompaniesByStatus(CompanyStatus status) {

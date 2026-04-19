@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import {
   Box,
   Button,
@@ -27,20 +26,18 @@ import MainLayout from '@/components/layout/MainLayout';
 import { companyService, Company } from '@/services/company.service';
 import { favoriteService } from '@/services/favorite.service';
 import { useAuth } from '@/context/useAuth';
-import { ROUTES } from '@/utils/constants';
+import { ROUTES, TURKISH_CITIES } from '@/utils/constants';
 import { colors } from '@/utils/colors';
 
-const CITIES = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Kocaeli', 'Antalya', 'Gaziantep'];
 const SORT_OPTIONS = [
-  { value: 'relevance', label: 'En İlgili' },
-  { value: 'name_asc', label: 'İsme Göre (A-Z)' },
-  { value: 'newest', label: 'En Yeni' },
+  { value: 'companyName:asc', label: 'İsme Göre (A-Z)' },
+  { value: 'createdAt:desc', label: 'En Yeni' },
 ];
 
-const ROLE_LABEL: Record<string, { label: string; color: string; bg: string }> = {
-  PRODUCER: { label: 'Üretici', color: colors.primary, bg: `${colors.primaryFixed}` },
-  SELLER: { label: 'Satıcı', color: colors.tertiary, bg: `${colors.tertiaryFixed}` },
-  BOTH: { label: 'Her İkisi', color: colors.secondary, bg: `${colors.secondaryFixed}` },
+const STATUS_CHIP: Record<string, { label: string; color: string; bg: string }> = {
+  ACTIVE:   { label: 'Aktif',          color: '#166534', bg: '#dcfce7' },
+  INACTIVE: { label: 'Pasif',          color: '#92400e', bg: '#fef3c7' },
+  MERGED:   { label: 'Birleştirildi',  color: colors.outline, bg: colors.surfaceContainerHigh },
 };
 
 export default function CompaniesPage() {
@@ -50,13 +47,23 @@ export default function CompaniesPage() {
 
   const [query, setQuery] = useState(searchParams.get('q') ?? '');
   const [city, setCity] = useState('');
+  const [sort, setSort] = useState('companyName:asc');
   const [page, setPage] = useState(0);
   const [favIds, setFavIds] = useState<Set<number>>(new Set());
 
+  const [sortBy, sortDir] = sort.split(':');
+
   const { data, isLoading } = useQuery({
-    queryKey: ['companies', query, city, page],
+    queryKey: ['companies', query, city, sort, page],
     queryFn: () =>
-      companyService.getAll({ page, size: 10, ...(query && { q: query }), ...(city && { city }) }),
+      companyService.getAll({
+        page,
+        size: 10,
+        ...(query && { name: query }),
+        ...(city && { city }),
+        sortBy,
+        sortDir,
+      }),
   });
 
   const { data: favCompanies } = useQuery({
@@ -72,7 +79,6 @@ export default function CompaniesPage() {
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     setPage(0);
-    router.replace(`${ROUTES.COMPANIES}?q=${encodeURIComponent(query)}`);
   }
 
   async function toggleFav(e: React.MouseEvent, company: Company) {
@@ -197,7 +203,7 @@ export default function CompaniesPage() {
                     sx={{ bgcolor: colors.surfaceContainerLow, '& fieldset': { border: 'none' } }}
                   >
                     <MenuItem value="">Tüm Şehirler</MenuItem>
-                    {CITIES.map((c) => (
+                    {TURKISH_CITIES.map((c) => (
                       <MenuItem key={c} value={c}>{c}</MenuItem>
                     ))}
                   </Select>
@@ -220,7 +226,8 @@ export default function CompaniesPage() {
                 </Typography>
                 <FormControl fullWidth size="small">
                   <Select
-                    defaultValue="relevance"
+                    value={sort}
+                    onChange={(e) => { setSort(e.target.value); setPage(0); }}
                     sx={{ bgcolor: colors.surfaceContainerLow, '& fieldset': { border: 'none' } }}
                   >
                     {SORT_OPTIONS.map((o) => (
@@ -350,12 +357,13 @@ function CompanyCard({
   isFav: boolean;
   onToggleFav: (e: React.MouseEvent) => void;
 }) {
+  const router = useRouter();
   const location = [company.district, company.city].filter(Boolean).join(', ');
+  const statusCfg = STATUS_CHIP[company.status] ?? STATUS_CHIP.ACTIVE;
 
   return (
     <Box
-      component={Link}
-      href={ROUTES.COMPANY_DETAIL(company.id)}
+      onClick={() => router.push(ROUTES.COMPANY_DETAIL(company.id))}
       sx={{
         bgcolor: colors.surfaceContainerLowest,
         borderRadius: 3,
@@ -365,7 +373,7 @@ function CompanyCard({
         display: 'flex',
         gap: 3,
         position: 'relative',
-        textDecoration: 'none',
+        cursor: 'pointer',
         transition: 'box-shadow 0.2s',
         '&:hover': { boxShadow: colors.shadow },
         flexDirection: { xs: 'column', md: 'row' },
@@ -426,11 +434,11 @@ function CompanyCard({
             {company.companyName}
           </Typography>
           <Chip
-            label="Aktif"
+            label={statusCfg.label}
             size="small"
             sx={{
-              bgcolor: `${colors.tertiaryFixed}`,
-              color: colors.tertiary,
+              bgcolor: statusCfg.bg,
+              color: statusCfg.color,
               fontWeight: 700,
               fontSize: '0.65rem',
               textTransform: 'uppercase',
@@ -479,9 +487,7 @@ function CompanyCard({
           variant="contained"
           endIcon={<ArrowForwardIcon />}
           sx={{ px: 3, py: 1.5 }}
-          onClick={(e) => e.stopPropagation()}
-          component={Link}
-          href={ROUTES.COMPANY_DETAIL(company.id)}
+          onClick={(e) => { e.stopPropagation(); router.push(ROUTES.COMPANY_DETAIL(company.id)); }}
         >
           Profili Gör
         </Button>

@@ -36,7 +36,7 @@ public class CompanyMaterial {
     @Column(name = "role", nullable = false, length = 20)
     private CompanyMaterialRole role;
 
-    @Column(name = "price", nullable = false, precision = 12, scale = 2)
+    @Column(name = "price", precision = 12, scale = 2)
     private BigDecimal price;
 
     @Column(name = "unit", length = 50)

@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,9 +27,16 @@ public class CompanyController {
 
     @GetMapping
     public ResponseEntity<PagedResponseDTO<CompanyResponseDTO>> getAllCompanies(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String city,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        Page<Company> companyPage = companyService.getAllCompanies(PageRequest.of(page, size));
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "companyName") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir) {
+        Sort sort = "desc".equalsIgnoreCase(sortDir)
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+        Page<Company> companyPage = companyService.getAllCompanies(name, city, PageRequest.of(page, size, sort));
         List<CompanyResponseDTO> content = companyPage.getContent().stream()
                 .map(companyMapper::toResponseDTO)
                 .toList();

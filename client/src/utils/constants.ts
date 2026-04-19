@@ -20,9 +20,12 @@ export const ROUTES = {
   COMPANY_MATERIALS: '/company/materials',
   COMPANY_CATALOG: '/company/catalog',
 
+  ACCOUNT_SETTINGS: '/account/settings',
+
   ADMIN: '/admin',
   ADMIN_APPROVALS: '/admin/approvals',
   ADMIN_COMPANIES: '/admin/companies',
+  ADMIN_MATERIALS: '/admin/materials',
   ADMIN_DUPLICATES: '/admin/duplicates',
   ADMIN_SCRAPER: '/admin/scraper',
   ADMIN_STATISTICS: '/admin/statistics',

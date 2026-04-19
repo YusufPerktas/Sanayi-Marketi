@@ -10,6 +10,7 @@ import com.sanayimarketi.entity.CompanyMaterial;
 import com.sanayimarketi.entity.Material;
 import com.sanayimarketi.mapper.CompanyMaterialMapper;
 import com.sanayimarketi.mapper.MaterialMapper;
+import com.sanayimarketi.repository.CompanyUserRepository;
 import com.sanayimarketi.service.CompanyMaterialService;
 import com.sanayimarketi.service.MaterialService;
 import jakarta.validation.Valid;
@@ -31,6 +32,7 @@ public class MaterialController {
     private final CompanyMaterialService companyMaterialService;
     private final MaterialMapper materialMapper;
     private final CompanyMaterialMapper companyMaterialMapper;
+    private final CompanyUserRepository companyUserRepository;
 
     @GetMapping
     public ResponseEntity<PagedResponseDTO<MaterialResponseDTO>> getAllMaterials(
@@ -86,10 +88,18 @@ public class MaterialController {
 
     @PostMapping
     public ResponseEntity<MaterialResponseDTO> createMaterial(
-            @Valid @RequestBody MaterialCreateRequestDTO request) {
+            @Valid @RequestBody MaterialCreateRequestDTO request,
+            @RequestAttribute(value = "userId", required = false) Long userId) {
+        Long companyId = null;
+        if (userId != null) {
+            companyId = companyUserRepository.findByUserId(userId)
+                    .map(cu -> cu.getCompany().getId())
+                    .orElse(null);
+        }
         Material material = materialService.createMaterial(
                 request.getMaterialName(),
-                request.getParentMaterialId()
+                request.getParentMaterialId(),
+                companyId
         );
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(materialMapper.toResponseDTO(material));

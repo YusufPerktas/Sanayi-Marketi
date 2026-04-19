@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Protected route prefixes — everything else is public
-const AUTH_PATHS = ['/dashboard', '/favorites', '/company', '/admin', '/application'];
+const AUTH_PATHS = ['/dashboard', '/favorites', '/company', '/admin', '/application', '/account'];
 
 function requiresAuth(pathname: string): boolean {
   return AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));

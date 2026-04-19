@@ -74,16 +74,34 @@ export default function LoginPage() {
 
   const { user, isLoading } = useAuth();
 
-  React.useEffect(() => {
-    if (isLoading || !user) return;
-    if (redirectTo) { router.replace(redirectTo); return; }
-    switch (user.role) {
-      case USER_ROLES.ADMIN: router.replace(ROUTES.ADMIN); break;
-      case USER_ROLES.COMPANY_USER: router.replace(ROUTES.COMPANY_MANAGE); break;
-      case USER_ROLES.PENDING_COMPANY_USER: router.replace(ROUTES.APPLICATION_STATUS); break;
-      default: router.replace(ROUTES.DASHBOARD);
+  // Hangi role hangi default rota?
+  function getRoleDefault(role: string): string {
+    switch (role) {
+      case USER_ROLES.ADMIN: return ROUTES.ADMIN;
+      case USER_ROLES.COMPANY_USER: return ROUTES.COMPANY_MANAGE;
+      case USER_ROLES.PENDING_COMPANY_USER: return ROUTES.APPLICATION_STATUS;
+      default: return ROUTES.DASHBOARD;
     }
-  }, [isLoading, user, redirectTo, router]);
+  }
+
+  // redirectTo'yu yalnızca kullanıcının rolü o sayfaya erişebiliyorsa kullan.
+  // Aksi hâlde role göre default rotaya git.
+  function getDestination(role: string, redirect: string | null): string {
+    const defaultRoute = getRoleDefault(role);
+    if (!redirect) return defaultRoute;
+    if (redirect.startsWith('/admin') && role !== USER_ROLES.ADMIN) return defaultRoute;
+    if (redirect.startsWith('/company') && role !== USER_ROLES.COMPANY_USER) return defaultRoute;
+    if (redirect === ROUTES.APPLICATION_STATUS && role !== USER_ROLES.PENDING_COMPANY_USER) return defaultRoute;
+    return redirect;
+  }
+
+  // Zaten giriş yapmış kullanıcı /login'e gelirse yönlendir.
+  // handleSubmit sırasında tetiklenmemesi için loading flag'e bakıyoruz.
+  React.useEffect(() => {
+    if (isLoading || !user || loading) return;
+    router.replace(getDestination(user.role, redirectTo));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, user]);
 
   function handleTabChange(tab: LoginTab) {
     setActiveTab(tab);
@@ -99,13 +117,7 @@ export default function LoginPage() {
     try {
       const data = await authService.login({ email, password });
       login(data.accessToken, data.userId, data.role);
-      if (redirectTo) { router.push(redirectTo); return; }
-      switch (data.role) {
-        case USER_ROLES.ADMIN: router.push(ROUTES.ADMIN); break;
-        case USER_ROLES.COMPANY_USER: router.push(ROUTES.COMPANY_MANAGE); break;
-        case USER_ROLES.PENDING_COMPANY_USER: router.push(ROUTES.APPLICATION_STATUS); break;
-        default: router.push(ROUTES.DASHBOARD);
-      }
+      router.push(getDestination(data.role, redirectTo));
     } catch (err) {
       const axiosError = err as AxiosError<ApiError>;
       if (axiosError.response?.data?.fieldErrors) setFieldErrors(axiosError.response.data.fieldErrors);

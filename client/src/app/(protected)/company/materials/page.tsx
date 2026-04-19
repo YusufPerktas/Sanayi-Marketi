@@ -227,7 +227,7 @@ export default function CompanyMaterialsPage() {
               {filtered.map((m) => {
                 const role = ROLE_CHIP[m.role] ?? ROLE_CHIP.BOTH;
                 return (
-                  <TableRow key={m.materialId} sx={{ '&:hover': { bgcolor: `${colors.surfaceContainerLow}50` }, borderBottom: `1px solid rgba(195,198,215,0.1)` }}>
+                  <TableRow key={m.id} sx={{ '&:hover': { bgcolor: `${colors.surfaceContainerLow}50` }, borderBottom: `1px solid rgba(195,198,215,0.1)` }}>
                     <TableCell sx={{ color: colors.onSurface, fontWeight: 500 }}>{m.materialName}</TableCell>
                     <TableCell>
                       <Chip label={role.label} size="small" sx={{ bgcolor: role.bg, color: role.color, fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', height: 22 }} />
@@ -255,7 +255,7 @@ export default function CompanyMaterialsPage() {
       </Box>
 
       {/* Add/Edit dialog */}
-      <Dialog open={modalMode !== null} onClose={() => setModalMode(null)} maxWidth="sm" fullWidth>
+      <Dialog open={modalMode !== null} onClose={() => { setModalMode(null); setModalSearch(''); setSelectedMaterial(null); setCreateError(null); }} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontFamily: 'var(--font-manrope)', fontWeight: 700 }}>
           {modalMode === 'add' ? 'Malzeme Ekle' : 'Malzeme Düzenle'}
         </DialogTitle>

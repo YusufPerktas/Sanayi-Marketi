@@ -18,11 +18,12 @@ import ApartmentIcon from '@mui/icons-material/Apartment';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useQuery } from '@tanstack/react-query';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { companyApplicationService } from '@/services/companyApplication.service';
+import { companyService } from '@/services/company.service';
+import { materialService } from '@/services/material.service';
 import { ROUTES } from '@/utils/constants';
 import { colors } from '@/utils/colors';
 
@@ -44,16 +45,26 @@ export default function AdminOverviewPage() {
     queryFn: companyApplicationService.getAll,
   });
 
+  const { data: companiesPage } = useQuery({
+    queryKey: ['admin-companies-count'],
+    queryFn: () => companyService.getAll({ size: 1 }),
+  });
+
+  const { data: materialsPage } = useQuery({
+    queryKey: ['admin-materials-count'],
+    queryFn: () => materialService.getAll({ size: 1 }),
+  });
+
   const pending = applications?.filter((a) => a.status === 'PENDING') ?? [];
   const recent = applications?.slice(0, 5) ?? [];
+  const totalCompanies = companiesPage?.totalElements;
+  const totalMaterials = materialsPage?.totalElements;
 
   const STATS = [
     {
       label: 'Toplam Firma',
-      value: '—',
+      value: totalCompanies != null ? totalCompanies.toString() : '...',
       icon: <ApartmentIcon sx={{ fontSize: '1.5rem', color: colors.primary }} />,
-      trend: '+12%',
-      trendColor: colors.tertiary,
     },
     {
       label: 'Bekleyen Başvurular',
@@ -63,10 +74,8 @@ export default function AdminOverviewPage() {
     },
     {
       label: 'Aktif Malzeme',
-      value: '—',
+      value: totalMaterials != null ? totalMaterials.toString() : '...',
       icon: <Inventory2Icon sx={{ fontSize: '1.5rem', color: colors.primary }} />,
-      trend: '+5.4%',
-      trendColor: colors.tertiary,
     },
     {
       label: 'Sistem Durumu',
@@ -107,13 +116,6 @@ export default function AdminOverviewPage() {
               </Box>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.8rem' }}>
-              {s.trend && (
-                <>
-                  <TrendingUpIcon sx={{ fontSize: '1rem', color: s.trendColor }} />
-                  <Typography sx={{ color: s.trendColor, fontWeight: 600, fontSize: '0.8rem' }}>{s.trend}</Typography>
-                  <Typography sx={{ color: colors.onSurfaceVariant, fontSize: '0.8rem' }}>geçen aya göre</Typography>
-                </>
-              )}
               {s.badge && (
                 <Box sx={{ px: 1.5, py: 0.25, bgcolor: colors.surfaceContainerHighest, borderRadius: 1, fontSize: '0.7rem', color: colors.onSurfaceVariant, fontWeight: 600 }}>
                   {s.badge}

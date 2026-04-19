@@ -14,3 +14,7 @@ Hesap zaten mevcutsa tekrar oluşturulmaz (idempotent).
 1 Çelik Fabrikası
 1celikfabrikasi@gmail.com
 fabrika01
+
+Anadolu Çelik Sanayi ve Ticaret A.Ş
+admin@anadolucelik.com
+Anadolu123

@@ -3,11 +3,9 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Box, Button, Container, Typography, Card, CardContent, Chip, IconButton } from '@mui/material';
+import { Box, Button, Container, Typography, Card, CardContent, CircularProgress, IconButton } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import VerifiedIcon from '@mui/icons-material/Verified';
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import HardwareIcon from '@mui/icons-material/Hardware';
 import LayersIcon from '@mui/icons-material/Layers';
 import RecyclingIcon from '@mui/icons-material/Recycling';
@@ -17,16 +15,11 @@ import ViewInArIcon from '@mui/icons-material/ViewInAr';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import FactoryIcon from '@mui/icons-material/Factory';
 import CategoryIcon from '@mui/icons-material/Category';
+import { useQuery } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
+import { companyService } from '@/services/company.service';
 import { ROUTES } from '@/utils/constants';
 import { colors } from '@/utils/colors';
-
-const FEATURED = [
-  { id: 1, name: 'Demirbağ Çelik', location: 'İstanbul, Gebze', tags: ['Çelik', 'Paslanmaz'], verified: true },
-  { id: 2, name: 'Erpa Alüminyum', location: 'Bursa, Nilüfer', tags: ['Alüminyum', 'Profil'], verified: true },
-  { id: 3, name: 'Mega Bakır', location: 'Ankara, Ostim', tags: ['Bakır', 'Kablo'], verified: false },
-  { id: 4, name: 'Polimer Plastik', location: 'İzmir, Çiğli', tags: ['Plastik', 'Hammadde'], verified: true },
-];
 
 const MATERIALS = [
   { name: 'Çelik', icon: <HardwareIcon />, href: `${ROUTES.MATERIALS}?q=çelik` },
@@ -41,6 +34,11 @@ export default function HomePage() {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState<'companies' | 'materials'>('companies');
+
+  const { data: featuredData, isLoading: loadingFeatured } = useQuery({
+    queryKey: ['home-featured-companies'],
+    queryFn: () => companyService.getAll({ page: 0, size: 4, sortBy: 'createdAt', sortDir: 'desc' }),
+  });
 
   function handleSearch() {
     if (!query.trim()) return;
@@ -103,29 +101,44 @@ export default function HomePage() {
             </Button>
           </Box>
           <Box sx={{ display: 'flex', gap: 3, overflowX: 'auto', pb: 2, scrollSnapType: 'x mandatory', '&::-webkit-scrollbar': { display: 'none' }, msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
-            {FEATURED.map((c) => (
-              <Card key={c.id} component={Link} href={ROUTES.COMPANY_DETAIL(c.id)}
-                sx={{ scrollSnapAlign: 'start', flexShrink: 0, width: 300, bgcolor: colors.surfaceContainerLowest, border: `1px solid rgba(195,198,215,0.2)`, boxShadow: colors.shadow, textDecoration: 'none', position: 'relative', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
-                <IconButton size="small" sx={{ position: 'absolute', top: 8, right: 8, color: colors.outline, '&:hover': { color: colors.error } }} onClick={(e) => e.preventDefault()}>
-                  <FavoriteBorderIcon fontSize="small" />
-                </IconButton>
-                <CardContent sx={{ p: 3 }}>
-                  <Box sx={{ width: 56, height: 56, bgcolor: colors.surfaceContainer, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-                    <FactoryIcon sx={{ color: colors.outline }} />
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
-                    <Typography sx={{ fontWeight: 700, color: colors.onSurface, fontSize: '1rem' }}>{c.name}</Typography>
-                    {c.verified && <VerifiedIcon sx={{ color: colors.primary, fontSize: '1rem' }} />}
-                  </Box>
-                  <Typography sx={{ fontSize: '0.8rem', color: colors.outline, display: 'flex', alignItems: 'center', gap: 0.5, mb: 2 }}>
-                    <LocationOnIcon sx={{ fontSize: '0.9rem' }} />{c.location}
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-                    {c.tags.map((tag) => <Chip key={tag} label={tag} size="small" sx={{ bgcolor: colors.surfaceContainer, color: colors.onSurfaceVariant, fontSize: '0.7rem', fontWeight: 600, height: 24 }} />)}
-                  </Box>
-                </CardContent>
-              </Card>
-            ))}
+            {loadingFeatured && (
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', py: 6 }}>
+                <CircularProgress />
+              </Box>
+            )}
+            {!loadingFeatured && (featuredData?.content ?? []).length === 0 && (
+              <Box sx={{ py: 6, color: colors.onSurfaceVariant, fontSize: '0.9rem' }}>
+                Henüz firma kaydı yok.
+              </Box>
+            )}
+            {(featuredData?.content ?? []).map((c) => {
+              const location = [c.district, c.city].filter(Boolean).join(', ');
+              return (
+                <Card key={c.id} component={Link} href={ROUTES.COMPANY_DETAIL(c.id)}
+                  sx={{ scrollSnapAlign: 'start', flexShrink: 0, width: 300, bgcolor: colors.surfaceContainerLowest, border: `1px solid rgba(195,198,215,0.2)`, boxShadow: colors.shadow, textDecoration: 'none', position: 'relative', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ width: 56, height: 56, bgcolor: colors.surfaceContainer, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2, overflow: 'hidden' }}>
+                      {c.logoUrl ? (
+                        <img src={`http://localhost:8080${c.logoUrl}`} alt={c.companyName} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }} />
+                      ) : (
+                        <FactoryIcon sx={{ color: colors.outline }} />
+                      )}
+                    </Box>
+                    <Typography sx={{ fontWeight: 700, color: colors.onSurface, fontSize: '1rem', mb: 0.5 }}>{c.companyName}</Typography>
+                    {location && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.8rem', color: colors.outline, mb: 1.5 }}>
+                        <LocationOnIcon sx={{ fontSize: '0.9rem' }} />{location}
+                      </Box>
+                    )}
+                    {c.description && (
+                      <Typography sx={{ fontSize: '0.8rem', color: colors.onSurfaceVariant, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {c.description}
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </Box>
         </Container>
       </Box>

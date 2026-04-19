@@ -71,6 +71,7 @@ export default function CompanyManagePage() {
 
   const completenessItems = [
     { label: 'Temel Bilgiler', done: true },
+    { label: 'Firma Logosu', done: !!company?.logoUrl },
     { label: 'İletişim Bilgileri', done: !!company?.phone || !!company?.email },
     { label: 'Adres', done: !!company?.fullAddress },
     { label: 'Firma Açıklaması', done: !!company?.description },

@@ -156,6 +156,7 @@ export default function CompanyEditPage() {
         }
       });
       await companyService.update(company.id, payload);
+      qc.invalidateQueries({ queryKey: ['my-company'] });
       setSuccess(true);
     } catch (err) {
       const axiosError = err as AxiosError<ApiError>;

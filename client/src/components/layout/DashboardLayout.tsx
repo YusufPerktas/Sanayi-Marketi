@@ -18,6 +18,7 @@ import CategoryIcon from '@mui/icons-material/Category';
 import LogoutIcon from '@mui/icons-material/Logout';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import AddIcon from '@mui/icons-material/Add';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { useAuth } from '@/context/useAuth';
 import { authService } from '@/services/auth.service';
 import { companyService } from '@/services/company.service';
@@ -35,6 +36,7 @@ const USER_NAV: NavItem[] = [
   { label: 'Panelim', href: ROUTES.DASHBOARD, icon: <DashboardIcon /> },
   { label: 'Favori Firmalar', href: ROUTES.FAVORITES + '?tab=companies', icon: <FavoriteIcon /> },
   { label: 'Favori Materyaller', href: ROUTES.FAVORITES + '?tab=materials', icon: <Inventory2Icon /> },
+  { label: 'Hesap Ayarları', href: ROUTES.ACCOUNT_SETTINGS, icon: <SettingsIcon /> },
 ];
 
 const COMPANY_NAV: NavItem[] = [
@@ -42,6 +44,7 @@ const COMPANY_NAV: NavItem[] = [
   { label: 'Firma Bilgileri', href: ROUTES.COMPANY_EDIT, icon: <BusinessIcon /> },
   { label: 'Malzemeler', href: ROUTES.COMPANY_MATERIALS, icon: <CategoryIcon /> },
   { label: 'Katalog', href: ROUTES.COMPANY_CATALOG, icon: <MenuBookIcon /> },
+  { label: 'Hesap Ayarları', href: ROUTES.ACCOUNT_SETTINGS, icon: <SettingsIcon /> },
 ];
 
 interface DashboardLayoutProps {

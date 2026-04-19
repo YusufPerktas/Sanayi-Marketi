@@ -197,7 +197,7 @@ Materials
 
 Company-Material Relationship (junction table: company_materials)
 
-Fields: company_id, material_id, role (PRODUCER/SELLER/BOTH), price DECIMAL(12,2) NOT NULL,
+Fields: company_id, material_id, role (PRODUCER/SELLER/BOTH), price DECIMAL(12,2) NULL (optional),
         unit VARCHAR(50) (e.g. "Ton", "Kg", "m²"), created_at
 Unique constraint: (company_id, material_id)
 No stock quantity tracked. Catalog is company-level, not material-level.
@@ -438,10 +438,14 @@ Company Applications (/api/company-applications):
   PUT    /{id}/approve          -> Approve -> upgrades user role to COMPANY_USER (ADMIN only)
   PUT    /{id}/reject           -> Reject with optional reason string (ADMIN only)
 
-Admin (/api/admin):  [TODO]
-  POST   /companies/{id1}/{id2}/merge -> Merge duplicate companies
-  PUT    /companies/{id}/status       -> Change company status
-  GET    /statistics                  -> System statistics
+Admin (/api/admin):  [DONE 2026-04-20]
+  POST   /companies/{primaryId}/merge/{secondaryId} -> Merge duplicate companies
+  PUT    /companies/{id}/status                     -> Change company status
+  GET    /materials                                 -> Admin material list (filter, search, paginated)
+  GET    /materials/stats                           -> Material stats (total/userCreated/unused/suspicious)
+  PUT    /materials/{id}                            -> Edit material name
+  DELETE /materials/{id}                            -> Delete material
+  POST   /materials/{targetId}/merge/{sourceId}     -> Merge two materials
   (Scraper endpoints: deferred)
 
 ---
@@ -636,6 +640,8 @@ Auth - COMPANY_USER:
 Auth - ADMIN:
   /admin                     Genel bakış + istatistik kartları
   /admin/approvals           Bekleyen başvurular -- onayla/reddet
+  /admin/companies           Firma listesi + durum yönetimi
+  /admin/materials           Malzeme yönetimi -- stats, filtre, düzenle/sil/birleştir [DONE 2026-04-20]
   /admin/duplicates          Duplikat şirket çözümü
   /admin/scraper             Scraper kontrol paneli (UI only -- backend deferred)
   /admin/statistics          Sistem istatistikleri
@@ -707,6 +713,11 @@ Database:     COMPLETE & LOCKED
                 -- Also re-run the approve_company_application() trigger from db.sql
                 -- Added 2026-04-19:
                 ALTER TABLE company_materials ADD COLUMN IF NOT EXISTS unit VARCHAR(50);
+                -- Added 2026-04-20:
+                ALTER TABLE company_materials ALTER COLUMN price DROP NOT NULL;
+                ALTER TABLE materials ADD COLUMN IF NOT EXISTS created_at TIMESTAMP;
+                ALTER TABLE materials ADD COLUMN IF NOT EXISTS created_by_company_id BIGINT;
+              -- ALL MIGRATIONS RUN as of 2026-04-20
 
 Backend:      RUNNING (Spring Boot Dashboard, port 8080)
               JWT Security: COMPLETE
@@ -734,31 +745,34 @@ Backend:      RUNNING (Spring Boot Dashboard, port 8080)
                     Mapper + DTO + Service updated accordingly
 
               KNOWN PENDING (backend):
-                - Catalog upload: DONE (2026-04-19) — POST /api/companies/{id}/catalog,
-                  DELETE /api/companies/{id}/catalog. Files saved to ${user.home}/sanayi-marketi-uploads/catalogs/
-                  Served via /uploads/catalogs/{companyId}/{filename}
-                - AdminController: DONE (2026-04-19) — POST /api/admin/companies/{primaryId}/merge/{secondaryId},
-                  PUT /api/admin/companies/{id}/status
-                - company_materials.unit: DONE (2026-04-19) — VARCHAR(50), optional
-                  CompanyMaterialRequestDTO: added String unit (optional)
-                  CompanyMaterialUpdateRequestDTO: NEW FILE — separate from Request DTO
-                    role (@NotNull), price (optional, no @NotNull), unit (optional)
-                    Reason: PUT update was failing @NotNull validation on materialId/price
-                  CompanyMaterialResponseDTO: added unit, companyCity, companyDistrict, companyLogoUrl
-                  CompanyMaterialMapper: maps all new fields from company entity
-                  CompanyMaterialService: addMaterialToCompany() + updateCompanyMaterial() accept String unit
-                  MaterialController: passes unit through; update endpoint uses CompanyMaterialUpdateRequestDTO
+                - Catalog upload: DONE (2026-04-19)
+                - AdminController: DONE (2026-04-19 + 2026-04-20)
+                - company_materials.unit: DONE (2026-04-19)
+                - company_materials.price nullable: DONE (2026-04-20)
+                  CompanyMaterialRequestDTO: removed @NotNull from price
+                  CompanyMaterial entity: removed nullable=false from price column
+                - Material search case-insensitive: DONE (2026-04-20)
+                  MaterialRepository: findByNormalizedNameContaining → findByMaterialNameContainingIgnoreCase
+                  Reason: normalizedName can be null for seeded records; IgnoreCase handles all cases at DB level
+                - Admin material management: DONE (2026-04-20)
+                  Material entity: added createdAt (LocalDateTime) + createdByCompanyId (Long) + @PrePersist
+                  MaterialRepository: added admin filter queries (USER_CREATED, UNUSED), count queries,
+                                      countByMaterialIds bulk query
+                  CompanyMaterialRepository: added countByMaterialIds(List<Long>), countByMaterialId(Long)
+                  MaterialService: createMaterial() overload with createdByCompanyId param;
+                                   getAdminMaterials(), getAdminStats(), mergeMaterials() added
+                  New DTOs: AdminMaterialResponseDTO, AdminMaterialStatsDTO
+                  MaterialController: passes createdByCompanyId from @RequestAttribute userId on create
+                  AdminController: 5 new endpoints (GET materials, GET stats, PUT, DELETE, POST merge)
                 - CompanyService.updateCompany(): FIXED — no longer sets status/catalogFileUrl/catalogFileType
-                  These fields were being set to null (NOT NULL constraint breach on status)
-                  CompanyUpdateRequestDTO: removed status, catalogFileUrl, catalogFileType fields
 
-Frontend:     COMPLETE + UPDATED (2026-04-19 session 3)
+Frontend:     COMPLETE + UPDATED (2026-04-20)
               Foundation:    Next.js 16.2.4 + React 19.2 + TypeScript, Axios, AuthContext, proxy.ts
               Design system: MUI theme, Manrope + Inter fonts, MD3 color tokens (colors.ts),
                              MainLayout, DashboardLayout, AdminLayout
               Services:      auth, company, material, favorite, companyApplication
 
-              All pages DONE (21 pages -- /admin/companies added):
+              All pages DONE (22 pages -- /admin/materials added 2026-04-20):
                 - /                    home -- hero search + featured companies
                 - /login               3-tab UI: Kullanıcı / Firma / Yönetici
                 - /register            BASIC_USER registration
@@ -807,6 +821,14 @@ Frontend:     COMPLETE + UPDATED (2026-04-19 session 3)
                 - /admin/scraper       scraper UI only (backend deferred)
                 - /admin/statistics    real data: company count, material count,
                                        application breakdown + approval rate, city distribution
+                - /admin/materials     NEW (2026-04-20): admin material management
+                                       Stats cards: Toplam / Firma Eklemeleri / Kullanılmayan / Şüpheli
+                                       Filter tabs: Tümü | Firma Eklemeleri | Kullanılmayan
+                                       Table: materialName (+ ⚠ suspicious), ekleyen (firma/Sistem),
+                                              kullanım (kaç firma), tarih, işlemler
+                                       Edit dialog: rename material
+                                       Delete dialog: shows usage count warning
+                                       Merge dialog: search target → move all links → delete source
 
               DashboardLayout changes:
                 - "Hesap Ayarları" REMOVED from nav (page does not exist; decision deferred)
@@ -861,6 +883,16 @@ Frontend:     COMPLETE + UPDATED (2026-04-19 session 3)
                 catalog page was using ['company-me'] — caused profile completion to show wrong state
                 Rule: never use 'company-me' — always 'my-company'
 
+              Changes 2026-04-20:
+                - /companies page: CompanyCard nested <a> fix — outer card uses onClick+router.push,
+                  inner "Profili Gör" button uses onClick+stopPropagation. Link import removed.
+                  Reason: Box component={Link} + Button component={Link} = nested <a> = hydration error
+                - company_materials price: made optional in frontend (label says "opsiyonel",
+                  price=undefined sent when empty, formatPrice shows "—" for null)
+                - admin.service.ts: added AdminMaterial/AdminMaterialStats types + all material methods
+                - AdminLayout: "Malzemeler" nav item added (Inventory2Icon, /admin/materials)
+                - constants.ts: ADMIN_MATERIALS route added
+
               KNOWN PENDING (frontend):
                 - /admin/duplicates: pair list is hardcoded mock data; backend duplicate detection deferred
                 - /admin/scraper: UI only (backend deferred)
@@ -894,6 +926,20 @@ Phase 6: Company Application Flow + Firm Panel Fixes  [DONE 2026-04-18]
 ---
 
 NEXT SESSION: End-to-end testing + remaining items
+
+Completed 2026-04-20:
+  - Nested <a> hydration fix in CompanyCard (/companies page)
+  - Material search case-insensitive fix (findByMaterialNameContainingIgnoreCase)
+  - company_materials.price made nullable (DTO @NotNull removed, entity nullable=false removed)
+    DB migration run: ALTER TABLE company_materials ALTER COLUMN price DROP NOT NULL;
+  - Admin material management — full backend + frontend:
+    Backend: Material entity tracking (createdAt, createdByCompanyId), MaterialRepository admin queries,
+             AdminMaterialResponseDTO + AdminMaterialStatsDTO, MaterialService admin methods,
+             MaterialController tracks creator on POST, AdminController 5 new endpoints
+    Frontend: /admin/materials page (stats, filter, table, edit/delete/merge dialogs),
+              AdminLayout nav item, admin.service.ts material methods, constants ADMIN_MATERIALS
+    DB migrations run: ALTER TABLE materials ADD COLUMN created_at TIMESTAMP;
+                       ALTER TABLE materials ADD COLUMN created_by_company_id BIGINT;
 
 Completed 2026-04-19 (session 3):
   - company_materials.unit column: backend entity/DTO/service/mapper/controller all updated
@@ -992,11 +1038,16 @@ DECISIONS LOG
 | Profile completion      | Real data checks + "Eksikleri Tamamla" hidden at 100%         | LOCKED |
 | Son Aktiviteler         | Derived from entity timestamps (no activity log table)        | LOCKED |
 | Price display format    | "21.500 TL / Ton" format in materials table + suppliers list  | LOCKED |
+| company_materials.price | NULL allowed -- price is optional for companies               | LOCKED |
+| Material search         | findByMaterialNameContainingIgnoreCase -- case-insensitive    | LOCKED |
+| Admin material mgmt     | Firms add freely; admin monitors/cleans via /admin/materials  | LOCKED |
+| Material tracking       | createdAt + createdByCompanyId stored on every new material   | LOCKED |
+| Suspicious materials    | short name (<3), unusual chars, or user-created + unused      | LOCKED |
+| CompanyCard navigation  | onClick+router.push (not component={Link}) -- no nested <a>   | LOCKED |
 
 ---
 
-Document version: 7.2
-Date: April 19, 2026
-Status: ACTIVE -- Materials + unit fully implemented, profile completion real, all major bugs fixed.
-        DB migration pending: ALTER TABLE company_materials ADD COLUMN IF NOT EXISTS unit VARCHAR(50);
+Document version: 8.0
+Date: April 20, 2026
+Status: ACTIVE -- Admin material management complete. All DB migrations run.
         Next: end-to-end testing all flows.

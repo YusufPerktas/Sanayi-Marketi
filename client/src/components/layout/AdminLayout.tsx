@@ -7,6 +7,7 @@ import { Box, Typography, IconButton, Badge } from '@mui/material';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import FactoryIcon from '@mui/icons-material/Factory';
+import Inventory2Icon from '@mui/icons-material/Inventory2';
 import MergeIcon from '@mui/icons-material/Merge';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import BarChartIcon from '@mui/icons-material/BarChart';
@@ -22,6 +23,7 @@ const ADMIN_NAV = [
   { label: 'Genel Bakış', href: ROUTES.ADMIN, icon: <AnalyticsIcon /> },
   { label: 'Başvurular', href: ROUTES.ADMIN_APPROVALS, icon: <AssignmentIndIcon /> },
   { label: 'Firmalar', href: ROUTES.ADMIN_COMPANIES, icon: <FactoryIcon /> },
+  { label: 'Malzemeler', href: ROUTES.ADMIN_MATERIALS, icon: <Inventory2Icon /> },
   { label: 'Duplikatlar', href: ROUTES.ADMIN_DUPLICATES, icon: <MergeIcon /> },
   { label: 'Scraper', href: ROUTES.ADMIN_SCRAPER, icon: <SmartToyIcon /> },
   { label: 'İstatistikler', href: ROUTES.ADMIN_STATISTICS, icon: <BarChartIcon /> },

@@ -56,7 +56,7 @@ export interface CompanyUpdateRequest {
 }
 
 export const companyService = {
-  getAll: (params?: { page?: number; size?: number; city?: string; q?: string }) =>
+  getAll: (params?: { page?: number; size?: number; name?: string; city?: string; sortBy?: string; sortDir?: string }) =>
     apiClient.get<PageResponse<Company>>('/api/companies', { params }).then((r) => r.data),
 
   getById: (id: number | string) =>

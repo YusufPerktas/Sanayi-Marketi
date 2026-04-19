@@ -123,9 +123,9 @@ export default function MaterialDetailPage() {
             >
               {material.materialName}
             </Typography>
-            {material.parentMaterialId && (
+            {material.parentMaterialName && (
               <Typography sx={{ fontSize: '0.875rem', color: colors.onSurfaceVariant }}>
-                Üst kategori ID: {material.parentMaterialId}
+                Üst kategori: {material.parentMaterialName}
               </Typography>
             )}
           </Box>
