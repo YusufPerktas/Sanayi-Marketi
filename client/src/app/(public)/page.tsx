@@ -60,29 +60,52 @@ export default function HomePage() {
           </Typography>
 
           {/* Search */}
-          <Box sx={{ maxWidth: 720, mx: 'auto', width: '100%' }}>
-            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, bgcolor: colors.surfaceContainerLowest, borderRadius: 3, boxShadow: colors.shadow, border: `1px solid rgba(195,198,215,0.2)`, p: 1, gap: { xs: 1, sm: 0 } }}>
-              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', px: 2 }}>
-                <SearchIcon sx={{ color: colors.outline, mr: 1.5 }} />
+          <Box sx={{ maxWidth: 760, mx: 'auto', width: '100%' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: colors.surfaceContainerLowest, borderRadius: 3, boxShadow: colors.shadow, border: `1px solid rgba(195,198,215,0.2)`, p: 1, gap: 0 }}>
+
+              {/* Category toggle — inside bar */}
+              <Box sx={{ display: 'flex', gap: 0.5, p: 0.5, bgcolor: colors.surfaceContainerLow, borderRadius: 2, flexShrink: 0 }}>
+                {(['companies', 'materials'] as const).map((t) => (
+                  <Button
+                    key={t}
+                    onClick={() => setTab(t)}
+                    startIcon={t === 'companies' ? <FactoryIcon sx={{ fontSize: '1rem !important' }} /> : <CategoryIcon sx={{ fontSize: '1rem !important' }} />}
+                    size="small"
+                    sx={{
+                      px: 2, py: 0.875, borderRadius: 1.5,
+                      bgcolor: tab === t ? '#fff' : 'transparent',
+                      color: tab === t ? colors.primary : colors.onSurfaceVariant,
+                      fontWeight: tab === t ? 700 : 500,
+                      fontSize: '0.8rem',
+                      boxShadow: tab === t ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+                      transition: 'all 0.15s',
+                      whiteSpace: 'nowrap',
+                      '&:hover': { bgcolor: tab === t ? '#fff' : 'rgba(195,198,215,0.2)' },
+                    }}
+                  >
+                    {t === 'companies' ? 'Firmalar' : 'Malzemeler'}
+                  </Button>
+                ))}
+              </Box>
+
+              {/* Divider */}
+              <Box sx={{ width: '1px', height: 32, bgcolor: 'rgba(195,198,215,0.4)', mx: 1.5, flexShrink: 0 }} />
+
+              {/* Input */}
+              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                <SearchIcon sx={{ color: colors.outline, mr: 1.5, flexShrink: 0 }} />
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  placeholder="Malzeme veya firma adı arayın..."
+                  placeholder={tab === 'companies' ? 'Firma adı veya sektör ara...' : 'Malzeme adı ara...'}
                   style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: '1rem', color: colors.onSurface, fontFamily: 'var(--font-inter), sans-serif', padding: '10px 0' }}
                 />
               </Box>
+
               <Button onClick={handleSearch} variant="contained" size="large" sx={{ px: 4, py: 1.5, borderRadius: 2, flexShrink: 0 }}>
                 Ara
               </Button>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 2, mt: 3, justifyContent: 'center' }}>
-              {(['companies', 'materials'] as const).map((t) => (
-                <Button key={t} onClick={() => setTab(t)} startIcon={t === 'companies' ? <FactoryIcon /> : <CategoryIcon />}
-                  sx={{ px: 3, py: 1, borderRadius: 99, bgcolor: tab === t ? colors.surfaceContainerHigh : colors.surfaceContainerLowest, color: tab === t ? colors.primary : colors.onSurfaceVariant, fontWeight: tab === t ? 700 : 500, border: `1px solid rgba(195,198,215,0.2)`, '&:hover': { bgcolor: colors.surfaceVariant } }}>
-                  {t === 'companies' ? 'Firmalar' : 'Malzemeler'}
-                </Button>
-              ))}
             </Box>
           </Box>
         </Box>

@@ -438,9 +438,10 @@ Company Applications (/api/company-applications):
   PUT    /{id}/approve          -> Approve -> upgrades user role to COMPANY_USER (ADMIN only)
   PUT    /{id}/reject           -> Reject with optional reason string (ADMIN only)
 
-Admin (/api/admin):  [DONE 2026-04-20]
+Admin (/api/admin):  [DONE 2026-04-20 / updated 2026-04-21]
   POST   /companies/{primaryId}/merge/{secondaryId} -> Merge duplicate companies
   PUT    /companies/{id}/status                     -> Change company status
+  GET    /companies/duplicates                      -> Levenshtein-based duplicate pairs (NEW 2026-04-21)
   GET    /materials                                 -> Admin material list (filter, search, paginated)
   GET    /materials/stats                           -> Material stats (total/userCreated/unused/suspicious)
   PUT    /materials/{id}                            -> Edit material name
@@ -746,7 +747,7 @@ Backend:      RUNNING (Spring Boot Dashboard, port 8080)
 
               KNOWN PENDING (backend):
                 - Catalog upload: DONE (2026-04-19)
-                - AdminController: DONE (2026-04-19 + 2026-04-20)
+                - AdminController: DONE (2026-04-19 + 2026-04-20 + 2026-04-21)
                 - company_materials.unit: DONE (2026-04-19)
                 - company_materials.price nullable: DONE (2026-04-20)
                   CompanyMaterialRequestDTO: removed @NotNull from price
@@ -765,6 +766,28 @@ Backend:      RUNNING (Spring Boot Dashboard, port 8080)
                   MaterialController: passes createdByCompanyId from @RequestAttribute userId on create
                   AdminController: 5 new endpoints (GET materials, GET stats, PUT, DELETE, POST merge)
                 - CompanyService.updateCompany(): FIXED — no longer sets status/catalogFileUrl/catalogFileType
+                - City filter fix: DONE (2026-04-21)
+                  CompanyRepository: removed findFiltered (Hibernate 7 null param bug)
+                  Added: findAllByCompanyNameContainingIgnoreCase, findAllByCityIgnoreCase,
+                         findByNameAndCity (null-free JPQL), findByStatusNot
+                  CompanyService: 4-way dispatch (hasName+hasCity / hasName / hasCity / none)
+                - Suspicious material criteria: UPDATED (2026-04-21) — 3 criteria:
+                  (1) name < 3 chars, (2) user-created + unused orphan, (3) same normalizedName as another material
+                  MaterialRepository: added findDuplicateNormalizedNames() JPQL subquery, countSuspicious(),
+                                      findSuspicious(Pageable), findSuspiciousByName(String, Pageable)
+                  MaterialService: getAdminStats() uses countSuspicious(); SUSPICIOUS case added to filter dispatch
+                                   enrichWithAdminData() computes duplicateNormalizedNames set
+                  Fixed: stats showed 14 but filter showed 0 (was passing usageCount=0 to all materials)
+                - Duplicate company detection: DONE (2026-04-21)
+                  New DTO: DuplicatePairDTO { companyA, companyB, similarityPercent }
+                  CompanyService: findDuplicatePairs() — O(n²) Levenshtein with Turkish char normalization
+                                   (ğ→g, ş→s, ü→u, ö→o, ç→c) + common suffix removal (a.ş., ltd., sti.)
+                                   Threshold: ≥70% similarity. Returns sorted by descending similarity.
+                  AdminController: GET /companies/duplicates → List<DuplicatePairDTO>
+                - FavoriteController: FIXED (2026-04-21)
+                  GET /favorites/materials + POST /favorites/materials/{id} return MaterialResponseDTO
+                  (was FavoriteMaterialResponseDTO — materialId field mismatch caused favorites not to appear)
+                  FavoriteMapper: toMaterialResponseDTO() now delegates to materialMapper.toResponseDTO()
 
 Frontend:     COMPLETE + UPDATED (2026-04-20)
               Foundation:    Next.js 16.2.4 + React 19.2 + TypeScript, Axios, AuthContext, proxy.ts
@@ -772,7 +795,7 @@ Frontend:     COMPLETE + UPDATED (2026-04-20)
                              MainLayout, DashboardLayout, AdminLayout
               Services:      auth, company, material, favorite, companyApplication
 
-              All pages DONE (22 pages -- /admin/materials added 2026-04-20):
+              All pages DONE (22 pages -- /admin/materials added 2026-04-20, all updated 2026-04-21):
                 - /                    home -- hero search + featured companies
                 - /login               3-tab UI: Kullanıcı / Firma / Yönetici
                 - /register            BASIC_USER registration
@@ -817,18 +840,23 @@ Frontend:     COMPLETE + UPDATED (2026-04-20)
                                          login email, phone, firm email, website, city+district, description
                                          "Girilmedi" shown for empty optional fields
                 - /admin/companies     company list + search + status chip + "Görüntüle" link
-                - /admin/duplicates    side-by-side comparison + merge/deactivate (mock data)
+                - /admin/duplicates    side-by-side comparison + merge/deactivate (REAL API 2026-04-21)
                 - /admin/scraper       scraper UI only (backend deferred)
                 - /admin/statistics    real data: company count, material count,
                                        application breakdown + approval rate, city distribution
                 - /admin/materials     NEW (2026-04-20): admin material management
                                        Stats cards: Toplam / Firma Eklemeleri / Kullanılmayan / Şüpheli
-                                       Filter tabs: Tümü | Firma Eklemeleri | Kullanılmayan
+                                       Filter tabs: Tümü | Firma Eklemeleri | Kullanılmayan | Şüpheli (2026-04-21)
                                        Table: materialName (+ ⚠ suspicious), ekleyen (firma/Sistem),
                                               kullanım (kaç firma), tarih, işlemler
                                        Edit dialog: rename material
                                        Delete dialog: shows usage count warning
                                        Merge dialog: search target → move all links → delete source
+                - /companies          City filter now works (Hibernate 7 null param fix in backend)
+                - /materials          Material favoriting added (heart icon on cards, toggle with auth check)
+                - /materials/[id]     Material favoriting added (heart icon with Tooltip in header)
+                - /                   Search bar: category toggle (Firmalar/Malzemeler) integrated inside
+                                       bar as segmented control on left; vertical divider; dynamic placeholder
 
               DashboardLayout changes:
                 - "Hesap Ayarları" REMOVED from nav (page does not exist; decision deferred)
@@ -836,6 +864,7 @@ Frontend:     COMPLETE + UPDATED (2026-04-20)
                 - Company variant header: shows company logo (if exists) + company name + "Firma Yöneticisi"
                   Logo absent: BusinessIcon placeholder. Fetches via companyService.getMe() (queryKey: my-company)
                 - User variant header: initial avatar + "Hesabım" + "Standart Üye"
+                - "Favori Firmalar" + "Favori Materyaller" MERGED into single "Favoriler" nav item (2026-04-21)
 
               company.service.ts changes:
                 - Added getMe() -> GET /api/company-users/me
@@ -883,6 +912,35 @@ Frontend:     COMPLETE + UPDATED (2026-04-20)
                 catalog page was using ['company-me'] — caused profile completion to show wrong state
                 Rule: never use 'company-me' — always 'my-company'
 
+              CRITICAL — Cross-session cache:
+                TanStack Query module-level QueryClient retains cached data between user sessions.
+                Solution: QueryCacheClearer component in Providers.tsx watches userId via useRef,
+                calls qc.clear() when userId changes (including logout → undefined).
+                Rule: always wrap QueryClient logic so cache is cleared on user switch.
+
+              Changes 2026-04-21:
+                - /companies page: city filter fixed (was always empty due to Hibernate 7 null param bug)
+                - /company-apply, /company/edit, /application/status: phone validation changed from
+                  startsWith('05') → startsWith('0') to accept landline numbers (0312, 0216, etc.)
+                  Error message updated to show both GSM (0532 XXX XX XX) and landline examples
+                - DashboardLayout: "Favori Firmalar" + "Favori Materyaller" merged into single
+                  "Favoriler" menu item (same /favorites page, one nav entry)
+                - Providers.tsx: QueryCacheClearer component added — watches userId via useRef,
+                  calls qc.clear() on user change or logout to prevent cross-session cache leakage
+                - /materials page: full material favoriting support added
+                  (isFav state, toggleFav(), qc.invalidateQueries after toggle, heart IconButton on cards)
+                - /materials/[id] page: material favoriting added
+                  (isFav state, toggleFav(), FavoriteIcon button with Tooltip in material header)
+                - /companies page: qc.invalidateQueries(['favorites','companies']) added after toggle
+                - /admin/duplicates: replaced hardcoded MOCK_PAIRS with real useQuery calling
+                  adminService.getCompanyDuplicates() (GET /api/admin/companies/duplicates)
+                - admin.service.ts: DuplicatePair interface + getCompanyDuplicates() method added;
+                  'SUSPICIOUS' added to AdminMaterialFilter type
+                - /admin/materials: "Şüpheli" filter tab added (was missing from FILTERS array)
+                - Homepage (/): category toggle (Firmalar/Malzemeler) moved from separate pill buttons
+                  below search bar into the search bar itself as integrated segmented control on left,
+                  with vertical divider, dynamic placeholder text, and FactoryIcon/CategoryIcon
+
               Changes 2026-04-20:
                 - /companies page: CompanyCard nested <a> fix — outer card uses onClick+router.push,
                   inner "Profili Gör" button uses onClick+stopPropagation. Link import removed.
@@ -894,7 +952,6 @@ Frontend:     COMPLETE + UPDATED (2026-04-20)
                 - constants.ts: ADMIN_MATERIALS route added
 
               KNOWN PENDING (frontend):
-                - /admin/duplicates: pair list is hardcoded mock data; backend duplicate detection deferred
                 - /admin/scraper: UI only (backend deferred)
                 - Hesap Ayarları: page not implemented; decision deferred
                 - materials/[id]: shows parentMaterialId as number, not name (minor cosmetic)
@@ -922,6 +979,19 @@ Phase 6: Company Application Flow + Firm Panel Fixes  [DONE 2026-04-18]
   - Admin approvals shows all submitted fields
   - Firm panel (manage/edit/materials) wired to real API, hardcoded IDs removed
   - Material API paths corrected throughout
+Phase 7: Bug Fixes & UX Improvements    [DONE 2026-04-21]
+  - City filter fix (Hibernate 7 null param → 4-way dispatch)
+  - Landline phone validation (startsWith('0') instead of '05')
+  - Suspicious material criteria expanded to 3 (short name + orphan + duplicate normalizedName)
+  - Suspicious filter & stats fixed (countSuspicious() repository method)
+  - Real backend duplicate detection (Levenshtein similarity, /admin/companies/duplicates)
+  - /admin/duplicates wired to real API (no more mock data)
+  - Cross-session TanStack Query cache cleared on user change (QueryCacheClearer)
+  - DashboardLayout favorites nav merged to single item
+  - Material favoriting added to /materials and /materials/[id] pages
+  - FavoriteController returns MaterialResponseDTO (field name fix)
+  - All favorite toggle handlers invalidate cache immediately
+  - Homepage search bar: category toggle integrated inside bar
 
 ---
 
@@ -978,17 +1048,21 @@ Completed 2026-04-19 (session 1):
   - Frontend admin/duplicates: merge/deactivate buttons wired to real API
 
 Priority order (next session):
-  1. Run DB migration if not done: ALTER TABLE company_materials ADD COLUMN IF NOT EXISTS unit VARCHAR(50);
-     Then restart backend and verify it starts without error
-  2. End-to-end test: /company-apply (all fields) -> PENDING_COMPANY_USER -> /application/status
-  3. End-to-end test: admin approve -> COMPANY_USER -> /company/manage (data loads correctly)
-  4. End-to-end test: admin reject + reason -> /application/status shows reason -> re-apply form works
-  5. End-to-end test: /company/edit pre-fills + saves correctly
-  6. End-to-end test: /company/materials add (search existing + create new) / edit (role+unit+price) / delete
-  7. End-to-end test: /company/catalog upload + delete, profile completion reaches 100%
-  8. materials/[id]: show parentMaterialName instead of parentMaterialId (minor cosmetic fix)
-  9. Decide on "Hesap Ayarları" page (deferred)
-  10. Address remaining mock data in /admin/duplicates (backend duplicate detection deferred)
+  1. Backend restart required after 2026-04-21 changes:
+     - CompanyRepository (city filter fix)
+     - CompanyService (4-way dispatch + findDuplicatePairs)
+     - DuplicatePairDTO (new file)
+     - AdminController (GET /companies/duplicates)
+     - MaterialRepository (suspicious queries)
+     - MaterialService (suspicious filter + countSuspicious)
+     - FavoriteMapper (returns MaterialResponseDTO)
+     - FavoriteController (return type change)
+  2. End-to-end test: city filter on /companies page
+  3. End-to-end test: material favoriting (add → panel shows immediately)
+  4. End-to-end test: /admin/duplicates loads real pairs
+  5. End-to-end test: /admin/materials Şüpheli tab shows correct results
+  6. materials/[id]: show parentMaterialName instead of parentMaterialId (minor cosmetic fix)
+  7. Decide on "Hesap Ayarları" page (deferred)
 
 ---
 
@@ -1042,12 +1116,22 @@ DECISIONS LOG
 | Material search         | findByMaterialNameContainingIgnoreCase -- case-insensitive    | LOCKED |
 | Admin material mgmt     | Firms add freely; admin monitors/cleans via /admin/materials  | LOCKED |
 | Material tracking       | createdAt + createdByCompanyId stored on every new material   | LOCKED |
-| Suspicious materials    | short name (<3), unusual chars, or user-created + unused      | LOCKED |
+| Suspicious materials    | 3 criteria: short name (<3) + orphan + duplicate normalizedName | LOCKED |
 | CompanyCard navigation  | onClick+router.push (not component={Link}) -- no nested <a>   | LOCKED |
+| City filter             | 4-way dispatch in CompanyService (Hibernate 7 null param fix)  | LOCKED |
+| Phone validation        | startsWith('0') — accepts both GSM (05x) and landlines (03x)  | LOCKED |
+| Material favoriting     | Supported on /materials list + /materials/[id] detail pages   | LOCKED |
+| Favorite cache sync     | qc.invalidateQueries(['favorites','*']) after every toggle    | LOCKED |
+| Cross-session cache     | QueryCacheClearer component: qc.clear() on userId change      | LOCKED |
+| Favorites nav           | Single "Favoriler" item (merged from 2 separate items)        | LOCKED |
+| Duplicate detection     | Levenshtein ≥70%, Turkish normalization, suffix removal       | LOCKED |
+| FavoriteController      | Returns MaterialResponseDTO (not FavoriteMaterialResponseDTO) | LOCKED |
+| Homepage search bar     | Category toggle integrated inside bar (not below it)          | LOCKED |
 
 ---
 
-Document version: 8.0
-Date: April 20, 2026
-Status: ACTIVE -- Admin material management complete. All DB migrations run.
-        Next: end-to-end testing all flows.
+Document version: 9.0
+Date: April 21, 2026
+Status: ACTIVE -- Phase 7 complete. City filter, duplicate detection, suspicious filter, material
+        favoriting, cross-session cache, phone validation, and homepage search bar all fixed/added.
+        Backend restart required before testing 2026-04-21 changes.

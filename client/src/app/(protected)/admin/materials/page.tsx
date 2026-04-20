@@ -40,6 +40,7 @@ const FILTERS: { value: AdminMaterialFilter; label: string }[] = [
   { value: 'ALL', label: 'Tümü' },
   { value: 'USER_CREATED', label: 'Firma Eklemeleri' },
   { value: 'UNUSED', label: 'Kullanılmayan' },
+  { value: 'SUSPICIOUS', label: 'Şüpheli' },
 ];
 
 export default function AdminMaterialsPage() {

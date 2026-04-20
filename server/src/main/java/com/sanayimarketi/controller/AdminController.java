@@ -3,6 +3,7 @@ package com.sanayimarketi.controller;
 import com.sanayimarketi.dto.AdminMaterialResponseDTO;
 import com.sanayimarketi.dto.AdminMaterialStatsDTO;
 import com.sanayimarketi.dto.CompanyResponseDTO;
+import com.sanayimarketi.dto.DuplicatePairDTO;
 import com.sanayimarketi.dto.MaterialCreateRequestDTO;
 import com.sanayimarketi.dto.MaterialResponseDTO;
 import com.sanayimarketi.dto.PagedResponseDTO;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -34,6 +36,11 @@ public class AdminController {
     private final MaterialMapper materialMapper;
 
     // ── Company endpoints ──────────────────────────────────────────
+
+    @GetMapping("/companies/duplicates")
+    public ResponseEntity<List<DuplicatePairDTO>> getCompanyDuplicates() {
+        return ResponseEntity.ok(companyService.findDuplicatePairs());
+    }
 
     @PostMapping("/companies/{primaryId}/merge/{secondaryId}")
     public ResponseEntity<Void> mergeCompanies(

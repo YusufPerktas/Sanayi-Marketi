@@ -16,12 +16,18 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
 
     List<Company> findByStatus(CompanyStatus status);
 
+    List<Company> findByStatusNot(CompanyStatus status);
+
     List<Company> findByCompanyNameContainingIgnoreCase(String name);
 
+    Page<Company> findAllByCompanyNameContainingIgnoreCase(String name, Pageable pageable);
+
+    Page<Company> findAllByCityIgnoreCase(String city, Pageable pageable);
+
     @Query("SELECT c FROM Company c WHERE " +
-           "(:name IS NULL OR LOWER(c.companyName) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
-           "(:city IS NULL OR LOWER(c.city) = LOWER(:city))")
-    Page<Company> findFiltered(@Param("name") String name,
-                               @Param("city") String city,
-                               Pageable pageable);
+           "LOWER(c.companyName) LIKE LOWER(CONCAT('%', :name, '%')) AND " +
+           "LOWER(c.city) = LOWER(:city)")
+    Page<Company> findByNameAndCity(@Param("name") String name,
+                                    @Param("city") String city,
+                                    Pageable pageable);
 }

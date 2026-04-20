@@ -1,10 +1,12 @@
 package com.sanayimarketi.service;
 
+import com.sanayimarketi.dto.DuplicatePairDTO;
 import com.sanayimarketi.entity.Company;
 import com.sanayimarketi.entity.CompanyUser;
 import com.sanayimarketi.entity.enums.CatalogFileType;
 import com.sanayimarketi.entity.enums.CompanyStatus;
 import com.sanayimarketi.exception.ResourceNotFoundException;
+import com.sanayimarketi.mapper.CompanyMapper;
 import com.sanayimarketi.repository.CompanyRepository;
 import com.sanayimarketi.repository.CompanyUserRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,6 +32,7 @@ public class CompanyService {
 
     private final CompanyRepository companyRepository;
     private final CompanyUserRepository companyUserRepository;
+    private final CompanyMapper companyMapper;
 
     @Value("${catalog.upload.dir}")
     private String catalogUploadDir;
@@ -36,12 +41,12 @@ public class CompanyService {
     private String logoUploadDir;
 
     public Page<Company> getAllCompanies(String name, String city, Pageable pageable) {
-        String n = (name != null && !name.isBlank()) ? name.trim() : null;
-        String c = (city != null && !city.isBlank()) ? city.trim() : null;
-        if (n == null && c == null) {
-            return companyRepository.findAll(pageable);
-        }
-        return companyRepository.findFiltered(n, c, pageable);
+        boolean hasName = name != null && !name.isBlank();
+        boolean hasCity = city != null && !city.isBlank();
+        if (hasName && hasCity) return companyRepository.findByNameAndCity(name.trim(), city.trim(), pageable);
+        if (hasName) return companyRepository.findAllByCompanyNameContainingIgnoreCase(name.trim(), pageable);
+        if (hasCity) return companyRepository.findAllByCityIgnoreCase(city.trim(), pageable);
+        return companyRepository.findAll(pageable);
     }
 
     public List<Company> getCompaniesByStatus(CompanyStatus status) {
@@ -230,6 +235,61 @@ public class CompanyService {
             return companyRepository.save(company);
         }
         return company;
+    }
+
+    public List<DuplicatePairDTO> findDuplicatePairs() {
+        List<Company> companies = companyRepository.findByStatusNot(CompanyStatus.MERGED);
+        List<DuplicatePairDTO> pairs = new ArrayList<>();
+        for (int i = 0; i < companies.size(); i++) {
+            for (int j = i + 1; j < companies.size(); j++) {
+                Company a = companies.get(i);
+                Company b = companies.get(j);
+                int similarity = nameSimilarityPercent(a.getCompanyName(), b.getCompanyName());
+                if (similarity >= 70) {
+                    pairs.add(new DuplicatePairDTO(
+                            companyMapper.toResponseDTO(a),
+                            companyMapper.toResponseDTO(b),
+                            similarity));
+                }
+            }
+        }
+        pairs.sort(Comparator.comparingInt(DuplicatePairDTO::getSimilarityPercent).reversed());
+        return pairs;
+    }
+
+    private static int nameSimilarityPercent(String a, String b) {
+        String na = normalizeName(a);
+        String nb = normalizeName(b);
+        if (na.isEmpty() || nb.isEmpty()) return 0;
+        int dist = levenshtein(na, nb);
+        int maxLen = Math.max(na.length(), nb.length());
+        return (int) Math.round(100.0 * (1.0 - (double) dist / maxLen));
+    }
+
+    private static String normalizeName(String name) {
+        return name.toLowerCase()
+                .replace("ı", "i").replace("ş", "s").replace("ğ", "g")
+                .replace("ü", "u").replace("ö", "o").replace("ç", "c")
+                .replaceAll("\\ba\\.ş\\.\\b|\\bltd\\.\\b|\\bltd\\b|\\bşti\\.\\b|\\bsanayi\\b"
+                        + "|\\bsan\\.\\b|\\btic\\.\\b|\\bticaret\\b|\\bve\\b|\\bco\\.\\b|\\binc\\.\\b", "")
+                .replaceAll("[^a-z0-9 ]", "")
+                .replaceAll("\\s+", " ")
+                .trim();
+    }
+
+    private static int levenshtein(String a, String b) {
+        int m = a.length(), n = b.length();
+        int[] prev = new int[n + 1], curr = new int[n + 1];
+        for (int j = 0; j <= n; j++) prev[j] = j;
+        for (int i = 1; i <= m; i++) {
+            curr[0] = i;
+            for (int j = 1; j <= n; j++) {
+                if (a.charAt(i - 1) == b.charAt(j - 1)) curr[j] = prev[j - 1];
+                else curr[j] = 1 + Math.min(prev[j - 1], Math.min(prev[j], curr[j - 1]));
+            }
+            int[] tmp = prev; prev = curr; curr = tmp;
+        }
+        return prev[n];
     }
 
     @Transactional

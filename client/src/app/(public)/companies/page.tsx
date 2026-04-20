@@ -21,7 +21,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FactoryIcon from '@mui/icons-material/Factory';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
 import { companyService, Company } from '@/services/company.service';
 import { favoriteService } from '@/services/favorite.service';
@@ -50,6 +50,7 @@ export default function CompaniesPage() {
   const [sort, setSort] = useState('companyName:asc');
   const [page, setPage] = useState(0);
   const [favIds, setFavIds] = useState<Set<number>>(new Set());
+  const qc = useQueryClient();
 
   const [sortBy, sortDir] = sort.split(':');
 
@@ -93,6 +94,7 @@ export default function CompaniesPage() {
       await favoriteService.addCompany(company.id);
     }
     setFavIds(next);
+    qc.invalidateQueries({ queryKey: ['favorites', 'companies'] });
   }
 
   const companies = data?.content ?? [];

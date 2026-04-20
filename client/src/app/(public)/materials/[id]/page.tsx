@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { useParams } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Box,
@@ -9,6 +9,8 @@ import {
   Chip,
   CircularProgress,
   Container,
+  IconButton,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import CategoryIcon from '@mui/icons-material/Category';
@@ -16,9 +18,13 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import FactoryIcon from '@mui/icons-material/Factory';
-import { useQuery } from '@tanstack/react-query';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
 import { materialService, MaterialCompany } from '@/services/material.service';
+import { favoriteService } from '@/services/favorite.service';
+import { useAuth } from '@/context/useAuth';
 import { ROUTES } from '@/utils/constants';
 import { colors } from '@/utils/colors';
 
@@ -30,6 +36,10 @@ const ROLE_CHIP: Record<string, { label: string; color: string; bg: string }> = 
 
 export default function MaterialDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
+  const qc = useQueryClient();
+  const [isFav, setIsFav] = useState(false);
 
   const { data: material, isLoading: loadingMaterial } = useQuery({
     queryKey: ['material', id],
@@ -42,6 +52,33 @@ export default function MaterialDetailPage() {
     queryFn: () => materialService.getSuppliers(id),
     enabled: !!id,
   });
+
+  const { data: favMaterials } = useQuery({
+    queryKey: ['favorites', 'materials'],
+    queryFn: favoriteService.getMaterials,
+    enabled: isAuthenticated,
+  });
+
+  useEffect(() => {
+    if (favMaterials && material) {
+      setIsFav(favMaterials.some((m) => m.id === material.id));
+    }
+  }, [favMaterials, material]);
+
+  async function toggleFav() {
+    if (!isAuthenticated) {
+      router.push(`${ROUTES.LOGIN}?redirect=${ROUTES.MATERIAL_DETAIL(id)}`);
+      return;
+    }
+    if (isFav) {
+      setIsFav(false);
+      await favoriteService.removeMaterial(Number(id));
+    } else {
+      setIsFav(true);
+      await favoriteService.addMaterial(Number(id));
+    }
+    qc.invalidateQueries({ queryKey: ['favorites', 'materials'] });
+  }
 
   if (loadingMaterial) {
     return (
@@ -111,15 +148,10 @@ export default function MaterialDetailPage() {
           >
             <CategoryIcon sx={{ fontSize: '2.5rem', color: colors.outline }} />
           </Box>
-          <Box>
+          <Box sx={{ flex: 1 }}>
             <Typography
               variant="h4"
-              sx={{
-                fontFamily: 'var(--font-manrope)',
-                fontWeight: 800,
-                color: colors.onSurface,
-                mb: 0.5,
-              }}
+              sx={{ fontFamily: 'var(--font-manrope)', fontWeight: 800, color: colors.onSurface, mb: 0.5 }}
             >
               {material.materialName}
             </Typography>
@@ -129,18 +161,28 @@ export default function MaterialDetailPage() {
               </Typography>
             )}
           </Box>
+          <Tooltip title={isFav ? 'Favorilerden çıkar' : 'Favorilere ekle'}>
+            <IconButton
+              onClick={toggleFav}
+              sx={{
+                color: isFav ? colors.error : colors.outline,
+                border: `1px solid`,
+                borderColor: isFav ? colors.error : 'rgba(195,198,215,0.4)',
+                borderRadius: 2,
+                p: 1.25,
+                '&:hover': { color: colors.error, borderColor: colors.error },
+              }}
+            >
+              {isFav ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+            </IconButton>
+          </Tooltip>
         </Box>
 
         {/* Sellers section */}
         <Box sx={{ mb: 2 }}>
           <Typography
             variant="h5"
-            sx={{
-              fontFamily: 'var(--font-manrope)',
-              fontWeight: 700,
-              color: colors.onSurface,
-              mb: 1,
-            }}
+            sx={{ fontFamily: 'var(--font-manrope)', fontWeight: 700, color: colors.onSurface, mb: 1 }}
           >
             Bu Malzemeyi Sunan Firmalar
           </Typography>

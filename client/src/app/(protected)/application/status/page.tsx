@@ -119,8 +119,8 @@ function ReapplyForm({ previous }: { previous: Partial<import('@/services/compan
     setFieldErrors({});
     setGlobalError(null);
     const rawPhone = form.phone.replace(/\D/g, '');
-    if (form.phone && (rawPhone.length !== 11 || !rawPhone.startsWith('05'))) {
-      setFieldErrors({ phone: 'Geçerli bir numara girin (05XX XXX XX XX)' });
+    if (form.phone && (rawPhone.length !== 11 || !rawPhone.startsWith('0'))) {
+      setFieldErrors({ phone: 'Geçerli bir telefon numarası girin (örn: 0532 123 45 67 veya 0312 123 45 67)' });
       return;
     }
     if (!form.proposedCompanyName.trim()) {

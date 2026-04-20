@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -8,24 +8,32 @@ import {
   Button,
   CircularProgress,
   Container,
+  IconButton,
   Typography,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CategoryIcon from '@mui/icons-material/Category';
-import { useQuery } from '@tanstack/react-query';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import MainLayout from '@/components/layout/MainLayout';
 import { materialService, Material } from '@/services/material.service';
+import { favoriteService } from '@/services/favorite.service';
+import { useAuth } from '@/context/useAuth';
 import { ROUTES } from '@/utils/constants';
 import { colors } from '@/utils/colors';
 
 export default function MaterialsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isAuthenticated } = useAuth();
 
   const [query, setQuery] = useState(searchParams.get('q') ?? '');
   const [page, setPage] = useState(0);
+  const [favIds, setFavIds] = useState<Set<number>>(new Set());
+  const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ['materials', query, page],
@@ -43,10 +51,39 @@ export default function MaterialsPage() {
         : materialService.getAll({ page, size: 20 }),
   });
 
+  const { data: favMaterials } = useQuery({
+    queryKey: ['favorites', 'materials'],
+    queryFn: favoriteService.getMaterials,
+    enabled: isAuthenticated,
+  });
+
+  useEffect(() => {
+    if (favMaterials) setFavIds(new Set(favMaterials.map((m) => m.id)));
+  }, [favMaterials]);
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     setPage(0);
     router.replace(`${ROUTES.MATERIALS}?q=${encodeURIComponent(query)}`);
+  }
+
+  async function toggleFav(e: React.MouseEvent, material: Material) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      router.push(`${ROUTES.LOGIN}?redirect=${ROUTES.MATERIALS}`);
+      return;
+    }
+    const next = new Set(favIds);
+    if (next.has(material.id)) {
+      next.delete(material.id);
+      await favoriteService.removeMaterial(material.id);
+    } else {
+      next.add(material.id);
+      await favoriteService.addMaterial(material.id);
+    }
+    setFavIds(next);
+    qc.invalidateQueries({ queryKey: ['favorites', 'materials'] });
   }
 
   const materials = data?.content ?? [];
@@ -149,7 +186,12 @@ export default function MaterialsPage() {
           }}
         >
           {materials.map((m) => (
-            <MaterialCard key={m.id} material={m} />
+            <MaterialCard
+              key={m.id}
+              material={m}
+              isFav={favIds.has(m.id)}
+              onToggleFav={(e) => toggleFav(e, m)}
+            />
           ))}
         </Box>
 
@@ -194,7 +236,15 @@ export default function MaterialsPage() {
   );
 }
 
-function MaterialCard({ material }: { material: Material }) {
+function MaterialCard({
+  material,
+  isFav,
+  onToggleFav,
+}: {
+  material: Material;
+  isFav: boolean;
+  onToggleFav: (e: React.MouseEvent) => void;
+}) {
   return (
     <Box
       component={Link}
@@ -208,10 +258,25 @@ function MaterialCard({ material }: { material: Material }) {
         flexDirection: 'column',
         gap: 1.5,
         textDecoration: 'none',
+        position: 'relative',
         transition: 'all 0.15s',
         '&:hover': { boxShadow: colors.shadow, bgcolor: colors.surfaceContainerLow },
       }}
     >
+      <IconButton
+        size="small"
+        onClick={onToggleFav}
+        sx={{
+          position: 'absolute',
+          top: 10,
+          right: 10,
+          color: isFav ? colors.error : colors.outline,
+          '&:hover': { color: colors.error },
+        }}
+      >
+        {isFav ? <FavoriteIcon fontSize="small" /> : <FavoriteBorderIcon fontSize="small" />}
+      </IconButton>
+
       <Box
         sx={{
           width: 48,
@@ -231,6 +296,7 @@ function MaterialCard({ material }: { material: Material }) {
           fontWeight: 700,
           color: colors.onSurface,
           fontSize: '1rem',
+          pr: 3,
         }}
       >
         {material.materialName}

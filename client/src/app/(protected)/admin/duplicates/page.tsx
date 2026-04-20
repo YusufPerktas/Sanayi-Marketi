@@ -18,37 +18,25 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import EmailIcon from '@mui/icons-material/Email';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { colors } from '@/utils/colors';
-import { adminService } from '@/services/admin.service';
-import { useMutation } from '@tanstack/react-query';
-
-// Hardcoded pairs — backend duplicate detection endpoint is deferred
-const MOCK_PAIRS = [
-  {
-    id: 1,
-    a: { id: 101, companyName: 'Demirbağ Çelik A.Ş.', city: 'İstanbul', district: 'Gebze', phone: '+90 216 456 78 90', email: 'info@demirbagscelik.com', status: 'ACTIVE', createdAt: '2024-02-15' },
-    b: { id: 205, companyName: 'Demirbag Celik Sanayi', city: 'İstanbul', district: 'Gebze', phone: '+90 216 456 78 91', email: 'iletisim@demirbagcelik.net', status: 'INACTIVE', createdAt: '2024-03-22' },
-    similarity: 92,
-  },
-  {
-    id: 2,
-    a: { id: 88, companyName: 'Kuzey Alüminyum Ltd.', city: 'Bursa', district: 'Nilüfer', phone: '+90 224 333 22 11', email: 'satis@kuzeyaluminyum.com', status: 'ACTIVE', createdAt: '2023-09-01' },
-    b: { id: 312, companyName: 'Kuzey Alüminyum Ve Metal', city: 'Bursa', district: 'Nilüfer', phone: null, email: 'kuzeyal@gmail.com', status: 'INACTIVE', createdAt: '2024-01-10' },
-    similarity: 87,
-  },
-];
+import { adminService, DuplicatePair } from '@/services/admin.service';
+import { useQuery, useMutation } from '@tanstack/react-query';
 
 export default function AdminDuplicatesPage() {
-  const [resolved, setResolved] = useState<Set<number>>(new Set());
+  const [resolved, setResolved] = useState<Set<string>>(new Set());
   const [snack, setSnack] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [pendingAction, setPendingAction] = useState<number | null>(null);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+
+  const { data: pairs = [], isLoading } = useQuery({
+    queryKey: ['admin', 'company-duplicates'],
+    queryFn: adminService.getCompanyDuplicates,
+  });
 
   const mergeMutation = useMutation({
     mutationFn: ({ primaryId, secondaryId }: { primaryId: number; secondaryId: number }) =>
       adminService.mergeCompanies(primaryId, secondaryId),
     onSuccess: (_, vars) => {
-      const pair = MOCK_PAIRS.find((p) => p.a.id === vars.primaryId || p.b.id === vars.primaryId);
-      if (pair) setResolved((prev) => new Set([...prev, pair.id]));
+      setResolved((prev) => new Set([...prev, `${vars.primaryId}-${vars.secondaryId}`]));
       setSnack('Firmalar başarıyla birleştirildi');
       setPendingAction(null);
     },
@@ -59,11 +47,10 @@ export default function AdminDuplicatesPage() {
   });
 
   const deactivateMutation = useMutation({
-    mutationFn: (secondaryId: number) =>
+    mutationFn: ({ pairKey, secondaryId }: { pairKey: string; secondaryId: number }) =>
       adminService.changeCompanyStatus(secondaryId, 'INACTIVE'),
-    onSuccess: (_, secondaryId) => {
-      const pair = MOCK_PAIRS.find((p) => p.b.id === secondaryId);
-      if (pair) setResolved((prev) => new Set([...prev, pair.id]));
+    onSuccess: (_, vars) => {
+      setResolved((prev) => new Set([...prev, vars.pairKey]));
       setSnack('Tekrarlı kayıt devre dışı bırakıldı');
       setPendingAction(null);
     },
@@ -73,19 +60,25 @@ export default function AdminDuplicatesPage() {
     },
   });
 
-  function handleMerge(pairId: number, primaryId: number, secondaryId: number) {
-    setPendingAction(pairId);
-    setApiError(null);
-    mergeMutation.mutate({ primaryId, secondaryId });
+  function pairKey(pair: DuplicatePair) {
+    return `${pair.companyA.id}-${pair.companyB.id}`;
   }
 
-  function handleDeactivate(pairId: number, secondaryId: number) {
-    setPendingAction(pairId);
+  function handleMerge(pair: DuplicatePair) {
+    const key = pairKey(pair);
+    setPendingAction(key);
     setApiError(null);
-    deactivateMutation.mutate(secondaryId);
+    mergeMutation.mutate({ primaryId: pair.companyA.id, secondaryId: pair.companyB.id });
   }
 
-  const activePairs = MOCK_PAIRS.filter((p) => !resolved.has(p.id));
+  function handleDeactivate(pair: DuplicatePair) {
+    const key = pairKey(pair);
+    setPendingAction(key);
+    setApiError(null);
+    deactivateMutation.mutate({ pairKey: key, secondaryId: pair.companyB.id });
+  }
+
+  const activePairs = pairs.filter((p) => !resolved.has(pairKey(p)));
 
   return (
     <AdminLayout title="Duplikat Firmalar">
@@ -95,7 +88,7 @@ export default function AdminDuplicatesPage() {
             Sistem tarafından tespit edilen benzer firma kayıtlarını inceleyin. Aynı kuruluşa ait olanları birleştirebilir veya hatalı kayıtları devre dışı bırakabilirsiniz.
           </Typography>
         </Box>
-        {activePairs.length > 0 && (
+        {!isLoading && activePairs.length > 0 && (
           <Chip
             icon={<WarningAmberIcon sx={{ fontSize: '1rem' }} />}
             label={`${activePairs.length} Bekleyen İşlem`}
@@ -106,7 +99,13 @@ export default function AdminDuplicatesPage() {
 
       {apiError && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setApiError(null)}>{apiError}</Alert>}
 
-      {activePairs.length === 0 && (
+      {isLoading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
+          <CircularProgress />
+        </Box>
+      )}
+
+      {!isLoading && activePairs.length === 0 && (
         <Box sx={{ textAlign: 'center', py: 12, bgcolor: colors.surfaceContainerLowest, borderRadius: 3, border: `1px solid rgba(195,198,215,0.15)` }}>
           <MergeIcon sx={{ fontSize: '3rem', color: colors.outline, mb: 2 }} />
           <Typography sx={{ color: colors.onSurfaceVariant }}>Bekleyen duplikat kaydı yok</Typography>
@@ -115,10 +114,11 @@ export default function AdminDuplicatesPage() {
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {activePairs.map((pair) => {
-          const isLoading = pendingAction === pair.id;
+          const key = pairKey(pair);
+          const isActionLoading = pendingAction === key;
           return (
             <Box
-              key={pair.id}
+              key={key}
               sx={{
                 bgcolor: colors.surfaceContainerLowest,
                 borderRadius: 3,
@@ -143,25 +143,25 @@ export default function AdminDuplicatesPage() {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <WarningAmberIcon sx={{ color: '#d97706' }} />
                   <Typography sx={{ fontWeight: 700, color: colors.onSurface }}>
-                    Olası Duplikat — Benzerlik: %{pair.similarity}
+                    Olası Duplikat — Benzerlik: %{pair.similarityPercent}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <Button
                     variant="contained"
-                    startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : <MergeIcon />}
-                    onClick={() => handleMerge(pair.id, pair.a.id, pair.b.id)}
-                    disabled={isLoading}
+                    startIcon={isActionLoading ? <CircularProgress size={16} color="inherit" /> : <MergeIcon />}
+                    onClick={() => handleMerge(pair)}
+                    disabled={isActionLoading}
                     sx={{ px: 3 }}
                   >
                     Birleştir
                   </Button>
                   <Button
                     variant="outlined"
-                    startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : <BlockIcon />}
+                    startIcon={isActionLoading ? <CircularProgress size={16} color="inherit" /> : <BlockIcon />}
                     color="error"
-                    onClick={() => handleDeactivate(pair.id, pair.b.id)}
-                    disabled={isLoading}
+                    onClick={() => handleDeactivate(pair)}
+                    disabled={isActionLoading}
                     sx={{ px: 3 }}
                   >
                     Devre Dışı Bırak
@@ -171,7 +171,7 @@ export default function AdminDuplicatesPage() {
 
               {/* Comparison grid */}
               <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 0 }}>
-                {[pair.a, pair.b].map((company, idx) => (
+                {[pair.companyA, pair.companyB].map((company, idx) => (
                   <Box
                     key={company.id}
                     sx={{
@@ -217,7 +217,7 @@ export default function AdminDuplicatesPage() {
                       )}
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: colors.onSurfaceVariant, fontSize: '0.875rem' }}>
                         <Typography sx={{ fontSize: '0.75rem', color: colors.outline }}>Kayıt: </Typography>
-                        {new Date(company.createdAt).toLocaleDateString('tr-TR')}
+                        {company.createdAt ? new Date(company.createdAt).toLocaleDateString('tr-TR') : '—'}
                       </Box>
                       <Typography sx={{ fontSize: '0.75rem', color: colors.outline }}>ID: #{company.id}</Typography>
                     </Box>

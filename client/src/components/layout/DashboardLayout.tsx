@@ -34,8 +34,7 @@ interface NavItem {
 
 const USER_NAV: NavItem[] = [
   { label: 'Panelim', href: ROUTES.DASHBOARD, icon: <DashboardIcon /> },
-  { label: 'Favori Firmalar', href: ROUTES.FAVORITES + '?tab=companies', icon: <FavoriteIcon /> },
-  { label: 'Favori Materyaller', href: ROUTES.FAVORITES + '?tab=materials', icon: <Inventory2Icon /> },
+  { label: 'Favoriler', href: ROUTES.FAVORITES, icon: <FavoriteIcon /> },
   { label: 'Hesap Ayarları', href: ROUTES.ACCOUNT_SETTINGS, icon: <SettingsIcon /> },
 ];
 

@@ -15,8 +15,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -107,6 +109,9 @@ public class MaterialService {
             case "UNUSED" -> hasSearch
                     ? materialRepository.findUnusedByName(trimmedSearch, pageable)
                     : materialRepository.findUnused(pageable);
+            case "SUSPICIOUS" -> hasSearch
+                    ? materialRepository.findSuspiciousByName(trimmedSearch, pageable)
+                    : materialRepository.findSuspicious(pageable);
             default -> hasSearch
                     ? materialRepository.findByMaterialNameContainingIgnoreCase(trimmedSearch, pageable)
                     : materialRepository.findAll(pageable);
@@ -120,10 +125,7 @@ public class MaterialService {
         long userCreated = materialRepository.countByCreatedByCompanyIdIsNotNull();
         long unused = materialRepository.countUnused();
 
-        // Suspicious: user-created AND unused OR name too short
-        long suspicious = materialRepository.findAll().stream()
-                .filter(m -> isSuspicious(m, 0))
-                .count();
+        long suspicious = materialRepository.countSuspicious();
 
         return AdminMaterialStatsDTO.builder()
                 .total(total)
@@ -179,13 +181,18 @@ public class MaterialService {
                 .stream()
                 .collect(Collectors.toMap(Company::getId, Company::getCompanyName));
 
+        Set<String> duplicateNormalizedNames = new HashSet<>(materialRepository.findDuplicateNormalizedNames());
+
         return page.map(m -> {
             long usage = usageCounts.getOrDefault(m.getId(), 0L);
-            return toAdminDTO(m, usage, companyNames);
+            boolean isDuplicate = m.getNormalizedName() != null
+                    && duplicateNormalizedNames.contains(m.getNormalizedName());
+            return toAdminDTO(m, usage, companyNames, isDuplicate);
         });
     }
 
-    private AdminMaterialResponseDTO toAdminDTO(Material m, long usageCount, Map<Long, String> companyNames) {
+    private AdminMaterialResponseDTO toAdminDTO(Material m, long usageCount,
+                                                Map<Long, String> companyNames, boolean isDuplicate) {
         return AdminMaterialResponseDTO.builder()
                 .id(m.getId())
                 .materialName(m.getMaterialName())
@@ -197,15 +204,13 @@ public class MaterialService {
                 .createdByCompanyId(m.getCreatedByCompanyId())
                 .createdByCompanyName(m.getCreatedByCompanyId() != null ? companyNames.get(m.getCreatedByCompanyId()) : null)
                 .userCreated(m.getCreatedByCompanyId() != null)
-                .suspicious(isSuspicious(m, usageCount))
+                .suspicious(isSuspicious(m, usageCount, isDuplicate))
                 .build();
     }
 
-    private boolean isSuspicious(Material m, long usageCount) {
-        String name = m.getMaterialName();
-        boolean shortName = name.trim().length() < 3;
-        boolean unusualChars = !name.matches("[\\p{L}0-9 \\-/().,]+");
+    private boolean isSuspicious(Material m, long usageCount, boolean isDuplicate) {
+        boolean shortName = m.getMaterialName().trim().length() < 3;
         boolean orphan = m.getCreatedByCompanyId() != null && usageCount == 0;
-        return shortName || unusualChars || orphan;
+        return shortName || orphan || isDuplicate;
     }
 }

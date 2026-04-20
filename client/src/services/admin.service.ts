@@ -2,6 +2,12 @@ import apiClient from './api/client';
 import { Company } from './company.service';
 import type { PageResponse } from './company.service';
 
+export interface DuplicatePair {
+  companyA: Company;
+  companyB: Company;
+  similarityPercent: number;
+}
+
 export interface AdminMaterial {
   id: number;
   materialName: string;
@@ -23,9 +29,12 @@ export interface AdminMaterialStats {
   suspicious: number;
 }
 
-export type AdminMaterialFilter = 'ALL' | 'USER_CREATED' | 'UNUSED';
+export type AdminMaterialFilter = 'ALL' | 'USER_CREATED' | 'UNUSED' | 'SUSPICIOUS';
 
 export const adminService = {
+  getCompanyDuplicates: () =>
+    apiClient.get<DuplicatePair[]>('/api/admin/companies/duplicates').then((r) => r.data),
+
   mergeCompanies: (primaryId: number, secondaryId: number) =>
     apiClient.post(`/api/admin/companies/${primaryId}/merge/${secondaryId}`),
 

@@ -138,8 +138,8 @@ export default function CompanyEditPage() {
 
     // Phone validation
     const rawPhone = form.phone.replace(/\D/g, '');
-    if (form.phone && (rawPhone.length !== 11 || !rawPhone.startsWith('05'))) {
-      setFieldErrors({ phone: 'Geçerli bir numara girin (05XX XXX XX XX)' });
+    if (form.phone && (rawPhone.length !== 11 || !rawPhone.startsWith('0'))) {
+      setFieldErrors({ phone: 'Geçerli bir telefon numarası girin (örn: 0532 123 45 67 veya 0312 123 45 67)' });
       return;
     }
 
@@ -226,7 +226,7 @@ export default function CompanyEditPage() {
               <OutlinedInput
                 value={form.phone}
                 onChange={handlePhoneChange}
-                placeholder="05XX XXX XX XX"
+                placeholder="0532 123 45 67"
                 inputProps={{ inputMode: 'numeric' }}
                 sx={inputSx}
               />

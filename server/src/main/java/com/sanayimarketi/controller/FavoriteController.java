@@ -1,7 +1,7 @@
 package com.sanayimarketi.controller;
 
 import com.sanayimarketi.dto.CompanyResponseDTO;
-import com.sanayimarketi.dto.FavoriteMaterialResponseDTO;
+import com.sanayimarketi.dto.MaterialResponseDTO;
 import com.sanayimarketi.entity.UserFavoriteCompany;
 import com.sanayimarketi.entity.UserFavoriteMaterial;
 import com.sanayimarketi.mapper.FavoriteMapper;
@@ -33,9 +33,9 @@ public class FavoriteController {
     }
 
     @GetMapping("/materials")
-    public ResponseEntity<List<FavoriteMaterialResponseDTO>> getUserFavoriteMaterials(
+    public ResponseEntity<List<MaterialResponseDTO>> getUserFavoriteMaterials(
             @RequestAttribute("userId") Long userId) {
-        List<FavoriteMaterialResponseDTO> favorites = favoriteService.getUserFavoriteMaterials(userId)
+        List<MaterialResponseDTO> favorites = favoriteService.getUserFavoriteMaterials(userId)
                 .stream()
                 .map(favoriteMapper::toMaterialResponseDTO)
                 .toList();
@@ -76,7 +76,7 @@ public class FavoriteController {
     }
 
     @PostMapping("/materials/{materialId}")
-    public ResponseEntity<FavoriteMaterialResponseDTO> addFavoriteMaterial(
+    public ResponseEntity<MaterialResponseDTO> addFavoriteMaterial(
             @RequestAttribute("userId") Long userId,
             @PathVariable Long materialId) {
         UserFavoriteMaterial favorite = favoriteService.addFavoriteMaterial(userId, materialId);

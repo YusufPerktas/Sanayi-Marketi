@@ -11,12 +11,11 @@ A web platform connecting users searching for materials with companies that manu
 
 ### Client
 - React
-- Vite
 
 ## Folder Structure
 
 ```
 ├── server/    # Spring Boot REST API
-├── client/    # React SPA with Vite
+├── client/    # Next.js
 └── README.md
 ```
