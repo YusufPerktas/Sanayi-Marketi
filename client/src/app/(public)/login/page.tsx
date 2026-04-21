@@ -89,10 +89,32 @@ export default function LoginPage() {
   function getDestination(role: string, redirect: string | null): string {
     const defaultRoute = getRoleDefault(role);
     if (!redirect) return defaultRoute;
-    if (redirect.startsWith('/admin') && role !== USER_ROLES.ADMIN) return defaultRoute;
-    if (redirect.startsWith('/company') && role !== USER_ROLES.COMPANY_USER) return defaultRoute;
-    if (redirect === ROUTES.APPLICATION_STATUS && role !== USER_ROLES.PENDING_COMPANY_USER) return defaultRoute;
-    return redirect;
+
+    switch (role) {
+      case USER_ROLES.ADMIN:
+        // Admin yalnızca /admin/* rotalarına yönlendirilebilir
+        return redirect.startsWith('/admin') ? redirect : defaultRoute;
+
+      case USER_ROLES.COMPANY_USER:
+        // Firma kullanıcısı /company/* veya ortak rotalara (/account, /favorites) gidebilir
+        return redirect.startsWith('/company') ||
+          redirect.startsWith('/account') ||
+          redirect === ROUTES.FAVORITES
+          ? redirect
+          : defaultRoute;
+
+      case USER_ROLES.PENDING_COMPANY_USER:
+        return redirect === ROUTES.APPLICATION_STATUS ? redirect : defaultRoute;
+
+      default: // BASIC_USER
+        // Standart kullanıcı /dashboard, /favorites, /account rotalarına gidebilir
+        return redirect === ROUTES.DASHBOARD ||
+          redirect.startsWith(ROUTES.DASHBOARD + '/') ||
+          redirect === ROUTES.FAVORITES ||
+          redirect.startsWith('/account')
+          ? redirect
+          : defaultRoute;
+    }
   }
 
   // Zaten giriş yapmış kullanıcı /login'e gelirse yönlendir.

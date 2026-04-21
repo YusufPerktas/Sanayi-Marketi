@@ -55,6 +55,7 @@ export default function DashboardLayout({ children, variant = 'user' }: Dashboar
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading, logout } = useAuth();
+  const isLoggingOut = React.useRef(false);
 
   const { data: myCompany } = useQuery({
     queryKey: ['my-company'],
@@ -63,7 +64,7 @@ export default function DashboardLayout({ children, variant = 'user' }: Dashboar
   });
 
   React.useEffect(() => {
-    if (!isLoading && !user) {
+    if (!isLoading && !user && !isLoggingOut.current) {
       router.replace(`${ROUTES.LOGIN}?redirect=${encodeURIComponent(pathname)}`);
     }
   }, [isLoading, user, router, pathname]);
@@ -75,6 +76,7 @@ export default function DashboardLayout({ children, variant = 'user' }: Dashboar
   const displayName = variant === 'company' ? (myCompany?.companyName ?? 'Firma') : 'Hesabım';
 
   async function handleLogout() {
+    isLoggingOut.current = true;
     await authService.logout();
     logout();
     router.push(ROUTES.HOME);
