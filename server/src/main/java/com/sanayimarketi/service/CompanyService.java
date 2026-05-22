@@ -43,10 +43,10 @@ public class CompanyService {
     public Page<Company> getAllCompanies(String name, String city, Pageable pageable) {
         boolean hasName = name != null && !name.isBlank();
         boolean hasCity = city != null && !city.isBlank();
-        if (hasName && hasCity) return companyRepository.findByNameAndCity(name.trim(), city.trim(), pageable);
-        if (hasName) return companyRepository.findAllByCompanyNameContainingIgnoreCase(name.trim(), pageable);
-        if (hasCity) return companyRepository.findAllByCityIgnoreCase(city.trim(), pageable);
-        return companyRepository.findAll(pageable);
+        if (hasName && hasCity) return companyRepository.findByNameAndCityAndStatus(name.trim(), city.trim(), CompanyStatus.ACTIVE, pageable);
+        if (hasName) return companyRepository.findAllByStatusAndCompanyNameContainingIgnoreCase(CompanyStatus.ACTIVE, name.trim(), pageable);
+        if (hasCity) return companyRepository.findAllByStatusAndCityIgnoreCase(CompanyStatus.ACTIVE, city.trim(), pageable);
+        return companyRepository.findAllByStatus(CompanyStatus.ACTIVE, pageable);
     }
 
     public List<Company> getCompaniesByStatus(CompanyStatus status) {

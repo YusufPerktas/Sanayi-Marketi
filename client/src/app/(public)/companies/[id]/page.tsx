@@ -34,7 +34,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { companyService } from '@/services/company.service';
 import { favoriteService } from '@/services/favorite.service';
 import { useAuth } from '@/context/useAuth';
-import { ROUTES } from '@/utils/constants';
+import { ROUTES, API_BASE_URL } from '@/utils/constants';
 import { colors } from '@/utils/colors';
 
 type Tab = 'general' | 'materials' | 'catalog' | 'location';
@@ -143,9 +143,15 @@ export default function CompanyDetailPage() {
               {/* Status badges */}
               <Box sx={{ position: 'absolute', top: 24, right: 24, display: 'flex', gap: 1 }}>
                 <Chip
-                  label="Aktif"
+                  label={company.status === 'ACTIVE' ? 'Aktif' : company.status === 'INACTIVE' ? 'Pasif' : 'Birleştirildi'}
                   size="small"
-                  sx={{ bgcolor: colors.surfaceContainerHighest, color: colors.tertiary, fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase' }}
+                  sx={{
+                    bgcolor: colors.surfaceContainerHighest,
+                    color: company.status === 'ACTIVE' ? colors.tertiary : colors.outline,
+                    fontWeight: 700,
+                    fontSize: '0.65rem',
+                    textTransform: 'uppercase',
+                  }}
                 />
               </Box>
 
@@ -167,7 +173,7 @@ export default function CompanyDetailPage() {
                 >
                   {company.logoUrl ? (
                     <img
-                      src={`http://localhost:8080${company.logoUrl}`}
+                      src={`${API_BASE_URL}${company.logoUrl}`}
                       alt={company.companyName}
                       style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '8px' }}
                     />
@@ -347,7 +353,7 @@ export default function CompanyDetailPage() {
                       <TableRow sx={{ bgcolor: colors.surface }}>
                         <TableCell sx={{ fontWeight: 600, color: colors.onSurfaceVariant, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Malzeme Adı</TableCell>
                         <TableCell sx={{ fontWeight: 600, color: colors.onSurfaceVariant, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rolü</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 600, color: colors.onSurfaceVariant, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fiyat (TL)</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600, color: colors.onSurfaceVariant, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fiyat</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -370,7 +376,7 @@ export default function CompanyDetailPage() {
                               />
                             </TableCell>
                             <TableCell align="right" sx={{ fontWeight: 600, color: colors.onSurface }}>
-                              {m.price != null ? `${m.price} ₺` : '—'}
+                              {m.price != null ? `${m.price} ₺${m.unit ? ` / ${m.unit}` : ''}` : '—'}
                             </TableCell>
                           </TableRow>
                         );
@@ -422,7 +428,7 @@ export default function CompanyDetailPage() {
                       variant="contained"
                       startIcon={<DownloadIcon />}
                       component="a"
-                      href={company.catalogFileUrl}
+                      href={`${API_BASE_URL}${company.catalogFileUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       sx={{ px: 4 }}

@@ -8,6 +8,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { colors } from '@/utils/colors';
+import { API_BASE_URL } from '@/utils/constants';
 import { companyService } from '@/services/company.service';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -69,7 +70,7 @@ export default function CompanyCatalogPage() {
 
   const existingCatalog = company?.catalogFileUrl
     ? {
-        url: `http://localhost:8080${company.catalogFileUrl}`,
+        url: `${API_BASE_URL}${company.catalogFileUrl}`,
         type: company.catalogFileType ?? '',
         name: company.catalogFileUrl.substring(company.catalogFileUrl.lastIndexOf('/') + 1),
       }

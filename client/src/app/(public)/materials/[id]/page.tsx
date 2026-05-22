@@ -25,7 +25,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { materialService, MaterialCompany } from '@/services/material.service';
 import { favoriteService } from '@/services/favorite.service';
 import { useAuth } from '@/context/useAuth';
-import { ROUTES } from '@/utils/constants';
+import { ROUTES, API_BASE_URL } from '@/utils/constants';
 import { colors } from '@/utils/colors';
 
 const ROLE_CHIP: Record<string, { label: string; color: string; bg: string }> = {
@@ -250,7 +250,7 @@ export default function MaterialDetailPage() {
                   }}
                 >
                   {mc.companyLogoUrl ? (
-                    <img src={`http://localhost:8080${mc.companyLogoUrl}`} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }} />
+                    <img src={`${API_BASE_URL}${mc.companyLogoUrl}`} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }} />
                   ) : (
                     <FactoryIcon sx={{ color: colors.outline }} />
                   )}

@@ -11,7 +11,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { favoriteService } from '@/services/favorite.service';
-import { ROUTES } from '@/utils/constants';
+import { ROUTES, API_BASE_URL } from '@/utils/constants';
 import { colors } from '@/utils/colors';
 import { useSearchParams } from 'next/navigation';
 
@@ -148,7 +148,7 @@ export default function FavoritesPage() {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Box sx={{ width: 48, height: 48, bgcolor: colors.surfaceContainerLow, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
                       {c.logoUrl ? (
-                        <img src={`http://localhost:8080${c.logoUrl}`} alt={c.companyName} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }} />
+                        <img src={`${API_BASE_URL}${c.logoUrl}`} alt={c.companyName} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }} />
                       ) : (
                         <FactoryIcon sx={{ color: colors.onSurfaceVariant }} />
                       )}

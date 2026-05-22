@@ -26,7 +26,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { companyService, Company } from '@/services/company.service';
 import { favoriteService } from '@/services/favorite.service';
 import { useAuth } from '@/context/useAuth';
-import { ROUTES, TURKISH_CITIES } from '@/utils/constants';
+import { ROUTES, TURKISH_CITIES, API_BASE_URL } from '@/utils/constants';
 import { colors } from '@/utils/colors';
 
 const SORT_OPTIONS = [
@@ -413,7 +413,7 @@ function CompanyCard({
       >
         {company.logoUrl ? (
           <img
-            src={`http://localhost:8080${company.logoUrl}`}
+            src={`${API_BASE_URL}${company.logoUrl}`}
             alt={company.companyName}
             style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '6px' }}
           />

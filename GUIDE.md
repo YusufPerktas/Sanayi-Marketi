@@ -952,13 +952,16 @@ Frontend:     COMPLETE + UPDATED (2026-04-20)
                 - constants.ts: ADMIN_MATERIALS route added
 
               KNOWN PENDING (frontend):
-                - /admin/scraper: UI only (backend deferred)
-                - Hesap Ayarları: page not implemented; decision deferred
-                - materials/[id]: shows parentMaterialId as number, not name (minor cosmetic)
+                - /admin/scraper: UI only (backend deferred — see Data Scraper section)
+
+              Hesap Ayarları: DONE (2026-05-22)
+                - /account/settings page implemented: email + password change
+                - UserController PUT /api/users/me wired, password verification in UserService
+                - DashboardLayout nav updated (both user and company variants)
 
               proxy.ts:      COMPLETE
 
-Data Scraper: DEFERRED
+Data Scraper: IN PROGRESS — see TODO section below
 Mobile:       OUT OF SCOPE
 
 ---
@@ -994,6 +997,83 @@ Phase 7: Bug Fixes & UX Improvements    [DONE 2026-04-21]
   - Homepage search bar: category toggle integrated inside bar
 
 ---
+
+---
+
+TODO (2026-05-22)
+
+NOT: Her TODO için çözüm önerisi yazılmıştır. Uygulama öncesi birlikte konuşup yöntemi netleştireceğiz.
+
+Priority 1 — Bug fixes (must fix before pre-final):
+
+  [TODO-1] ACTIVE status filter missing in public company listing — YAPILDI, TEST BEKLİYOR
+    Problem:  CompanyService.getAllCompanies() fetches ALL companies regardless of status.
+              INACTIVE and MERGED companies appear on /companies page and homepage.
+    Yapılan:  CompanyRepository.java — 4 yeni ACTIVE-filtered metod eklendi.
+              CompanyService.getAllCompanies() — 4 yol CompanyStatus.ACTIVE ile güncellendi.
+              Admin arama (searchCompaniesByName) olduğu gibi bırakıldı.
+    Scope:    CompanyRepository.java + CompanyService.java only
+
+  [TODO-2] materials/[id] parentMaterialName — TAMAMLANDI (2026-05-22)
+    Durum:    Backend (MaterialResponseDTO + MaterialMapper) ve frontend (/materials/[id]/page.tsx)
+              zaten doğru şekilde parentMaterialName kullanıyor. Fix gerekmez.
+
+  [TODO-4] Katalog indirme linki kırık — YAPILDI, TEST BEKLİYOR
+    Problem:  companies/[id]/page.tsx satır 424: href={company.catalogFileUrl} kullanıyor.
+              catalogFileUrl bir relative path (/uploads/catalogs/...) — frontend origin'i olan
+              localhost:3000'e yönlendiriyor. Dosyalar backend'de localhost:8080 üzerinden sunuluyor.
+              Logo zaten doğru prefix kullanıyor (http://localhost:8080${company.logoUrl}).
+    Öneri:    Catalog href'ine http://localhost:8080 prefix eklemek. Ancak production'da bu URL
+              dinamik olmalı — env variable veya API base URL üzerinden çekilebilir.
+    Scope:    client/src/app/(public)/companies/[id]/page.tsx satır 424
+
+  [TODO-5] Firma detay header'ında "Aktif" rozeti hardcoded — YAPILDI, TEST BEKLİYOR
+    Problem:  companies/[id]/page.tsx satır 148: label="Aktif" sabit yazılmış.
+              INACTIVE veya MERGED bir firmaya direkt URL ile girildiğinde yanlış gösterir.
+    Öneri:    company.status değerine göre dinamik badge render etmek.
+              TODO-1 tamamlandığında etkisi azalır (INACTIVE firmalar listede görünmez)
+              ama URL'den direkt girildiğinde hâlâ sorun olur.
+    Scope:    client/src/app/(public)/companies/[id]/page.tsx satır 144-150
+
+  [TODO-6] Firma detay malzeme sekmesinde birim (unit) gösterilmiyor — YAPILDI, TEST BEKLİYOR
+    Problem:  companies/[id]/page.tsx satır 373: Fiyat gösteriyor (${m.price} ₺) ama birim yok.
+              Veri mevcut (CompanyMaterial.unit alanı dolu olabilir) ama render edilmiyor.
+              /materials/[id] sayfasında ise birim gösteriliyor — tutarsızlık var.
+    Öneri:    Tabloya "Birim" sütunu eklemek veya fiyat yanında göstermek.
+    Scope:    client/src/app/(public)/companies/[id]/page.tsx satır 373
+
+  [TODO-7] PUT /api/materials/{id} yetki kontrolü eksik — YAPILDI (endpoint kaldırıldı)
+    Problem:  MaterialController.java satır 108: Herhangi bir kimliği doğrulanmış kullanıcı
+              global materyal havuzundaki herhangi bir malzemenin adını değiştirebilir.
+              Admin için ayrı /api/admin/materials/{id} endpoint'i var.
+    Öneri:    Bu endpoint'i ya sadece ADMIN'e kısıtlamak, ya da endpoint'i kaldırıp admin
+              endpoint'ine yönlendirmek. Şu an COMPANY_USER bu endpoint'i kullanmıyor
+              (admin paneli /api/admin/... kullanıyor) — düşük öncelikli.
+    Scope:    MaterialController.java satır 108-118 + SecurityConfig.java
+
+Priority 2 — Data Scraper integration:
+
+  [TODO-3] Data Scraper backend integration
+    Current state: Standalone Python scraper in /data-scraper/
+                   Produces company_info.json + catalog PDFs per company
+                   7+ companies already scraped (Borusan, Çolakoğlu, İçdaş, Yücel Boru, etc.)
+                   company_info.json format: { company_name, website, sector, status,
+                                               contact_info: {phone, email, address},
+                                               catalog_info: {count, files[]} }
+    Integration approach: PENDING DECISION (options discussed 2026-05-22)
+      Option A — Admin panel JSON import (recommended): Admin uploads scraper output JSON,
+                 backend parses and creates Company records (status: INACTIVE) + AUTO_IMPORTED
+                 CompanyApplication records. Admin approves → ACTIVE.
+      Option B — Scraper POSTs directly to backend API: After scraping, POST to backend endpoint.
+      Option C — Admin panel triggers scraper: /admin/scraper page starts scraper via backend.
+    Note: Scraped companies have no material list (only sector string).
+          Materials left empty; to be filled by company user after claiming via MANUAL_EXISTING application.
+    Backend work needed:
+      - POST /api/admin/import endpoint (accepts JSON array of scraped companies)
+      - Catalog files copied to upload dir during import
+      - CompanyApplication AUTO_IMPORTED records created
+    Frontend work needed:
+      - /admin/scraper page wired to real backend (currently UI stub)
 
 NEXT SESSION: End-to-end testing + remaining items
 

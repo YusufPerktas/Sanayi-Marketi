@@ -23,7 +23,7 @@ import { AxiosError } from 'axios';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { companyService } from '@/services/company.service';
-import { TURKISH_CITIES } from '@/utils/constants';
+import { TURKISH_CITIES, API_BASE_URL } from '@/utils/constants';
 import { colors } from '@/utils/colors';
 
 interface ApiError { error: string; message: string; fieldErrors?: Record<string, string> }
@@ -182,7 +182,7 @@ export default function CompanyEditPage() {
         <Box sx={{ bgcolor: colors.surfaceContainerLowest, borderRadius: 3, p: 4, border: `1px solid rgba(195,198,215,0.15)`, boxShadow: colors.shadowSm, mb: 3, display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
           <Box sx={{ width: 96, height: 96, borderRadius: 2, bgcolor: colors.surfaceContainerLow, border: `1px solid rgba(195,198,215,0.2)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
             {company?.logoUrl ? (
-              <img src={`http://localhost:8080${company.logoUrl}`} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '6px' }} />
+              <img src={`${API_BASE_URL}${company.logoUrl}`} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '6px' }} />
             ) : (
               <FactoryIcon sx={{ fontSize: '2.5rem', color: colors.outline }} />
             )}

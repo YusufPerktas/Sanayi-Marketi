@@ -105,18 +105,6 @@ public class MaterialController {
                 .body(materialMapper.toResponseDTO(material));
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<MaterialResponseDTO> updateMaterial(
-            @PathVariable Long id,
-            @Valid @RequestBody MaterialCreateRequestDTO request) {
-        Material material = materialService.updateMaterial(
-                id,
-                request.getMaterialName(),
-                request.getParentMaterialId()
-        );
-        return ResponseEntity.ok(materialMapper.toResponseDTO(material));
-    }
-
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteMaterial(@PathVariable Long id) {
         materialService.deleteMaterial(id);

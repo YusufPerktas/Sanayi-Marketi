@@ -23,7 +23,7 @@ import { useAuth } from '@/context/useAuth';
 import { authService } from '@/services/auth.service';
 import { companyService } from '@/services/company.service';
 import { useQuery } from '@tanstack/react-query';
-import { ROUTES, USER_ROLES } from '@/utils/constants';
+import { ROUTES, USER_ROLES, API_BASE_URL } from '@/utils/constants';
 import { colors } from '@/utils/colors';
 
 interface NavItem {
@@ -120,7 +120,7 @@ export default function DashboardLayout({ children, variant = 'user' }: Dashboar
           >
             {variant === 'company' && myCompany?.logoUrl ? (
               <img
-                src={`http://localhost:8080${myCompany.logoUrl}`}
+                src={`${API_BASE_URL}${myCompany.logoUrl}`}
                 alt="logo"
                 style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }}
               />
