@@ -555,15 +555,236 @@ Route protection (proxy.ts):
 
 ---
 
-DATA SCRAPER  [DEFERRED]
+DATA SCRAPER  [ACTIVE DEVELOPMENT — Phase 8 & 9]
 
-Current state:
-- Standalone Python module (/data-scraper/)
-- Produces company_info.json + catalog files per company
-- NOT integrated with backend
+Current state (standalone Python module — /data-scraper/):
+- Stack: requests + Selenium (Chrome headless) + BeautifulSoup + lxml
+- Finds PDF/DOC/DOCX catalogs by crawling company websites (depth=2, up to 15 pages)
+- Extracts contact info: phone, email, address (multiple strategies: Schema.org, footer, semantic HTML, labeled patterns, full-page regex)
+- Status values: SUCCESS (katalog + iletişim) | PARTIAL (sadece katalog) | FAILED | ERROR
+- Per-company output: output/catalogs/{CompanyName}/company_info.json + indirilen katalog dosyaları
+- Input list: config/companies.json → { company_name, website, sector }
+- Modes: batch (all companies) | single (--company "name") | list (--list)
+- Already scraped 7 companies: Borusan Boru, Çolakoğlu Metalurji, İçdaş Çelik,
+  Yücel Boru, İzmir Demir Çelik, Borçelik, Kroman Çelik
 
-This phase: Admin UI panel (ScraperControl component) -- display only.
-Backend integration: future phase.
+company_info.json format (current output):
+  {
+    "company_name": "Borusan Boru",
+    "website": "https://borusanboru.com/",
+    "sector": "Çelik/Metal",
+    "status": "PARTIAL",
+    "contact_info": { "phone": "", "email": "", "address": "" },
+    "catalog_info": { "count": 4, "files": ["output/catalogs/Borusan_Boru/genel-urun-katalogu.pdf", ...] },
+    "scrape_date": "2026-01-10 15:38:33",
+    "scrape_timestamp": "2026-01-10T15:38:33.439910"
+  }
+
+---
+
+Known Problems (success rate low — most companies return PARTIAL or FAILED):
+
+1. JS-heavy sites: Many Turkish industrial sites render content via React/Angular SPAs.
+   requests library gets empty/minimal HTML. Selenium helps but is slow (~5-15s/page).
+
+2. Anti-bot protection: Cloudflare, Captcha, rate limiting. Generic User-Agent gets blocked.
+   Some sites return 403/429 on automated requests.
+
+3. Non-standard catalog patterns: Links buried in custom JS carousels, lightbox galleries,
+   iframe embeds, or loaded via XHR requests that neither requests nor Selenium catches easily.
+
+4. Contact info often empty: Turkish addresses/phones in non-standard formats.
+   Phone extracted as "" for many scraped companies despite data being on the page.
+   City/district NOT extracted at all — needed for Company record on import.
+
+5. No resume capability: If batch run is interrupted, entire run must restart from scratch.
+   No way to skip already-successfully-scraped companies without manual management.
+
+6. Sequential only: Scraping 100 companies one-by-one takes hours. No parallelism.
+
+7. Limited company list: config/companies.json has very few companies. Hundreds of Turkish
+   industrial companies not in the list. No sector-based grouping.
+
+8. No city/district field: company_info.json has address as free text but no structured
+   city/district — these are required fields when creating a Company record in the DB.
+
+---
+
+PHASE 8 — Scraper Improvement  [PENDING IMPLEMENTATION]
+
+Goal: Significantly higher success rate, complete contact data, faster batch runs.
+Scope: data-scraper/ Python module only. No backend/frontend changes in this phase.
+
+Planned improvements:
+
+  8a. Resume / skip-existing
+      - Before scraping: check if output/catalogs/{CompanyName}/company_info.json exists
+      - If status is SUCCESS or PARTIAL → skip (already done)
+      - --force flag to override and re-scrape
+      - --status FAILED flag to retry only failed ones
+
+  8b. City / district extraction
+      - Parse address text for Turkish city names (81 il listesi from constants)
+      - Also try to extract ilçe from address patterns (e.g. "Atatürk Mah., Gemlik, Bursa")
+      - Add city + district fields to company_info.json output
+      - city: String | None, district: String | None
+
+  8c. Better contact info extraction
+      - Structured phone validation using Turkish area codes (0212, 0312, 053x, etc.)
+      - Better address parsing: look for postal codes (5-digit), mahalle/cadde/sokak patterns
+      - Fallback: if main site fails, check Google Maps link or LinkedIn company page
+
+  8d. Selenium optimization
+      - Profile known JS-heavy domains (avoid requests entirely, go straight to Selenium)
+      - Configurable per-domain strategy in settings.py
+      - Reduce Selenium JS wait time for non-JS-heavy sites
+
+  8e. Parallelism (optional — evaluate trade-offs)
+      - ThreadPoolExecutor for batch mode (configurable worker count: 2-5)
+      - Risk: anti-bot triggers; use with longer delays if parallelized
+      - Rate limiting per-domain (not per-request) to avoid bans
+
+  8f. Extended companies.json
+      - Expand list to 50+ real Turkish industrial companies
+      - Add sector groupings: Çelik/Metal, Alüminyum, Plastik, İnşaat Malzemeleri, Makine, etc.
+      - Structure: { company_name, website, sector, city } (city pre-filled when known)
+
+Updated company_info.json format after Phase 8:
+  {
+    "company_name": "Borusan Boru",
+    "website": "https://borusanboru.com/",
+    "sector": "Çelik/Metal",
+    "status": "SUCCESS",
+    "contact_info": {
+      "phone": "+90 212 XXX XX XX",
+      "email": "info@borusanboru.com",
+      "address": "Fatih Sultan Mehmet Mah. ...",
+      "city": "İstanbul",
+      "district": "Ümraniye"
+    },
+    "catalog_info": { "count": 4, "files": [...] },
+    "scrape_date": "...",
+    "scrape_timestamp": "..."
+  }
+
+---
+
+PHASE 9 — Catalog Analysis → Material Extraction  [PENDING DECISION]
+
+Goal: Extract product/material names from downloaded PDF catalogs.
+      Extracted names become candidates for the global material pool.
+      Admin reviews, approves, edits, or rejects each candidate.
+      Approved materials are imported into the system.
+
+Pipeline:
+  [Downloaded PDF catalogs in output/catalogs/{CompanyName}/]
+    → CatalogAnalyzer reads each PDF
+    → Extracts text from pages (pdfminer / PyMuPDF)
+    → Identifies product/material names (rule-based or LLM)
+    → Saves materials_candidates.json alongside company_info.json
+    → Admin reviews candidates in /admin/scraper UI (Tab 3)
+    → Admin approves/edits/rejects each candidate
+    → Approved materials → POST to backend → global material pool
+
+materials_candidates.json format (new output file per catalog):
+  {
+    "company_name": "Borusan Boru",
+    "catalog_file": "genel-urun-katalogu.pdf",
+    "analyzed_at": "2026-05-23T10:00:00",
+    "extraction_method": "rule-based",
+    "candidates": [
+      { "name": "Dikişsiz Çelik Boru", "confidence": 0.92, "source_page": 3 },
+      { "name": "Kaynaklı Boru",        "confidence": 0.88, "source_page": 5 },
+      { "name": "Galvanizli Boru",      "confidence": 0.85, "source_page": 7 }
+    ],
+    "total_candidates": 3,
+    "status": "PENDING_REVIEW"
+  }
+
+Extraction approach (UNDECIDED — options to discuss):
+
+  Option A — Rule-based NLP extraction
+    Libraries: pdfminer.six (text extraction) + regex + keyword matching
+    Logic: Identify product names from table headers, bold/large text, item codes
+           Look for patterns: "XX Boru", "YY Çelik", "ZZ Levha" etc.
+           Use material keyword dictionary (built from existing system materials)
+    Pros: Free, fast, offline, no API cost, fully controllable
+    Cons: Low accuracy on complex/non-standard layouts, misses image-embedded text
+    Stack: Pure Python, no new dependencies
+
+  Option B — LLM-based extraction (Claude API / GPT-4o)
+    Libraries: anthropic SDK (or openai)
+    Logic: Send PDF page text to LLM with structured prompt:
+           "Extract all product/material names from this catalog page. Return JSON list."
+    Pros: High accuracy, handles any layout, understands Turkish, handles ambiguity
+    Cons: API cost per catalog page (~$0.001-0.01/page), requires API key, latency
+    Stack: Python side only, backend unchanged
+
+  Option C — Hybrid (rule-based first, LLM for low-confidence results)
+    Rule-based extracts high-confidence items. LLM handles remaining pages.
+    Best accuracy/cost balance.
+    Cons: Most complex to implement; requires tuning the confidence threshold.
+
+  Option D — OCR + rule-based (for scanned/image-based PDFs)
+    Libraries: pytesseract + pdfminer
+    Use when: catalogs are scanned images (not digital PDFs)
+    Pros: Handles scanned catalogs (some older Turkish company catalogs are scanned)
+    Cons: Requires Tesseract binary install, slow, Turkish OCR accuracy varies
+    Combine with: Option A or B for text extraction
+
+  Recommendation: Start with Option A for MVP. Upgrade to B/C if accuracy is insufficient.
+                  Option D as add-on since we already have some scanned-looking PDFs.
+
+New Python module: data-scraper/catalog_analyzer.py
+  - Runs AFTER scraping (separate command or --analyze flag)
+  - Usage: python main.py --analyze              (analyze all scraped companies)
+           python main.py --analyze --company "X" (single company)
+  - Reads existing company_info.json to find catalog files
+  - Writes materials_candidates.json to same folder
+
+---
+
+PHASE 10 — Backend + Frontend Integration  [PENDING — after Phase 8 & 9]
+
+Backend endpoints needed (AdminController additions):
+
+  POST /api/admin/scraper/companies/import
+    Auth: ADMIN only
+    Body: [{ companyName, website, sector, phone, email, city, district, address, catalogFiles[] }]
+    Action: For each entry:
+      1. Create Company record (status: INACTIVE)
+      2. Copy catalog file to ~/sanayi-marketi-uploads/catalogs/{companyId}/
+      3. Update Company.catalogFileUrl (first catalog file becomes the catalog)
+      4. Create CompanyApplication (type: AUTO_IMPORTED, status: PENDING)
+    Returns: { imported: N, errors: [...] }
+
+  POST /api/admin/scraper/materials/import
+    Auth: ADMIN only
+    Body: [{ materialName, companyId? }]
+    Action: For each entry:
+      1. Create Material in global pool (if not duplicate)
+      2. If companyId provided: create CompanyMaterial record (role: SELLER, price: null)
+    Returns: { created: N, duplicates: [...], errors: [...] }
+
+Frontend (/admin/scraper page — currently UI stub, needs full implementation):
+
+  Tab 1: Genel Bakış
+    - Stats: son tarama tarihi, toplam şirket, SUCCESS/PARTIAL/FAILED dağılımı
+    - Scraped companies list (from output/catalogs/ folder listing — backend serves this)
+    - "Tarama Başlat" button (deferred — requires Option C backend integration)
+
+  Tab 2: Firma İçe Aktarma
+    - Table: şirket adı | sektör | katalog sayısı | iletişim durumu | durum (YENİ/AKTARILDI)
+    - Per-row: "Sisteme Aktar" button → POST /api/admin/scraper/companies/import
+    - Bulk import: checkbox + "Seçilenleri Aktar"
+    - After import: redirects to /admin/approvals to approve AUTO_IMPORTED applications
+
+  Tab 3: Malzeme Adayları
+    - Group by company: expandable rows
+    - Per candidate: malzeme adı | güven skoru | sayfa no | onay checkbox | düzenle/reddet
+    - Sistem malzemeleriyle çakışan adaylar: sarı uyarı ("Zaten sistemde: X")
+    - "Seçilenleri Ekle" → POST /api/admin/scraper/materials/import
+    - Filters: Tümü | Yüksek Güven (>0.8) | Orta | Düşük
 
 ---
 
@@ -961,7 +1182,7 @@ Frontend:     COMPLETE + UPDATED (2026-04-20)
 
               proxy.ts:      COMPLETE
 
-Data Scraper: IN PROGRESS — see TODO section below
+Data Scraper: ACTIVE DEVELOPMENT — Phase 8 (scraper iyileştirme) + Phase 9 (katalog analizi) — bkz. DATA SCRAPER bölümü ve TODO-8/9/10
 Mobile:       OUT OF SCOPE
 
 ---
@@ -1019,13 +1240,13 @@ Priority 1 — Bug fixes (must fix before pre-final):
               zaten doğru şekilde parentMaterialName kullanıyor. Fix gerekmez.
 
   [TODO-4] Katalog indirme linki kırık — YAPILDI, TEST BEKLİYOR
-    Problem:  companies/[id]/page.tsx satır 424: href={company.catalogFileUrl} kullanıyor.
-              catalogFileUrl bir relative path (/uploads/catalogs/...) — frontend origin'i olan
-              localhost:3000'e yönlendiriyor. Dosyalar backend'de localhost:8080 üzerinden sunuluyor.
-              Logo zaten doğru prefix kullanıyor (http://localhost:8080${company.logoUrl}).
-    Öneri:    Catalog href'ine http://localhost:8080 prefix eklemek. Ancak production'da bu URL
-              dinamik olmalı — env variable veya API base URL üzerinden çekilebilir.
-    Scope:    client/src/app/(public)/companies/[id]/page.tsx satır 424
+    Problem:  companies/[id]/page.tsx: href={company.catalogFileUrl} relative path olduğu için
+              localhost:3000'e yönlendiriyordu. Dosyalar backend localhost:8080'de sunuluyor.
+    Yapılan:  constants.ts'e API_BASE_URL eklendi (NEXT_PUBLIC_API_BASE_URL env var, fallback localhost:8080).
+              8 dosyada hardcoded http://localhost:8080 → ${API_BASE_URL} olarak değiştirildi:
+              companies/[id], companies, materials/[id], favorites, home/page,
+              DashboardLayout, company/edit, company/catalog
+              Production için .env'e NEXT_PUBLIC_API_BASE_URL eklemek yeterli.
 
   [TODO-5] Firma detay header'ında "Aktif" rozeti hardcoded — YAPILDI, TEST BEKLİYOR
     Problem:  companies/[id]/page.tsx satır 148: label="Aktif" sabit yazılmış.
@@ -1051,31 +1272,66 @@ Priority 1 — Bug fixes (must fix before pre-final):
               (admin paneli /api/admin/... kullanıyor) — düşük öncelikli.
     Scope:    MaterialController.java satır 108-118 + SecurityConfig.java
 
-Priority 2 — Data Scraper integration:
+Priority 2 — Data Scraper (Phase 8 → 9 → 10):
 
-  [TODO-3] Data Scraper backend integration
-    Current state: Standalone Python scraper in /data-scraper/
-                   Produces company_info.json + catalog PDFs per company
-                   7+ companies already scraped (Borusan, Çolakoğlu, İçdaş, Yücel Boru, etc.)
-                   company_info.json format: { company_name, website, sector, status,
-                                               contact_info: {phone, email, address},
-                                               catalog_info: {count, files[]} }
-    Integration approach: PENDING DECISION (options discussed 2026-05-22)
-      Option A — Admin panel JSON import (recommended): Admin uploads scraper output JSON,
-                 backend parses and creates Company records (status: INACTIVE) + AUTO_IMPORTED
-                 CompanyApplication records. Admin approves → ACTIVE.
-      Option B — Scraper POSTs directly to backend API: After scraping, POST to backend endpoint.
-      Option C — Admin panel triggers scraper: /admin/scraper page starts scraper via backend.
-    Note: Scraped companies have no material list (only sector string).
-          Materials left empty; to be filled by company user after claiming via MANUAL_EXISTING application.
-    Backend work needed:
-      - POST /api/admin/import endpoint (accepts JSON array of scraped companies)
-      - Catalog files copied to upload dir during import
-      - CompanyApplication AUTO_IMPORTED records created
-    Frontend work needed:
-      - /admin/scraper page wired to real backend (currently UI stub)
+  [TODO-8] Scraper iyileştirmesi — Phase 8  [PLAN HAZIR — UYGULAMA BEKLİYOR]
+    Kapsam: data-scraper/ Python modülü. Backend/frontend değişikliği yok.
+    Mevcut sorun: Yüzlerce firmadan sadece çok azı kullanılabilir sonuç veriyor.
+                  İletişim bilgileri (phone/email) çoğunlukla boş çıkıyor.
+                  Şehir/ilçe hiç çıkarılmıyor — Company kaydı için zorunlu.
+    Alt görevler:
+      8a. Resume/skip: company_info.json zaten varsa atla. --force ile override.
+          --status FAILED flag ile sadece başarısız olanları yeniden dene.
+      8b. Şehir/ilçe çıkarımı: address metninden Türk şehir+ilçe adlarını parse et.
+          company_info.json'a city + district alanları ekle.
+      8c. İletişim bilgisi iyileştirmesi: Türkçe telefon alan kodu doğrulaması,
+          adres regex pattern iyileştirmesi, postal kod tespiti.
+      8d. Selenium optimizasyonu: Bilinen JS-heavy domain'ler için direkt Selenium.
+          Diğerleri için önce requests → başarısızsa Selenium (mevcut mantık aynı).
+      8e. Paralel scraping (opsiyonel): ThreadPoolExecutor, 2-5 worker.
+          Risk: anti-bot tetikleyebilir — uzun delay ile kullan.
+      8f. companies.json genişletme: 50+ Türk sanayi şirketi, sektöre göre gruplu.
+          Alanlar: { company_name, website, sector, city (pre-filled if known) }
 
-NEXT SESSION: End-to-end testing + remaining items
+  [TODO-9] Katalog analizi + malzeme çıkarımı — Phase 9  [KARAR BEKLİYOR]
+    Kapsam: data-scraper/ Python modülü. Yeni dosya: catalog_analyzer.py
+    Bağımlılık: TODO-8 tamamlandıktan sonra başlanması önerilir (daha fazla katalog verisi için).
+    Karar gerektiren: extraction yaklaşımı — bkz. DATA SCRAPER bölümü (Option A/B/C/D).
+    Kullanım (planlanan):
+      python main.py --analyze                → tüm scraplanmış şirketleri analiz et
+      python main.py --analyze --company "X"  → tek şirket
+    Alt görevler:
+      9a. PDF metin çıkarımı: pdfminer.six veya PyMuPDF ile sayfa bazlı text extraction.
+      9b. Malzeme isim tespiti: seçilen yaklaşıma göre implementasyon.
+          Option A (rule-based): regex + keyword dictionary + Türkçe NLP pattern'ler.
+          Option B (LLM): Claude API — structured prompt, JSON response.
+      9c. materials_candidates.json format + yazıcı (JSONWriter'a yeni metod).
+          Format: { company_name, catalog_file, candidates: [{name, confidence, source_page}] }
+      9d. Güven skoru hesaplama (rule-based için): keyword match sayısı, sayfa pozisyonu,
+          tablo/başlık bağlamı gibi sinyallerden 0.0-1.0 arası skor.
+      9e. Yinelenen materyal tespiti: sistemdeki mevcut malzeme listesiyle karşılaştırma.
+          (CSV/JSON olarak export edilmiş sistem materyalleriyle offline karşılaştırma.)
+
+  [TODO-10] Backend + Frontend entegrasyonu — Phase 10  [BEKLEYEN]
+    Kapsam: backend AdminController + ScraperService + frontend /admin/scraper sayfası.
+    Bağımlılık: TODO-8 ve TODO-9 tamamlandıktan sonra.
+    Backend:
+      10a. POST /api/admin/scraper/companies/import
+           Body: scraped company listesi (JSON array)
+           Action: Company (INACTIVE) + AUTO_IMPORTED CompanyApplication oluşturur
+           Katalog dosyalarını ~/sanayi-marketi-uploads/catalogs/{id}/ klasörüne kopyalar
+      10b. POST /api/admin/scraper/materials/import
+           Body: onaylı malzeme adayları listesi
+           Action: Material kaydı oluşturur; companyId varsa CompanyMaterial de oluşturur
+      10c. ScraperService.java: 10a ve 10b işlemlerinin iş mantığı
+    Frontend (/admin/scraper — şu an UI stub):
+      10d. Tab 1: Genel Bakış (son tarama tarihi, stats)
+      10e. Tab 2: Firma İçe Aktarma (tablo + "Sisteme Aktar" butonları)
+      10f. Tab 3: Malzeme Adayları (company bazlı gruplama, onay/reddet UI)
+
+NEXT SESSION: TODO-1/4/5/6 test sonuçları doğrulanacak → onaylanırsa "Completed"e taşınacak.
+              TODO-8 için plan hazır — uygulama önceliği ve başlangıç noktası belirlenecek.
+              TODO-9 için extraction yaklaşımı (Option A/B/C/D) kararı verilecek.
 
 Completed 2026-04-20:
   - Nested <a> hydration fix in CompanyCard (/companies page)
@@ -1210,8 +1466,10 @@ DECISIONS LOG
 
 ---
 
-Document version: 9.0
-Date: April 21, 2026
-Status: ACTIVE -- Phase 7 complete. City filter, duplicate detection, suspicious filter, material
-        favoriting, cross-session cache, phone validation, and homepage search bar all fixed/added.
-        Backend restart required before testing 2026-04-21 changes.
+Document version: 10.0
+Date: May 23, 2026
+Status: ACTIVE -- Phase 7 complete. Data Scraper bölümü Phase 8 (scraper iyileştirme) ve
+        Phase 9 (katalog analizi + malzeme çıkarımı) olarak yeniden tanımlandı.
+        TODO-3 kaldırıldı → TODO-8/9/10 olarak detaylı planlandı.
+        Hesap Ayarları sayfası tamamlandı (2026-05-22).
+        TODO-1/4/5/6 uygulandı, test bekleniyor.
