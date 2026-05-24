@@ -71,17 +71,22 @@ class JSONWriter:
             output_data = {
                 'company_name': company_data.get('company_name'),
                 'website': company_data.get('website'),
-                'sector': company_data.get('sector'),
+                'sectors': company_data.get('sectors', []),
+                'logo_url': company_data.get('logo_url', ''),
+                'description': company_data.get('description', ''),
                 'status': company_data.get('status'),
                 'contact_info': {
                     'phone': company_data.get('phone'),
                     'email': company_data.get('email'),
-                    'address': company_data.get('address')
+                    'address': company_data.get('address'),
+                    'city': company_data.get('city', ''),
+                    'district': company_data.get('district', ''),
                 },
                 'catalog_info': {
                     'count': company_data.get('catalog_count', 0),
                     'files': company_data.get('catalog_files', [])
                 },
+                'imported': False,
                 'scrape_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 'scrape_timestamp': datetime.now().isoformat()
             }

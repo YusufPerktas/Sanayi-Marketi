@@ -66,6 +66,7 @@ from scrapers.catalog_strategies import StrategyManager
 from utils.logger import get_logger
 from utils.file_downloader import FileDownloader
 from utils.validators import determine_status, has_contact_info
+from utils.location_extractor import extract_city_district
 
 logger = get_logger(__name__)
 
@@ -123,13 +124,13 @@ class GenericScraper(BaseScraper):
         Args:
             website: Firma web sitesi URL'si
             company_name: Firma adı
-            sector: Firma sektörü (opsiyonel)
+            sector: Firma sektörü — "/" ile ayrılmış çoklu sektör desteklenir (opsiyonel)
 
         Returns:
             Dict: Scrape sonuçları
                 - company_name: Firma adı
                 - website: Web sitesi
-                - sector: Sektör
+                - sectors: Sektör listesi
                 - phone: Telefon numarası
                 - email: E-posta adresi
                 - address: Adres
@@ -142,14 +143,21 @@ class GenericScraper(BaseScraper):
             >>> if result['status'] != 'FAILED':
             ...     print(f"Katalog sayısı: {result['catalog_count']}")
         """
+        # sector string'ini array'e çevir ("Çelik/Metal" → ["Çelik", "Metal"])
+        sectors = [s.strip() for s in sector.split('/') if s.strip()] if sector else []
+
         # Sonuç dictionary'si
         result = {
             'company_name': company_name,
             'website': website,
-            'sector': sector,
+            'sectors': sectors,
+            'logo_url': '',
+            'description': '',
             'phone': '',
             'email': '',
             'address': '',
+            'city': '',
+            'district': '',
             'catalog_count': 0,
             'catalog_files': [],
             'status': STATUS_ERROR,
@@ -209,12 +217,20 @@ class GenericScraper(BaseScraper):
             result['phone'] = contact_info.get('phone', '')
             result['email'] = contact_info.get('email', '')
             result['address'] = contact_info.get('address', '')
+            result['city'] = contact_info.get('city', '')
+            result['district'] = contact_info.get('district', '')
+
+            # =================================================================
+            # 3.5. LOGO VE AÇIKLAMA ÇIKAR
+            # =================================================================
+            result['logo_url'] = self._extract_logo_url(main_soup, base_url)
+            result['description'] = self._extract_description(main_soup, base_url)
 
             # =================================================================
             # 4. KATALOGLARI İNDİR
             # =================================================================
             if catalog_links:
-                downloaded_files = self._download_catalogs(catalog_links, company_name)
+                downloaded_files = self._download_catalogs(catalog_links, company_name, base_url)
                 result['catalog_count'] = len(downloaded_files)
                 result['catalog_files'] = downloaded_files
 
@@ -611,11 +627,25 @@ class GenericScraper(BaseScraper):
 
         # 2. Yaygın iletişim sayfası URL'lerini dene
         common_contact_paths = [
-            '/iletisim', '/iletişim', '/contact', '/contact-us', '/contactus',
-            '/bize-ulasin', '/bizeulasin', '/bize-ulaşın',
-            '/hakkimizda', '/hakkımızda', '/about', '/about-us', '/aboutus',
-            '/kurumsal', '/kurumsal/iletisim', '/tr/iletisim', '/tr/contact',
-            '/corporate/contact', '/sirket/iletisim', '/şirket/iletişim',
+            # Türkçe — kök dizin
+            '/iletisim', '/iletişim', '/iletisim-bilgileri', '/iletisim-formu',
+            '/bize-ulasin', '/bize-ulaşın', '/bizeulasin',
+            '/hakkimizda', '/hakkımızda', '/hakkinda', '/hakkında',
+            '/kurumsal', '/kurumsal/iletisim', '/kurumsal/hakkimizda',
+            # İngilizce — kök dizin
+            '/contact', '/contact-us', '/contactus', '/contact-information',
+            '/about', '/about-us', '/aboutus', '/about-company',
+            '/get-in-touch', '/reach-us',
+            # /tr/ prefix'li (Türk kurumsal sitelerde yaygın)
+            '/tr/iletisim', '/tr/iletişim', '/tr/hakkimizda', '/tr/kurumsal',
+            '/tr/bize-ulasin', '/tr/contact',
+            # /en/ prefix'li (iki dilli siteler)
+            '/en/contact', '/en/contact-us', '/en/about', '/en/about-us',
+            # Kurumsal alt yollar
+            '/corporate/contact', '/corporate/contact-us', '/corporate/about',
+            '/sirket/iletisim', '/company/contact',
+            # .html uzantılılar (eski siteler)
+            '/iletisim.html', '/contact.html', '/hakkimizda.html',
         ]
 
         contact_pages = []
@@ -648,14 +678,22 @@ class GenericScraper(BaseScraper):
             # Önce hızlı requests ile dene
             page_soup = self.fetch_page(page_url)
 
-            # Başarısızsa veya içerik az ise Selenium dene
-            if page_soup:
+            # Selenium fallback: sayfa yüklenmediyse, çok kısaysa veya içerik
+            # yeterli ama hiç iletişim bilgisi bulunamadıysa (JS-rendered sayfalar)
+            if not page_soup:
+                page_soup = self.fetch_page_with_js(page_url)
+            else:
                 page_text = page_soup.get_text()
-                # Sayfa çok kısa ise muhtemelen JS ile yükleniyor
                 if len(page_text) < 500:
                     page_soup = self.fetch_page_with_js(page_url)
-            else:
-                page_soup = self.fetch_page_with_js(page_url)
+                else:
+                    # Sayfa yüklendi ama iletişim bilgisi var mı kontrol et
+                    quick = self.extract_contact_info(page_soup)
+                    if not quick['phone'] and not quick['email']:
+                        logger.debug(f"Requests'te iletişim yok, Selenium deneniyor: {page_url}")
+                        selenium_soup = self.fetch_page_with_js(page_url)
+                        if selenium_soup:
+                            page_soup = selenium_soup
 
             if page_soup:
                 page_contact = self.extract_contact_info(page_soup)
@@ -697,14 +735,28 @@ class GenericScraper(BaseScraper):
             'phone': '',
             'email': '',
             'address': '',
+            'city': '',
+            'district': '',
+            '_schema_locality': '',
+            '_schema_region': '',
             'phones': [],
-            'emails': []
+            'emails': [],
         }
 
         # =================================================================
-        # STRATEGY 0: JSON-LD Schema.org (En güvenilir)
+        # STRATEGY 0: JSON-LD Schema.org — contactPoint dahil (En güvenilir)
         # =================================================================
         contact = self._extract_from_schema_org(soup, contact)
+
+        # =================================================================
+        # STRATEGY 0.5: HTML5 Microdata (itemprop) — yapısal & güvenilir
+        # =================================================================
+        contact = self._extract_from_microdata(soup, contact)
+
+        # =================================================================
+        # STRATEGY 0.6: OpenGraph / Meta etiketleri
+        # =================================================================
+        contact = self._extract_from_meta_tags(soup, contact)
 
         # =================================================================
         # STRATEGY 1: mailto: ve tel: linkleri (Çok güvenilir)
@@ -744,58 +796,362 @@ class GenericScraper(BaseScraper):
         if contact['emails'] and not contact['email']:
             contact['email'] = self._select_best_email(contact['emails'])
 
-        # Geçici listeleri temizle
+        # Şehir / ilçe çıkar
+        city, district = extract_city_district(
+            address=contact.get('address', ''),
+            schema_locality=contact.get('_schema_locality', ''),
+            schema_region=contact.get('_schema_region', ''),
+        )
+        contact['city'] = city
+        contact['district'] = district
+
+        # Geçici alanları temizle
         del contact['phones']
         del contact['emails']
+        contact.pop('_schema_locality', None)
+        contact.pop('_schema_region', None)
 
         return contact
 
     def _extract_from_schema_org(self, soup: BeautifulSoup, contact: Dict) -> Dict:
-        """JSON-LD Schema.org verisinden iletişim bilgisi çıkarır."""
+        """JSON-LD Schema.org verisinden iletişim bilgisi çıkarır (contactPoint dahil)."""
         import json
+
+        def _apply_org_data(data: dict) -> None:
+            """Tek bir Schema.org nesnesinden iletişim bilgisi toplar."""
+            # Doğrudan telefon/email
+            phone = data.get('telephone') or data.get('phone')
+            if phone:
+                formatted = self._format_phone(str(phone))
+                if formatted and formatted not in contact['phones']:
+                    contact['phones'].append(formatted)
+
+            email = data.get('email')
+            if email and self._is_valid_email(email) and email not in contact['emails']:
+                contact['emails'].append(email)
+
+            # contactPoint (nested veya liste) — büyük kurumsal sitelerin tercih ettiği format
+            cp = data.get('contactPoint', [])
+            if isinstance(cp, dict):
+                cp = [cp]
+            for point in cp:
+                if not isinstance(point, dict):
+                    continue
+                cp_phone = point.get('telephone') or point.get('phone')
+                if cp_phone:
+                    formatted = self._format_phone(str(cp_phone))
+                    if formatted and formatted not in contact['phones']:
+                        contact['phones'].append(formatted)
+                cp_email = point.get('email')
+                if cp_email and self._is_valid_email(cp_email) and cp_email not in contact['emails']:
+                    contact['emails'].append(cp_email)
+
+            # Adres
+            addr = data.get('address')
+            if isinstance(addr, dict):
+                locality = addr.get('addressLocality', '')
+                region = addr.get('addressRegion', '')
+                if locality and not contact['_schema_locality']:
+                    contact['_schema_locality'] = locality
+                if region and not contact['_schema_region']:
+                    contact['_schema_region'] = region
+
+                if not contact['address']:
+                    parts = [
+                        addr.get('streetAddress', ''),
+                        locality,
+                        addr.get('postalCode', ''),
+                        addr.get('addressCountry', ''),
+                    ]
+                    address = ' '.join(p for p in parts if p)
+                    if address and len(address) > 20:
+                        contact['address'] = address
+            elif isinstance(addr, str) and len(addr) > 20 and not contact['address']:
+                contact['address'] = addr
 
         for script in soup.find_all('script', type='application/ld+json'):
             try:
-                data = json.loads(script.string or '{}')
-
-                # Liste ise ilk elemanı al
-                if isinstance(data, list):
-                    data = data[0] if data else {}
-
-                # Telefon
-                if not contact['phone']:
-                    phone = data.get('telephone') or data.get('phone')
-                    if phone:
-                        formatted = self._format_phone(str(phone))
-                        if formatted:
-                            contact['phone'] = formatted
-
-                # Email
-                if not contact['email']:
-                    email = data.get('email')
-                    if email and self._is_valid_email(email):
-                        contact['email'] = email
-
-                # Adres
-                if not contact['address']:
-                    addr = data.get('address')
-                    if isinstance(addr, dict):
-                        parts = [
-                            addr.get('streetAddress', ''),
-                            addr.get('addressLocality', ''),
-                            addr.get('postalCode', ''),
-                            addr.get('addressCountry', '')
-                        ]
-                        address = ' '.join(p for p in parts if p)
-                        if address and len(address) > 20:
-                            contact['address'] = address
-                    elif isinstance(addr, str) and len(addr) > 20:
-                        contact['address'] = addr
-
+                raw = json.loads(script.string or '{}')
+                # Root liste olabilir: [@graph veya düz liste]
+                items = raw if isinstance(raw, list) else [raw]
+                for item in items:
+                    if not isinstance(item, dict):
+                        continue
+                    _apply_org_data(item)
+                    # @graph içindeki Organization nesnelerini de tara
+                    for node in item.get('@graph', []):
+                        if isinstance(node, dict):
+                            _apply_org_data(node)
             except (json.JSONDecodeError, TypeError, AttributeError):
                 continue
 
         return contact
+
+    def _extract_from_microdata(self, soup: BeautifulSoup, contact: Dict) -> Dict:
+        """HTML5 Microdata (itemprop) verisinden iletişim bilgisi çıkarır."""
+        # Telefon: itemprop="telephone"
+        for elem in soup.find_all(attrs={'itemprop': 'telephone'}):
+            raw = (elem.get('content') or
+                   elem.get('href', '').replace('tel:', '') or
+                   elem.get_text()).strip()
+            formatted = self._format_phone(raw)
+            if formatted and formatted not in contact['phones']:
+                contact['phones'].append(formatted)
+
+        # Email: itemprop="email"
+        for elem in soup.find_all(attrs={'itemprop': 'email'}):
+            raw = (elem.get('href', '').replace('mailto:', '') or
+                   elem.get('content') or
+                   elem.get_text()).strip().split('?')[0]
+            if self._is_valid_email(raw) and raw not in contact['emails']:
+                contact['emails'].append(raw)
+
+        # Adres bileşenleri: locality ve region için
+        for elem in soup.find_all(attrs={'itemprop': 'addressLocality'}):
+            text = (elem.get('content') or elem.get_text()).strip()
+            if text and not contact['_schema_locality']:
+                contact['_schema_locality'] = text
+
+        for elem in soup.find_all(attrs={'itemprop': 'addressRegion'}):
+            text = (elem.get('content') or elem.get_text()).strip()
+            if text and not contact['_schema_region']:
+                contact['_schema_region'] = text
+
+        for elem in soup.find_all(attrs={'itemprop': 'streetAddress'}):
+            text = (elem.get('content') or elem.get_text()).strip()
+            if text and not contact['address'] and self._is_valid_address(text):
+                contact['address'] = text
+
+        return contact
+
+    def _extract_from_meta_tags(self, soup: BeautifulSoup, contact: Dict) -> Dict:
+        """OpenGraph ve diğer meta etiketlerinden iletişim bilgisi çıkarır."""
+        phone_props = [
+            'phone', 'telephone', 'contact:phone_number',
+            'business:contact_data:phone_number', 'og:phone_number',
+        ]
+        email_props = [
+            'email', 'contact:email',
+            'business:contact_data:email_address', 'og:email',
+        ]
+
+        for prop in phone_props:
+            for meta in soup.find_all('meta', attrs={'property': prop}) + \
+                         soup.find_all('meta', attrs={'name': prop}):
+                content = meta.get('content', '').strip()
+                formatted = self._format_phone(content)
+                if formatted and formatted not in contact['phones']:
+                    contact['phones'].append(formatted)
+
+        for prop in email_props:
+            for meta in soup.find_all('meta', attrs={'property': prop}) + \
+                         soup.find_all('meta', attrs={'name': prop}):
+                content = meta.get('content', '').strip()
+                if self._is_valid_email(content) and content not in contact['emails']:
+                    contact['emails'].append(content)
+
+        return contact
+
+    # -----------------------------------------------------------------
+    # LOGO & AÇIKLAMA
+    # -----------------------------------------------------------------
+
+    def _extract_logo_url(self, soup: BeautifulSoup, base_url: str) -> str:
+        """
+        Firma logo URL'sini çıkarır.
+
+        Öncelik sırası:
+        1. <meta property="og:image"> — sosyal paylaşım için en iyi görsel
+        2. <meta name="twitter:image">
+        3. <link rel="apple-touch-icon"> — yüksek kaliteli uygulama ikonu
+        4. <img> with "logo" in class / id / alt / src
+        5. <img> inside header or nav (ilk makul boyuttaki)
+        """
+        def resolve_and_validate(url: str) -> str:
+            if not url or url.startswith('data:'):
+                return ''
+            resolved = self.resolve_url(base_url, url.strip())
+            # Pixel tracker kontrolü (1x1 gibi bilinen isimler)
+            resolved_lower = resolved.lower()
+            if any(kw in resolved_lower for kw in ['pixel', 'tracking', '1x1', 'spacer', 'blank']):
+                return ''
+            return resolved
+
+        # 1. og:image
+        og = soup.find('meta', property='og:image') or \
+             soup.find('meta', attrs={'name': 'og:image'})
+        if og:
+            url = resolve_and_validate(og.get('content', ''))
+            if url:
+                logger.debug(f"Logo (og:image): {url}")
+                return url
+
+        # 2. twitter:image
+        tw = soup.find('meta', attrs={'name': 'twitter:image'}) or \
+             soup.find('meta', attrs={'property': 'twitter:image'})
+        if tw:
+            url = resolve_and_validate(tw.get('content', ''))
+            if url:
+                logger.debug(f"Logo (twitter:image): {url}")
+                return url
+
+        # 3. apple-touch-icon (en yüksek boyutluyu al)
+        best_icon = None
+        best_size = 0
+        for link in soup.find_all('link'):
+            rel = link.get('rel', [])
+            # BS4'te rel liste, bazen string döner
+            if isinstance(rel, str):
+                rel = [rel]
+            rel_str = ' '.join(rel).lower()
+            if 'apple-touch-icon' not in rel_str:
+                continue
+            href = link.get('href', '')
+            if not href or href.startswith('data:'):
+                continue
+            sizes = link.get('sizes', '0x0')
+            try:
+                w = int(sizes.split('x')[0])
+            except (ValueError, IndexError):
+                w = 1
+            if w > best_size:
+                best_size = w
+                best_icon = href
+        if best_icon:
+            url = resolve_and_validate(best_icon)
+            if url:
+                logger.debug(f"Logo (apple-touch-icon): {url}")
+                return url
+
+        # 4. <img> "logo" geçen class / id / alt / src
+        for img in soup.find_all('img'):
+            classes = ' '.join(img.get('class', []))
+            img_id = img.get('id', '')
+            alt = img.get('alt', '')
+            src = img.get('src', '') or img.get('data-src', '')
+            if any('logo' in x.lower() for x in [classes, img_id, alt, src]):
+                url = resolve_and_validate(src)
+                if url:
+                    logger.debug(f"Logo (img[logo]): {url}")
+                    return url
+
+        # 5. <img> inside header / nav — ilk makul görsel
+        for selector in ['header img', 'nav img', '[class*="header"] img',
+                          '[class*="navbar"] img', '[class*="nav-"] img']:
+            for img in soup.select(selector)[:5]:
+                src = img.get('src', '') or img.get('data-src', '')
+                url = resolve_and_validate(src)
+                if url:
+                    logger.debug(f"Logo (header img): {url}")
+                    return url
+
+        return ''
+
+    def _extract_description(self, soup: BeautifulSoup, base_url: str) -> str:
+        """
+        Firma açıklamasını çıkarır.
+
+        Öncelik sırası:
+        1. <meta name="description"> / og:description / twitter:description
+        2. Schema.org "description" alanı
+        3. İlk anlamlı paragraf (nav/footer/cookie dışı, 80+ karakter)
+        """
+        import json as _json
+
+        # 1. Meta etiketleri
+        for attr in [
+            {'name': 'description'},
+            {'property': 'og:description'},
+            {'name': 'og:description'},
+            {'name': 'twitter:description'},
+            {'property': 'twitter:description'},
+        ]:
+            meta = soup.find('meta', attrs=attr)
+            if meta:
+                content = meta.get('content', '').strip()
+                if content and len(content) >= 50:
+                    logger.debug(f"Açıklama (meta): {content[:80]}...")
+                    return content[:1500]
+
+        # 2. Schema.org description
+        for script in soup.find_all('script', type='application/ld+json'):
+            try:
+                raw = _json.loads(script.string or '{}')
+                items = raw if isinstance(raw, list) else [raw]
+                for item in items:
+                    desc = item.get('description', '') if isinstance(item, dict) else ''
+                    if desc and len(str(desc)) >= 50:
+                        logger.debug(f"Açıklama (Schema.org): {str(desc)[:80]}...")
+                        return str(desc)[:1500]
+            except Exception:
+                continue
+
+        # 3. Sayfadan ilk anlamlı paragraf
+        return self._extract_first_meaningful_paragraph(soup)
+
+    def _extract_first_meaningful_paragraph(self, soup: BeautifulSoup) -> str:
+        """
+        Sayfa içeriğinden ilk anlamlı paragrafı bulur.
+
+        Filtreler:
+        - 80+ karakter
+        - Cookie / KVKK / navigasyon metni değil
+        - Sayı veya link listesi değil
+        """
+        _SKIP_KEYWORDS = {
+            'cookie', 'çerez', 'kvkk', 'gizlilik', 'kullanım koşulları',
+            'aydınlatma', 'kabul et', 'accept', 'tıklayın', 'click here',
+            'tüm hakları', 'all rights', 'copyright', 'javascript',
+        }
+        _COMPANY_HINTS = {
+            'firmamız', 'şirketimiz', 'kuruluş', 'üretim', 'hizmet',
+            'sektör', 'ürün', 'kalite', 'müşteri', 'yıl', 'uzman',
+            'fabrika', 'tesis', 'ihracat', 'founded', 'company',
+            'established', 'manufacture', 'industry', 'product',
+        }
+
+        # Gürültülü alanları soup'tan çıkar (kopya üzerinde çalış)
+        soup_copy = BeautifulSoup(str(soup), 'lxml')
+        for tag in soup_copy.find_all(['nav', 'header', 'footer', 'script',
+                                        'style', 'noscript', 'aside']):
+            tag.decompose()
+
+        # Tercihli içerik bölgeleri
+        candidates = []
+        for selector in ['main', 'article', '[class*="about"]', '[class*="hakkimizda"]',
+                          '[class*="kurumsal"]', '[class*="content"]', '[id*="about"]',
+                          '[id*="content"]', 'section', '.container', 'body']:
+            container = soup_copy.select_one(selector)
+            if not container:
+                continue
+            for p in container.find_all('p'):
+                text = p.get_text(separator=' ', strip=True)
+                # Uzunluk kontrolü
+                if len(text) < 80 or len(text) > 2000:
+                    continue
+                text_lower = text.lower()
+                # Skip keywords kontrolü
+                if any(kw in text_lower for kw in _SKIP_KEYWORDS):
+                    continue
+                # Sadece linklerden ibaret değil
+                link_count = len(p.find_all('a'))
+                word_count = len(text.split())
+                if link_count > word_count / 3:
+                    continue
+                # Puanlama: firma hintleri içeriyorsa öncelik ver
+                score = sum(1 for h in _COMPANY_HINTS if h in text_lower)
+                candidates.append((score, text))
+            if candidates:
+                break  # İlk uygun container yeterli
+
+        if candidates:
+            # En yüksek puan veya ilk bulunanı döndür
+            candidates.sort(key=lambda x: x[0], reverse=True)
+            best = candidates[0][1]
+            logger.debug(f"Açıklama (paragraf): {best[:80]}...")
+            return best[:1500]
+
+        return ''
 
     def _extract_from_footer(self, soup: BeautifulSoup, contact: Dict) -> Dict:
         """Footer'dan iletişim bilgisi çıkarır."""
@@ -1362,24 +1718,30 @@ class GenericScraper(BaseScraper):
         return True
 
     def _select_best_phone(self, phones: List[str]) -> str:
-        """En iyi telefon numarasını seçer (sabit hat öncelikli)."""
+        """
+        En iyi telefon numarasını seçer.
+
+        Öncelik sırası:
+        1. Herhangi bir sabit hat (02xx alan kodu) — kurumsal numara daha güvenilir
+        2. Santral/dahili hat (genellikle sabit hat ile başlar)
+        3. Mobil hat (05xx)
+        4. Listedeki ilk numara (fallback)
+        """
         if not phones:
             return ''
 
-        # Sabit hat tercih et (0212, 0216 vb.)
-        for phone in phones:
-            digits = re.sub(r'\D', '', phone)
-            if digits.startswith('90212') or digits.startswith('90216') or \
-               digits.startswith('0212') or digits.startswith('0216'):
-                return phone
-
-        # Diğer sabit hatlar
+        # 1. Sabit hat (02xx — şehre göre değişir, İstanbul'a özgü değil)
         for phone in phones:
             digits = re.sub(r'\D', '', phone)
             if digits.startswith('902') or digits.startswith('02'):
                 return phone
 
-        # İlk telefonu döndür
+        # 2. Mobil hat (05xx)
+        for phone in phones:
+            digits = re.sub(r'\D', '', phone)
+            if digits.startswith('905') or digits.startswith('05'):
+                return phone
+
         return phones[0]
 
     def _select_best_email(self, emails: List[str]) -> str:
@@ -1458,13 +1820,15 @@ class GenericScraper(BaseScraper):
         return ''
 
     def _download_catalogs(self, catalog_urls: List[str],
-                           company_name: str) -> List[str]:
+                           company_name: str,
+                           base_url: str = '') -> List[str]:
         """
         Katalog dosyalarını indirir.
 
         Args:
             catalog_urls: İndirilecek katalog URL'leri
             company_name: Firma adı (klasör için)
+            base_url: Firma ana URL'si (Referer header için)
 
         Returns:
             List[str]: İndirilen dosya yolları
@@ -1472,7 +1836,8 @@ class GenericScraper(BaseScraper):
         downloaded = []
 
         for url in catalog_urls:
-            result = self.downloader.download(url, company_name)
+            # trusted=True: URL'ler catalog discovery tarafından zaten vetting edildi
+            result = self.downloader.download(url, company_name, referer=base_url, trusted=True)
             if result['success']:
                 downloaded.append(result['file_path'])
 

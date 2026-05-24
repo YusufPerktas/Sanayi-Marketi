@@ -106,13 +106,14 @@ def process_company(scraper: GenericScraper, company: Dict[str, str]) -> Dict[st
     company_name = company.get('company_name', 'Bilinmeyen')
     website = company.get('website', '')
     sector = company.get('sector', '')
+    sectors = [s.strip() for s in sector.split('/') if s.strip()] if sector else []
 
     if not website:
         logger.warning(f"Website bilgisi eksik: {company_name}")
         return {
             'company_name': company_name,
             'website': '',
-            'sector': sector,
+            'sectors': sectors,
             'status': STATUS_ERROR,
             'catalog_count': 0
         }
@@ -146,7 +147,8 @@ def process_single_company(company_name: str, companies: List[Dict[str, str]]) -
     print(f"\n[TEKLİ ARAMA MODU]")
     print(f"Firma: {company['company_name']}")
     print(f"Web: {company['website']}")
-    print(f"Sektör: {company['sector']}")
+    sectors_str = ', '.join([s.strip() for s in company.get('sector', '').split('/') if s.strip()])
+    print(f"Sektör: {sectors_str or '-'}")
     print(f"\nİşlem başlıyor...\n")
     
     logger.info(f"Tekli arama başlıyor: {company_name}")
@@ -173,6 +175,15 @@ def process_single_company(company_name: str, companies: List[Dict[str, str]]) -
         print(f"  Email: {result['email']}")
     if result.get('address'):
         print(f"  Adres: {result['address']}")
+    if result.get('city'):
+        print(f"  Şehir: {result['city']}")
+    if result.get('district'):
+        print(f"  İlçe: {result['district']}")
+    if result.get('logo_url'):
+        print(f"  Logo: {result['logo_url']}")
+    if result.get('description'):
+        desc_preview = result['description'][:120].replace('\n', ' ')
+        print(f"  Açıklama: {desc_preview}...")
     
     # JSON'a kaydet
     if status in [STATUS_SUCCESS, STATUS_PARTIAL]:
@@ -293,8 +304,8 @@ def generate_test_info(test_dir: str, test_num: int, results: List[Dict[str, Any
         f"",
         f"## Sonuçlar",
         f"",
-        f"| Firma | Durum | Telefon | Email | Adres | Katalog |",
-        f"|-------|-------|---------|-------|-------|---------|",
+        f"| Firma | Durum | Tel | Email | Adres | Şehir | İlçe | Logo | Açıklama | Katalog |",
+        f"|-------|-------|-----|-------|-------|-------|------|------|----------|---------|",
     ]
 
     success = partial = failed = 0
@@ -304,8 +315,12 @@ def generate_test_info(test_dir: str, test_num: int, results: List[Dict[str, Any
         phone = '✓' if r.get('phone') else '✗'
         email = '✓' if r.get('email') else '✗'
         address = '✓' if r.get('address') else '✗'
+        city = r.get('city', '') or '✗'
+        district = r.get('district', '') or '✗'
+        logo = '✓' if r.get('logo_url') else '✗'
+        desc = '✓' if r.get('description') else '✗'
         catalogs = str(r.get('catalog_count', 0))
-        lines.append(f"| {name} | {status} | {phone} | {email} | {address} | {catalogs} |")
+        lines.append(f"| {name} | {status} | {phone} | {email} | {address} | {city} | {district} | {logo} | {desc} | {catalogs} |")
         if status == STATUS_SUCCESS:
             success += 1
         elif status == STATUS_PARTIAL:
@@ -354,7 +369,12 @@ def process_test_run(test_num: int, companies: List[Dict[str, str]]) -> None:
             catalog_count = result.get('catalog_count', 0)
             phone = result.get('phone', '')
             email = result.get('email', '')
-            print(f"  → {status} | katalog: {catalog_count} | tel: {'✓' if phone else '✗'} | email: {'✓' if email else '✗'}")
+            city = result.get('city', '')
+            district = result.get('district', '')
+            logo = '✓' if result.get('logo_url') else '✗'
+            desc = '✓' if result.get('description') else '✗'
+            location_str = f"{city}/{district}" if district else (city or '✗')
+            print(f"  → {status} | katalog: {catalog_count} | tel: {'✓' if phone else '✗'} | email: {'✓' if email else '✗'} | lokasyon: {location_str} | logo: {logo} | açıklama: {desc}")
 
             # JSON kaydet
             from utils.validators import sanitize_filename
@@ -376,15 +396,52 @@ def process_test_run(test_num: int, companies: List[Dict[str, str]]) -> None:
     print(f"{'='*50}")
 
 
-# Test modu için sabit firma listesi
+# Test modu için sabit firma listesi (35 firma)
+# Doğrulanmış çalışanlar (test-1/2'den):
+#   Borusan Boru, Çolakoğlu Metalurji, İzmir Demir Çelik → SUCCESS
+#   Yücel Boru, Kroman Çelik, İçdaş Çelik → PARTIAL (katalog var, iletişim eksik)
+# Borçelik çıkarıldı — sitede kamuya açık katalog yok (teyit edildi)
 TEST_COMPANIES = [
+    # --- Doğrulanmış (test-1/2) ---
     'Borusan Boru',
     'Çolakoğlu Metalurji',
-    'İçdaş Çelik',
-    'Yücel Boru',
     'İzmir Demir Çelik',
-    'Borçelik',
+    'Yücel Boru',
     'Kroman Çelik',
+    'İçdaş Çelik',
+    # --- Çelik / Metal ---
+    'Noksel Çelik',
+    'Assan Alüminyum',
+    'Çemtaş Çelik',
+    'Kaptan Demir Çelik',
+    'Erbakır',
+    'Kardemir',
+    'Tosyalı Holding',
+    'Sarkuysan',
+    'KM Metal',
+    # --- İnşaat / Yapı ---
+    'Knauf',
+    'Mapei',
+    'Seranit',
+    'Fırat A.Ş.',
+    # --- Elektrik / Elektronik ---
+    'Nexans Türkiye',
+    'HES',
+    'EAE Elektrik',
+    'Sigma Elektrik',
+    'Onka Elektrik',
+    'Mutlusan',
+    'Best Transformer',
+    'Eine',
+    # --- Endüstriyel / Mekanik ---
+    'Ayvaz',
+    'Ekin Endüstriyel',
+    'Dizayn Grup',
+    'Vansan',
+    'Etna',
+    'Standart Pompa',
+    'Tuna Vida',
+    'Çözümbu',
 ]
 
 
@@ -422,7 +479,7 @@ def main() -> None:
   {
     "company_name": "Firma Adı",
     "website": "https://firma-website.com",
-    "sector": "Sektör"
+    "sector": "Sektör/Alt Sektör"
   }
 ]''')
         return
@@ -440,7 +497,8 @@ def main() -> None:
         print("[FİRMA LİSTESİ]")
         print()
         for i, company in enumerate(companies, 1):
-            print(f"{i:3d}. {company['company_name']:35s} | {company['sector']}")
+            sector_str = company.get('sector', '').replace('/', ', ')
+            print(f"{i:3d}. {company['company_name']:35s} | {sector_str}")
         print()
         return
     

@@ -209,12 +209,12 @@ VALID_AREA_CODES = [
 
 # EXCEL
 EXCEL_COLUMNS = [
-    'company_name', 'website', 'sector', 'phone', 'email',
+    'company_name', 'website', 'sectors', 'phone', 'email',
     'address', 'catalog_count', 'catalog_files', 'status', 'scrape_date'
 ]
 
 EXCEL_HEADERS = {
-    'company_name': 'Firma Adı', 'website': 'Web Sitesi', 'sector': 'Sektör',
+    'company_name': 'Firma Adı', 'website': 'Web Sitesi', 'sectors': 'Sektörler',
     'phone': 'Telefon', 'email': 'E-posta', 'address': 'Adres',
     'catalog_count': 'Katalog Sayısı', 'catalog_files': 'Katalog Dosyaları',
     'status': 'Durum', 'scrape_date': 'Tarih'
@@ -225,3 +225,19 @@ STATUS_SUCCESS = 'SUCCESS'
 STATUS_PARTIAL = 'PARTIAL'
 STATUS_FAILED = 'FAILED'
 STATUS_ERROR = 'ERROR'
+
+# TÜRKİYE 81 İL LİSTESİ (canonical yazım — şehir/ilçe tespitinde kullanılır)
+TURKISH_CITIES = [
+    'Adana', 'Adıyaman', 'Afyonkarahisar', 'Ağrı', 'Amasya', 'Ankara', 'Antalya',
+    'Artvin', 'Aydın', 'Balıkesir', 'Bilecik', 'Bingöl', 'Bitlis', 'Bolu',
+    'Burdur', 'Bursa', 'Çanakkale', 'Çankırı', 'Çorum', 'Denizli', 'Diyarbakır',
+    'Edirne', 'Elazığ', 'Erzincan', 'Erzurum', 'Eskişehir', 'Gaziantep', 'Giresun',
+    'Gümüşhane', 'Hakkari', 'Hatay', 'Isparta', 'Mersin', 'İstanbul', 'İzmir',
+    'Kars', 'Kastamonu', 'Kayseri', 'Kırklareli', 'Kırşehir', 'Kocaeli', 'Konya',
+    'Kütahya', 'Malatya', 'Manisa', 'Kahramanmaraş', 'Mardin', 'Muğla', 'Muş',
+    'Nevşehir', 'Niğde', 'Ordu', 'Rize', 'Sakarya', 'Samsun', 'Siirt', 'Sinop',
+    'Sivas', 'Tekirdağ', 'Tokat', 'Trabzon', 'Tunceli', 'Şanlıurfa', 'Uşak',
+    'Van', 'Yozgat', 'Zonguldak', 'Aksaray', 'Bayburt', 'Karaman', 'Kırıkkale',
+    'Batman', 'Şırnak', 'Bartın', 'Ardahan', 'Iğdır', 'Yalova', 'Karabük',
+    'Kilis', 'Osmaniye', 'Düzce',
+]

@@ -37,6 +37,9 @@ ENV/
 # Katalog klasörü içindeki tüm tarih klasörleri ve dosyaları
 output/catalogs/*/
 
+# Test çıktıları (indirilen PDF'ler, JSON'lar, TEST_INFO.md dahil)
+output/tests/*/
+
 # Excel çıktı dosyaları (tarihli olanlar dahil)
 output/*.xlsx
 output/company_data*.xlsx

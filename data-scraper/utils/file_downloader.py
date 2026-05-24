@@ -210,7 +210,9 @@ class FileDownloader:
 
     def download(self, url: str, company_name: str,
                  custom_filename: Optional[str] = None,
-                 link_text: str = '') -> Dict[str, any]:
+                 link_text: str = '',
+                 referer: str = '',
+                 trusted: bool = False) -> Dict[str, any]:
         """
         Dosyayı indirir ve kaydeder (URL pre-filtering ile).
 
@@ -245,15 +247,16 @@ class FileDownloader:
 
         try:
             # =================================================================
-            # PRE-DOWNLOAD FILTERING (Yeni!)
+            # PRE-DOWNLOAD FILTERING
             # =================================================================
-            should_download, filter_reason = self.should_download_url(url, link_text)
-
-            if not should_download:
-                logger.debug(f"URL filtrelendi: {url} - Sebep: {filter_reason}")
-                result['skipped'] = True
-                result['skip_reason'] = filter_reason
-                return result
+            # trusted=True: URL discovery tarafından zaten vetting edildi, tekrar filtreleme
+            if not trusted:
+                should_download, filter_reason = self.should_download_url(url, link_text)
+                if not should_download:
+                    logger.debug(f"URL filtrelendi: {url} - Sebep: {filter_reason}")
+                    result['skipped'] = True
+                    result['skip_reason'] = filter_reason
+                    return result
 
             # URL hash ile duplicate kontrolü (indirmeden önce)
             url_hash = hashlib.md5(url.encode()).hexdigest()
@@ -283,13 +286,18 @@ class FileDownloader:
             # Dosyayı indir
             file_path = os.path.join(company_dir, filename)
 
+            # Referer varsa headers'a ekle (bazı siteler olmadan blokluyor)
+            req_headers = dict(self.headers)
+            if referer:
+                req_headers['Referer'] = referer
+
             for attempt in range(1, self.max_retries + 1):
                 try:
                     logger.debug(f"İndiriliyor (deneme {attempt}): {url}")
 
                     response = requests.get(
                         url,
-                        headers=self.headers,
+                        headers=req_headers,
                         timeout=self.timeout,
                         stream=True,
                         allow_redirects=True

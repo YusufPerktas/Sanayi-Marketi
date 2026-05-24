@@ -31,13 +31,13 @@ except ImportError:
     OUTPUT_DIR = 'output'
     EXCEL_FILE = os.path.join(OUTPUT_DIR, 'company_data.xlsx')
     EXCEL_COLUMNS = [
-        'company_name', 'website', 'sector', 'phone', 'email',
+        'company_name', 'website', 'sectors', 'phone', 'email',
         'address', 'catalog_count', 'catalog_files', 'status', 'scrape_date'
     ]
     EXCEL_HEADERS = {
         'company_name': 'Firma Adı',
         'website': 'Web Sitesi',
-        'sector': 'Sektör',
+        'sectors': 'Sektörler',
         'phone': 'Telefon',
         'email': 'E-posta',
         'address': 'Adres',
@@ -205,8 +205,10 @@ class ExcelWriter:
         for col in self.columns:
             value = company_data.get(col, '')
 
-            # catalog_files listesini string'e çevir
+            # list kolonları string'e çevir
             if col == 'catalog_files' and isinstance(value, list):
+                value = ', '.join(value) if value else ''
+            if col == 'sectors' and isinstance(value, list):
                 value = ', '.join(value) if value else ''
 
             # scrape_date yoksa ekle
