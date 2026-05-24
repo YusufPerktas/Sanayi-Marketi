@@ -27,7 +27,18 @@ SELENIUM_HEADLESS = os.getenv('SELENIUM_HEADLESS', 'true').lower() == 'true'
 OUTPUT_DIR = 'output'
 CATALOGS_DIR = os.path.join(OUTPUT_DIR, 'catalogs')
 LOGS_DIR = os.path.join(OUTPUT_DIR, 'logs')
+TESTS_DIR = os.path.join(OUTPUT_DIR, 'tests')
 EXCEL_FILE = os.path.join(OUTPUT_DIR, 'company_data.xlsx')
+
+# JS-HEAVY DOMAINS (requests yetersiz kalıyor, direkt Selenium kullan)
+# Test sırasında yeni JS-heavy site tespit edilince buraya ekle
+JS_HEAVY_DOMAINS = [
+    'oyakmadenmetalurji.com.tr',
+    'tosyalidemircelik.com.tr',
+    'kardemir.com',
+    'assan.com',
+    'assanaluminyum.com',
+]
 
 
 class RunSession:
@@ -127,6 +138,11 @@ PDF_NEGATIVE_KEYWORDS = [
     'cevre-ve-iklim', 'cevre_ve_iklim', 'cevre-iklim', 'iklim',
     'enerji_yonetimi', 'enerji-yonetimi', 'enerji_yonetim',
     'karbon', 'carbon', 'emisyon', 'emission',
+    'msds', 'sds',
+    'guvenlik-bilgi', 'guvenlik_bilgi',
+    'basvuru-formu', 'basvuru_formu',
+    'teklif-formu', 'teklif_formu',
+    'ihale-sartnamesi', 'ihale_sartnamesi',
 ]
 
 PDF_MIN_SIZE = int(os.getenv('PDF_MIN_SIZE', 10000))

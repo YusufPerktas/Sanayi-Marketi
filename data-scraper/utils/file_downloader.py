@@ -76,40 +76,41 @@ class FileDownloader:
         })
         return text.translate(tr_map).lower()
 
-    def should_download_url(self, url: str, link_text: str = '') -> Tuple[bool, str]:
+    # URL path'inde katalog olduğunu gösteren segmentler
+    CATALOG_PATH_INDICATORS = [
+        '/katalog', '/catalog', '/catalogue',
+        '/download', '/downloads', '/indir', '/indirme',
+        '/urunler', '/urun', '/products', '/product',
+        '/dosya', '/dosyalar', '/brosur', '/brochure',
+        '/fiyat', '/pricelist',
+    ]
+
+    def should_download_url(self, url: str, link_text: str = '',
+                            from_catalog_page: bool = False) -> Tuple[bool, str]:
         """
         URL'nin indirilip indirilmeyeceğini kontrol eder (indirmeden önce).
 
-        Negatif keyword varsa indirmez, pozitif keyword varsa öncelik verir.
+        Karar sırası:
+        1. Negatif keyword varsa: indir ME
+        2. Pozitif keyword varsa: İNDİR
+        3. PDF + katalog sayfasından geldiyse: İNDİR
+        4. PDF + URL path'inde katalog göstergesi varsa: İNDİR
+        5. Diğer: indir ME
 
         Args:
             url: Kontrol edilecek URL
             link_text: Link metni (opsiyonel)
-
-        Returns:
-            Tuple[bool, str]: (İndirilsin mi, Sebep)
-
-        Example:
-            >>> should_download, reason = downloader.should_download_url(
-            ...     "https://example.com/privacy-policy.pdf", "Gizlilik Politikası"
-            ... )
-            >>> print(should_download)  # False
-            >>> print(reason)  # "Negative keyword: privacy"
+            from_catalog_page: Bu PDF bir katalog/download sayfasından mı bulundu?
         """
         import re
 
-        # URL'yi decode et (URL-encoded karakterler için: %C3%B6 -> ö)
         decoded_url = self._normalize_turkish(unquote(url))
         text_lower = self._normalize_turkish(link_text) if link_text else ''
 
-        # Dosya adını URL'den çıkar
         filename = self._extract_filename(url)
         filename_normalized = self._normalize_turkish(filename)
 
-        # Hash'li dosya adı kontrolü (MD5/SHA1 gibi sadece hex karakterlerden oluşan)
-        # Örnek: 44e6837acccc042ae3d6cd8eac957784.pdf
-        # NOT: Sadece "buttons" dizinindeki hash'li dosyaları atla
-        # "files" dizinindeki hash'li dosyalar gerçek katalog olabilir (örn: Çemtaş)
+        # Hash'li dosya adı kontrolü — sadece /buttons/ dizininde atla
         name_without_ext = os.path.splitext(filename)[0]
         if re.match(r'^[a-f0-9]{20,}$', name_without_ext.lower()):
             if '/buttons/' in url.lower() or '/button/' in url.lower():
@@ -117,25 +118,31 @@ class FileDownloader:
 
         combined = f"{decoded_url} {text_lower} {filename_normalized}"
 
-        # Negatif keyword kontrolü (bunlar engelleyici)
+        # 1. Negatif keyword varsa indir ME
         for neg_kw in PDF_NEGATIVE_KEYWORDS:
             if neg_kw in combined:
                 return False, f"Negative keyword: {neg_kw}"
 
-        # Pozitif keyword kontrolü
-        has_positive = any(pos_kw in combined for pos_kw in PDF_POSITIVE_KEYWORDS)
-
-        if has_positive:
+        # 2. Pozitif keyword varsa İNDİR
+        if any(pos_kw in combined for pos_kw in PDF_POSITIVE_KEYWORDS):
             return True, "Has positive keyword"
 
-        # PDF uzantılı dosyalar için: negatif keyword yoksa indir
+        # 3-4. PDF için ek kontrol
         if url.lower().endswith('.pdf'):
-            return True, "PDF file without negative keywords"
+            if from_catalog_page:
+                return True, "PDF from catalog page"
+
+            url_path = urlparse(url).path.lower()
+            if any(ind in url_path for ind in self.CATALOG_PATH_INDICATORS):
+                return True, "PDF in catalog path"
+
+            return False, "No catalog indicator found"
 
         # PDF olmayan ve pozitif keyword olmayan dosyaları indirme
         return False, "No positive keyword found"
 
-    def get_url_score(self, url: str, link_text: str = '') -> int:
+    def get_url_score(self, url: str, link_text: str = '',
+                      from_catalog_page: bool = False) -> int:
         """
         URL'ye relevance skoru verir (0-100).
 
@@ -144,11 +151,9 @@ class FileDownloader:
         Args:
             url: Skorlanacak URL
             link_text: Link metni
-
-        Returns:
-            int: Relevance skoru (0-100)
+            from_catalog_page: Katalog sayfasından gelen URL için bonus
         """
-        score = 50  # Başlangıç skoru
+        score = 50
         url_lower = url.lower()
         text_lower = link_text.lower() if link_text else ''
         combined = f"{url_lower} {text_lower}"
@@ -156,12 +161,12 @@ class FileDownloader:
         # Negatif keyword'ler skoru ciddi düşürür
         for neg_kw in PDF_NEGATIVE_KEYWORDS:
             if neg_kw in combined:
-                score -= 60  # Ağır ceza
+                score -= 60
                 break
 
         # Pozitif keyword'ler skoru artırır
         positive_matches = sum(1 for pos_kw in PDF_POSITIVE_KEYWORDS if pos_kw in combined)
-        score += positive_matches * 15  # Her eşleşme için +15
+        score += positive_matches * 15
 
         # URL path analizi
         if '/catalog' in url_lower or '/katalog' in url_lower:
@@ -171,7 +176,11 @@ class FileDownloader:
         if '/download' in url_lower or '/indir' in url_lower:
             score += 10
 
-        return max(0, min(100, score))  # 0-100 arasında tut
+        # Katalog sayfasından geldiyse bonus
+        if from_catalog_page:
+            score += 20
+
+        return max(0, min(100, score))
 
     def validate_pdf_content(self, content: bytes, url: str) -> Tuple[bool, str]:
         """

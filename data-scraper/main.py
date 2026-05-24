@@ -23,6 +23,7 @@ from config.settings import (
     OUTPUT_DIR,
     CATALOGS_DIR,
     LOGS_DIR,
+    TESTS_DIR,
     STATUS_SUCCESS,
     STATUS_PARTIAL,
     STATUS_FAILED,
@@ -69,7 +70,7 @@ def load_companies(json_path: str = 'config/companies.json') -> List[Dict[str, s
 
 def ensure_directories() -> None:
     """Gerekli dizinleri oluşturur."""
-    directories = [OUTPUT_DIR, CATALOGS_DIR, LOGS_DIR]
+    directories = [OUTPUT_DIR, CATALOGS_DIR, LOGS_DIR, TESTS_DIR]
 
     for directory in directories:
         if not os.path.exists(directory):
@@ -279,6 +280,114 @@ def process_batch(companies: List[Dict[str, str]]) -> None:
     logger.info(f"İşlem tamamlandı. Süre: {duration}")
 
 
+def generate_test_info(test_dir: str, test_num: int, results: List[Dict[str, Any]]) -> None:
+    """Test klasörüne TEST_INFO.md dosyası oluşturur."""
+    lines = [
+        f"# Test {test_num}",
+        f"",
+        f"**Tarih:** {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        f"",
+        f"## Bu testte yapılan değişiklikler",
+        f"",
+        f"> (Bu bölümü doldurun: hangi 8x alt görevi uygulandı, ne değiştirildi)",
+        f"",
+        f"## Sonuçlar",
+        f"",
+        f"| Firma | Durum | Telefon | Email | Adres | Katalog |",
+        f"|-------|-------|---------|-------|-------|---------|",
+    ]
+
+    success = partial = failed = 0
+    for r in results:
+        name = r.get('company_name', '-')
+        status = r.get('status', '-')
+        phone = '✓' if r.get('phone') else '✗'
+        email = '✓' if r.get('email') else '✗'
+        address = '✓' if r.get('address') else '✗'
+        catalogs = str(r.get('catalog_count', 0))
+        lines.append(f"| {name} | {status} | {phone} | {email} | {address} | {catalogs} |")
+        if status == STATUS_SUCCESS:
+            success += 1
+        elif status == STATUS_PARTIAL:
+            partial += 1
+        else:
+            failed += 1
+
+    lines += [
+        f"",
+        f"**Özet:** SUCCESS: {success} | PARTIAL: {partial} | FAILED/ERROR: {failed}",
+        f"",
+        f"## Önceki teste göre fark",
+        f"",
+        f"> (Bu bölümü doldurun: iyileşme veya kötüleşme var mı)",
+    ]
+
+    md_path = os.path.join(test_dir, 'TEST_INFO.md')
+    with open(md_path, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(lines))
+
+    print(f"\n[OK] TEST_INFO.md oluşturuldu: {md_path}")
+
+
+def process_test_run(test_num: int, companies: List[Dict[str, str]]) -> None:
+    """Test modunda tüm firmaları çeker, output/tests/test-N/ klasörüne kaydeder."""
+    test_dir = os.path.join(TESTS_DIR, f'test-{test_num}')
+    os.makedirs(test_dir, exist_ok=True)
+
+    print(f"\n[TEST MODU] Test #{test_num}")
+    print(f"Çıktı klasörü: {os.path.abspath(test_dir)}")
+    print(f"Firma sayısı: {len(companies)}\n")
+
+    logger.info(f"Test #{test_num} başlıyor. Klasör: {test_dir}")
+
+    results: List[Dict[str, Any]] = []
+
+    with GenericScraper(catalogs_dir=test_dir) as scraper:
+        for i, company in enumerate(companies, 1):
+            company_name = company.get('company_name', 'Bilinmeyen')
+            print(f"[{i}/{len(companies)}] {company_name}...")
+
+            result = process_company(scraper, company)
+            results.append(result)
+
+            status = result.get('status', STATUS_ERROR)
+            catalog_count = result.get('catalog_count', 0)
+            phone = result.get('phone', '')
+            email = result.get('email', '')
+            print(f"  → {status} | katalog: {catalog_count} | tel: {'✓' if phone else '✗'} | email: {'✓' if email else '✗'}")
+
+            # JSON kaydet
+            from utils.validators import sanitize_filename
+            company_dir = os.path.join(test_dir, sanitize_filename(company_name))
+            os.makedirs(company_dir, exist_ok=True)
+            if status in [STATUS_SUCCESS, STATUS_PARTIAL]:
+                JSONWriter.save_company(result, company_dir)
+
+    generate_test_info(test_dir, test_num, results)
+
+    success = sum(1 for r in results if r.get('status') == STATUS_SUCCESS)
+    partial = sum(1 for r in results if r.get('status') == STATUS_PARTIAL)
+    failed = len(results) - success - partial
+
+    print(f"\n{'='*50}")
+    print(f"  Test #{test_num} tamamlandı")
+    print(f"  SUCCESS: {success} | PARTIAL: {partial} | FAILED/ERROR: {failed}")
+    print(f"  Klasör: {os.path.abspath(test_dir)}")
+    print(f"{'='*50}")
+
+
+# Test modu için sabit firma listesi
+TEST_COMPANIES = [
+    'Borusan Boru',
+    'Çolakoğlu Metalurji',
+    'İçdaş Çelik',
+    'Yücel Boru',
+    'İzmir Demir Çelik',
+    'Borçelik',
+    'Kroman Çelik',
+]
+
+
 def main() -> None:
     """Ana çalıştırma fonksiyonu."""
     parser = argparse.ArgumentParser(
@@ -289,11 +398,13 @@ def main() -> None:
   python main.py                           # Toplu arama (tüm firmalar)
   python main.py --company "Tosyalı"      # Tekli arama (belirli firma)
   python main.py --list                   # Firma listesini göster
+  python main.py --test 1                 # Test modu (tüm firmalar, test-1 klasörüne kaydeder)
         """
     )
     parser.add_argument('--company', type=str, help='Belirli firma adı ara (tekli mod)')
     parser.add_argument('--list', action='store_true', help='Firma listesini göster')
-    
+    parser.add_argument('--test', type=int, metavar='N', help='Test modu: tüm firmaları çek, output/tests/test-N/ klasörüne kaydet')
+
     args = parser.parse_args()
     
     # Dizinleri oluştur
@@ -333,11 +444,20 @@ def main() -> None:
         print()
         return
     
+    # --test seçeneği (test modu)
+    if args.test is not None:
+        test_companies = [c for c in companies if c.get('company_name') in TEST_COMPANIES]
+        if not test_companies:
+            print("[HATA] Test firmaları companies.json'da bulunamadı!")
+            return
+        process_test_run(args.test, test_companies)
+        return
+
     # --company seçeneği (tekli mod)
     if args.company:
         process_single_company(args.company, companies)
         return
-    
+
     # Varsayılan mod: Toplu arama
     process_batch(companies)
 

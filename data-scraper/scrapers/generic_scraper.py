@@ -167,14 +167,19 @@ class GenericScraper(BaseScraper):
             logger.info(f"Scraping başladı: {company_name}")
 
             # =================================================================
-            # 1. ANA SAYFAYI ÇEK (JavaScript rendering ile)
+            # 1. ANA SAYFAYI ÇEK
             # =================================================================
-            # Önce Selenium ile dene (JS-heavy siteler için)
-            main_soup = self.fetch_page_with_js(website)
-
-            if not main_soup:
-                # Fallback: requests ile dene
+            if self._is_js_heavy(website):
+                # Bilinen JS-heavy domain — direkt Selenium
+                logger.debug(f"JS-heavy domain, direkt Selenium: {website}")
+                main_soup = self.fetch_page_with_js(website)
+            else:
+                # Önce requests dene (hızlı)
                 main_soup = self.fetch_page(website)
+                # İçerik yetersizse Selenium'a geç
+                if not main_soup or len(main_soup.get_text().strip()) < 500:
+                    logger.debug(f"Requests yetersiz, Selenium deneniyor: {website}")
+                    main_soup = self.fetch_page_with_js(website)
 
             if not main_soup:
                 logger.debug(f"Ana sayfa çekilemedi: {website}")
@@ -229,6 +234,17 @@ class GenericScraper(BaseScraper):
 
         return result
 
+    def _is_js_heavy(self, url: str) -> bool:
+        """URL'nin bilinen JS-heavy domain listesinde olup olmadığını kontrol eder."""
+        try:
+            from config.settings import JS_HEAVY_DOMAINS
+            domain = urlparse(url).netloc.lower()
+            if domain.startswith('www.'):
+                domain = domain[4:]
+            return any(d in domain for d in JS_HEAVY_DOMAINS)
+        except Exception:
+            return False
+
     def _find_all_catalogs(self, main_soup: BeautifulSoup,
                            base_url: str) -> List[str]:
         """
@@ -249,8 +265,8 @@ class GenericScraper(BaseScraper):
         """
         all_catalogs: Set[str] = set()
 
-        # 1. Ana sayfadan katalog linkleri
-        main_catalogs = self.extract_catalog_links(main_soup, base_url)
+        # 1. Ana sayfadan katalog linkleri (ana sayfa katalog sayfası sayılmaz)
+        main_catalogs = self.extract_catalog_links(main_soup, base_url, from_catalog_page=False)
         all_catalogs.update(main_catalogs)
         logger.debug(f"Ana sayfada {len(main_catalogs)} katalog bulundu")
 
@@ -322,7 +338,16 @@ class GenericScraper(BaseScraper):
                 page_soup = self.fetch_page_with_js(page_url)
 
             if page_soup:
-                page_catalogs = self.extract_catalog_links(page_soup, base_url)
+                # URL'de katalog/download kelimesi geçiyorsa katalog sayfası say
+                page_url_lower = page_url.lower()
+                is_catalog_page = any(
+                    kw in page_url_lower
+                    for kw in ['katalog', 'catalog', 'download', 'indir',
+                               'urunler', 'urun', 'products', 'dosya', 'brosur', 'brochure']
+                )
+                page_catalogs = self.extract_catalog_links(
+                    page_soup, base_url, from_catalog_page=is_catalog_page
+                )
                 all_catalogs.update(page_catalogs)
 
                 if page_catalogs:
@@ -432,7 +457,8 @@ class GenericScraper(BaseScraper):
 
         return potential_pages[:10]  # Maksimum 10 URL
 
-    def extract_catalog_links(self, soup: BeautifulSoup, base_url: str) -> List[str]:
+    def extract_catalog_links(self, soup: BeautifulSoup, base_url: str,
+                              from_catalog_page: bool = False) -> List[str]:
         """
         Sayfadan katalog dosya linklerini çıkarır (geliştirilmiş versiyon).
 
@@ -447,6 +473,8 @@ class GenericScraper(BaseScraper):
         Args:
             soup: BeautifulSoup nesnesi
             base_url: Sayfanın base URL'si
+            from_catalog_page: True ise bu sayfa bir katalog/download sayfasıdır —
+                               keyword'süz PDF'lere daha güvenilir davranılır
 
         Returns:
             List[str]: Katalog dosya URL'leri (relevance'a göre sıralı)
@@ -462,10 +490,12 @@ class GenericScraper(BaseScraper):
                 return
 
             full_url = self.resolve_url(base_url, url)
-            should_download, reason = self.downloader.should_download_url(full_url, link_text)
+            should_download, reason = self.downloader.should_download_url(
+                full_url, link_text, from_catalog_page
+            )
 
             if should_download:
-                score = self.downloader.get_url_score(full_url, link_text)
+                score = self.downloader.get_url_score(full_url, link_text, from_catalog_page)
                 catalog_candidates.append((full_url, score, link_text))
             else:
                 logger.debug(f"Link filtrelendi: {full_url} - {reason}")
