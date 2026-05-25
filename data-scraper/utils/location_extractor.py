@@ -27,12 +27,13 @@ _TR_NORMALIZE_TABLE = str.maketrans(
 # Adres yapısal anahtar kelimeleri — bunlar ilçe adı değildir
 _STREET_KEYWORDS = frozenset({
     # Adres yapısı
-    'mah', 'mahallesi', 'mahalle', 'sok', 'sokak', 'sokagi', 'cad', 'cadde',
-    'caddesi', 'bulvar', 'blv', 'apt', 'plaza', 'sitesi', 'osb', 'organize',
+    'mah', 'mahallesi', 'mahalle', 'sok', 'sokak', 'sokagi', 'sk',
+    'cad', 'cadde', 'caddesi', 'cd',
+    'bulvar', 'blv', 'apt', 'plaza', 'sitesi', 'osb', 'organize',
     'sanayi', 'bolgesi', 'bolge', 'no', 'kat', 'daire', 'turkiye', 'turkey',
-    'merkez', 'il', 'ilce', 'koy', 'belde',
+    'merkez', 'il', 'ilce', 'koy', 'belde', 'posta', 'kutusu',
     # Tesis / bina türleri — ilçe ile karışmasın
-    'fabrika', 'fabrikasi', 'fabrikasi', 'tesis', 'tesisi', 'isletme', 'isletmesi',
+    'fabrika', 'fabrikasi', 'tesis', 'tesisi', 'isletme', 'isletmesi',
     'sube', 'subesi', 'depo', 'deposu', 'ofis', 'ofisi', 'bina', 'binasi',
     'kampus', 'kampusu', 'atolye', 'atoyesi', 'mudurluk', 'mudurugu',
     'merkezi', 'genel', 'holding', 'grubu', 'anonim', 'limited', 'sirketi',
@@ -71,8 +72,11 @@ def _match_city(text: str) -> str:
 
 def _clean_component(text: str) -> str:
     """İlçe/şehir bileşenini temizler: ZIP kodu, noktalama, fazla boşluk."""
+    # Baştaki ve sondaki 5 haneli ZIP kodunu kaldır
+    text = re.sub(r'^\s*\d{5}\s*', '', text)
     text = re.sub(r'\s*\d{5}\s*$', '', text)
-    text = text.strip(',./-\\; \t\n')
+    # Tire, em-dash, en-dash ve standart noktalama temizle
+    text = text.strip(',./-\\;–—–— \t\n')
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
@@ -85,6 +89,12 @@ def _is_district_candidate(text: str, city_normalized: str) -> bool:
     # Sadece rakamlar → ZIP kodu, değil
     if re.match(r'^\d+$', text):
         return False
+    # Rakamla başlıyorsa → posta kodu veya bina numarası (örn. "34522 Esenyurt")
+    if re.match(r'^\d', text.strip()):
+        return False
+    # "No:" veya "No." kalıbı → bina/kapı numarası (örn. "No:15", "No.7")
+    if re.search(r'\bno\b\s*[:.]\s*\d', normalized):
+        return False
     # Şehir adıyla aynı → değil
     if normalized == city_normalized:
         return False
@@ -96,14 +106,19 @@ def _is_district_candidate(text: str, city_normalized: str) -> bool:
         return False
     words = normalized.split()
     if len(words) == 1:
-        # Tek kelime: kendisi street keyword ise değil
-        if words[0] in _STREET_KEYWORDS:
+        # Tek kelime: başı rakam veya street keyword → değil
+        # (örn. "Sk." → "sk" normalize → keyword)
+        word_stem = re.split(r'[^a-z]', words[0])[0]  # "sk." → "sk", "no:15" → "no"
+        if word_stem in _STREET_KEYWORDS:
             return False
     else:
-        # Çok kelime: HERHANGİ biri street keyword ise değil
-        # (örn. "Gemlik Fabrikası" → "fabrikasi" keyword → reject)
-        if any(w in _STREET_KEYWORDS for w in words):
-            return False
+        # Çok kelime: HERHANGİ biri street keyword veya rakamla başlıyorsa → değil
+        for w in words:
+            stem = re.split(r'[^a-z]', w)[0]
+            if stem in _STREET_KEYWORDS:
+                return False
+            if re.match(r'^\d', w):
+                return False
     return True
 
 

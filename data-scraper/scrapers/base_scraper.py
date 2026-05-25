@@ -267,6 +267,21 @@ class BaseScraper(ABC):
             >>> scraper.resolve_url("https://example.com", "/page.html")
             'https://example.com/page.html'
         """
+        # Wix CMS internal URL → CDN URL dönüşümü
+        # Örnek: wix:document://v1/ugd/1a45e3_HASH.pdf/DisplayName.pdf
+        # → https://static.wixstatic.com/ugd/1a45e3_HASH.pdf
+        if relative_url.startswith('wix:document://v1/ugd/'):
+            ugd_path = relative_url[len('wix:document://v1/ugd/'):]
+            file_hash = ugd_path.split('/')[0]  # e.g. "1a45e3_abc123.pdf"
+            if file_hash.lower().endswith('.pdf'):
+                return f"https://static.wixstatic.com/ugd/{file_hash}"
+            return ''
+
+        # Backslash-escaped path normalizasyonu (Wix/CMS JS çıktısından gelir)
+        # \/GUID\/hash-name.pdf → /GUID/hash-name.pdf
+        if '\\/' in relative_url:
+            relative_url = relative_url.replace('\\/', '/')
+
         if relative_url.startswith(('http://', 'https://')):
             return relative_url
         return urljoin(base_url, relative_url)

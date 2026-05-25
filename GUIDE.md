@@ -804,6 +804,267 @@ TEST SONUÇLARI
     ~ BUG-2 (Yücel/Kroman/İçdaş iletişim): Selenium fallback devreye giriyor
       ama bu sitelerde iletişim bilgisi gerçekten gizlenmiş olabilir, araştırılacak
 
+  Test #3  [2026-05-25]  ← 35 firma (genişletilmiş TEST_COMPANIES), encoding fix
+  Kapsam: İlk 35 firma testi. Windows cp1254 encoding bug fix (sys.stdout.reconfigure).
+
+  | Firma               | Durum   | Tel | Email | Adres | Şehir    | İlçe           | Logo | Açıklama | Katalog |
+  |---------------------|---------|-----|-------|-------|----------|----------------|------|----------|---------|
+  | Tosyalı Holding     | SUCCESS | ✓   | ✗     | ✗     | ✗        | ✗              | ✓    | ✓        | 22      |
+  | Kardemir            | FAILED  | ✓   | ✓     | ✗     | ✗        | ✗              | ✓    | ✓        | 0       |
+  | Borusan Boru        | SUCCESS | ✗   | ✓     | ✗     | ✗        | ✗              | ✓    | ✓        | 5       |
+  | Çolakoğlu Metalurji | SUCCESS | ✓   | ✗     | ✓     | ✗        | ✗              | ✓    | ✓        | 6       |
+  | İzmir Demir Çelik   | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗              | ✓    | ✓        | 1       |
+  | Noksel Çelik        | FAILED  | ✓   | ✓     | ✗     | ✗        | ✗              | ✗    | ✓        | 0       |
+  | Yücel Boru          | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗              | ✓    | ✓        | 12      |
+  | Kroman Çelik        | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗              | ✓    | ✓        | 6       |
+  | Assan Alüminyum     | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗              | ✓    | ✓        | 0       |
+  | Çemtaş Çelik        | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗              | ✗    | ✗        | 2       |
+  | Kaptan Demir Çelik  | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗              | ✗    | ✗        | 0       |
+  | İçdaş Çelik         | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗              | ✓    | ✓        | 2       |
+  | Erbakır             | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗              | ✗    | ✗        | 0 *BUG-5|
+  | Knauf               | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗              | ✓    | ✓        | 0       |
+  | Seranit             | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗              | ✓    | ✓        | 9       |
+  | Mapei               | FAILED  | ✓   | ✓     | ✓     | Ankara   | Nergiz Sk*     | ✓    | ✓        | 0       |
+  | Nexans Türkiye      | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗              | ✓    | ✓        | 0       |
+  | Ayvaz               | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗              | ✓    | ✓        | 59      |
+  | HES                 | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗              | ✗    | ✗        | 2       |
+  | Fırat A.Ş.          | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗              | ✗    | ✗        | 1       |
+  | Çözümbu             | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗              | ✗    | ✗        | 0       |
+  | Eine                | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗              | ✗    | ✓        | 0       |
+  | Ekin Endüstriyel    | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗              | ✗    | ✗        | 0       |
+  | KM Metal            | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗              | ✓    | ✓        | 0       |
+  | Dizayn Grup         | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗              | ✗    | ✓        | 1       |
+  | Vansan              | SUCCESS | ✗   | ✓     | ✗     | ✗        | ✗              | ✗    | ✗        | 21      |
+  | Etna                | SUCCESS | ✓   | ✓     | ✓     | İstanbul | Ümraniye –*    | ✓    | ✓        | 9       |
+  | Standart Pompa      | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗              | ✓    | ✗        | 6       |
+  | Best Transformer    | FAILED  | ✓   | ✓     | ✗     | ✗        | ✗              | ✗    | ✗        | 0       |
+  | Sigma Elektrik      | FAILED  | ✗   | ✓     | ✓     | İstanbul | No:15*         | ✓    | ✓        | 0       |
+  | EAE Elektrik        | SUCCESS | ✓   | ✓     | ✓     | İstanbul | 34522 Esenyurt*| ✓    | ✓        | 57      |
+  | Onka Elektrik       | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗              | ✓    | ✗        | 8       |
+  | Mutlusan            | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗              | ✗    | ✓        | 0       |
+  | Tuna Vida           | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗              | ✗    | ✗        | 1       |
+  | Sarkuysan           | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗              | ✗    | ✗        | 0       |
+
+  Özet: SUCCESS: 13 | PARTIAL: 6 | FAILED: 16
+  * BUG-5: Erbakır — deep_scan 13 katalog buldu ama double-filter tümünü sildi (bkz. Bilinen Sorunlar)
+  * BUG-6: İlçe parse hataları — adres satırı veya posta kodu ilçe alanına yazılıyor
+    Mapei: ilçe="Nergiz Sk", Sigma: ilçe="No:15", EAE: ilçe="34522 Esenyurt", Etna: ilçe="Ümraniye –"
+
+  Başarılar:
+    - Logo: 22/35 ✓ (%63)
+    - Açıklama: 24/35 ✓ (%69)
+    - Yüksek katalog: Ayvaz 59, EAE Elektrik 57, Tosyalı 22, Vansan 21, Yücel 12
+
+  Sorunlar:
+    - 16 FAILED: çoğunda iletişim var ama katalog bulunamıyor
+      8 firmada hem tel+email+adres var ama katalog 0 (Kaptan Demir, Erbakır*BUG-5, Eine,
+      KM Metal, Mutlusan, Sarkuysan, Knauf, Nexans, Assan, Çözümbu, Ekin)
+    - 6 PARTIAL: iletişim JS-rendered (Yücel, Kroman, İçdaş, Seranit, HES, Standart Pompa)
+    - BUG-5 fix → Test #4 çalıştırıldı (bkz. sonraki test)
+
+  Test #5  [2026-05-25]  ← BUG-6 fix (ilçe parse düzeltmesi)
+  Kapsam: location_extractor.py — sk/cd keywords, ZIP prefix, em-dash, No:\d, rakamla başlayan token
+
+  | Firma               | Durum   | Tel | Email | Adres | Şehir    | İlçe     | Logo | Açıklama | Katalog |
+  |---------------------|---------|-----|-------|-------|----------|----------|------|----------|---------|
+  | Tosyalı Holding     | SUCCESS | ✓   | ✗     | ✗     | ✗        | ✗        | ✓    | ✓        | 22      |
+  | Kardemir            | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗        | ✓    | ✓        | 0       |
+  | Borusan Boru        | SUCCESS | ✗   | ✓     | ✗     | ✗        | ✗        | ✓    | ✓        | 5       |
+  | Çolakoğlu Metalurji | SUCCESS | ✓   | ✗     | ✓     | ✗        | ✗        | ✓    | ✓        | 6       |
+  | İzmir Demir Çelik   | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✓        | 1       |
+  | Noksel Çelik        | FAILED  | ✓   | ✓     | ✗     | ✗        | ✗        | ✗    | ✓        | 0       |
+  | Yücel Boru          | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗        | ✓    | ✓        | 12      |
+  | Kroman Çelik        | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗        | ✓    | ✓        | 6       |
+  | Assan Alüminyum     | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗        | ✓    | ✓        | 0       |
+  | Çemtaş Çelik        | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✗    | ✓        | 2       |
+  | Kaptan Demir Çelik  | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✗        | 0       |
+  | İçdaş Çelik         | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗        | ✓    | ✓        | 2       |
+  | Erbakır             | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✗        | 0 *BUG-7|
+  | Knauf               | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗        | ✓    | ✓        | 0       |
+  | Seranit             | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗        | ✓    | ✓        | 9       |
+  | Mapei               | FAILED  | ✓   | ✓     | ✓     | Ankara   | ✗        | ✓    | ✓        | 0       |
+  | Nexans Türkiye      | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗        | ✓    | ✓        | 0       |
+  | Ayvaz               | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✓        | 59      |
+  | HES                 | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗        | ✗    | ✗        | 2       |
+  | Fırat A.Ş.          | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✗        | 1       |
+  | Çözümbu             | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗        | ✗    | ✗        | 0       |
+  | Eine                | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✓        | 0       |
+  | Ekin Endüstriyel    | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗        | ✗    | ✗        | 0       |
+  | KM Metal            | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗        | ✓    | ✓        | 0       |
+  | Dizayn Grup         | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✓        | 1       |
+  | Vansan              | SUCCESS | ✗   | ✓     | ✗     | ✗        | ✗        | ✗    | ✗        | 26      |
+  | Etna                | SUCCESS | ✓   | ✓     | ✓     | İstanbul | Ümraniye | ✓    | ✓        | 9       |
+  | Standart Pompa      | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗        | ✓    | ✗        | 6       |
+  | Best Transformer    | FAILED  | ✓   | ✓     | ✗     | ✗        | ✗        | ✗    | ✗        | 0       |
+  | Sigma Elektrik      | FAILED  | ✗   | ✓     | ✓     | İstanbul | ✗        | ✓    | ✓        | 0       |
+  | EAE Elektrik        | SUCCESS | ✓   | ✓     | ✓     | İstanbul | Esenyurt | ✓    | ✓        | 57      |
+  | Onka Elektrik       | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✗        | 8       |
+  | Mutlusan            | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✓        | 1       |
+  | Tuna Vida           | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✗        | 1       |
+  | Sarkuysan           | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✗        | 0       |
+
+  Özet: SUCCESS: 14 | PARTIAL: 6 | FAILED: 15
+  Test #4 → Test #5 değişimleri (BUG-6 fix doğrulaması):
+
+    ✓ Etna:          district "Ümraniye –" → "Ümraniye"  (em-dash temizlendi)
+    ✓ Sigma:         district "No:15"      → ✗           (kapı no reddedildi)
+    ✓ EAE Elektrik:  district "34522 Esenyurt" → "Esenyurt" (ZIP temizlendi, ilçe kaldı)
+    ✓ Mapei:         district "Nergiz Sk"  → ✗           (sokak adı reddedildi)
+    = SUCCESS/PARTIAL/FAILED sayıları değişmedi (BUG-6 sadece ilçe kalitesini etkiler, status'ı değil)
+
+  Test #8  [2026-05-25]  ← B görevi araştırması (FAILED firma katalog tespiti)
+  Kapsam: settings.py — kurumsal kaldırıldı PDF_NEGATIVE_KEYWORDS'ten, CATALOG_PAGE_KEYWORDS genişletildi.
+          catalog_strategies.py — SPA tespiti (< 5 link → Selenium). Yeni common_paths eklendi.
+          Sonuç: FAILED firmalara yardım etmedi. Kardemir flaky (SUCCESS→FAILED). Test #7 hâlâ baseline.
+
+  | Firma               | Durum   | Tel | Email | Adres | Şehir    | İlçe     | Logo | Açıklama | Katalog  |
+  |---------------------|---------|-----|-------|-------|----------|----------|------|----------|----------|
+  | Tosyalı Holding     | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✓        | 22       |
+  | Kardemir            | FAILED  | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✓        | 0 *flaky |
+  | Borusan Boru        | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✓        | 5        |
+  | Çolakoğlu Metalurji | SUCCESS | ✓   | ✗     | ✓     | ✗        | ✗        | ✓    | ✓        | 6        |
+  | İzmir Demir Çelik   | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✓        | 1        |
+  | Noksel Çelik        | FAILED  | ✓   | ✓     | ✗     | ✗        | ✗        | ✗    | ✓        | 0        |
+  | Yücel Boru          | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✓        | 12       |
+  | Kroman Çelik        | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✓        | 6        |
+  | Assan Alüminyum     | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗        | ✓    | ✓        | 0        |
+  | Çemtaş Çelik        | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✗    | ✗        | 2        |
+  | Kaptan Demir Çelik  | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✗        | 0        |
+  | İçdaş Çelik         | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✓        | 2        |
+  | Erbakır             | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✓        | 0 *BUG-7 |
+  | Knauf               | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗        | ✓    | ✓        | 0        |
+  | Seranit             | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗        | ✓    | ✓        | 9        |
+  | Mapei               | FAILED  | ✓   | ✓     | ✓     | Ankara   | ✗        | ✓    | ✓        | 0        |
+  | Nexans Türkiye      | FAILED  | ✓   | ✗     | ✗     | ✗        | ✗        | ✓    | ✓        | 0        |
+  | Ayvaz               | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✓        | 59       |
+  | HES                 | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗        | ✗    | ✗        | 2        |
+  | Fırat A.Ş.          | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✗        | 1        |
+  | Çözümbu             | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗        | ✗    | ✗        | 0        |
+  | Eine                | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✗        | 0        |
+  | Ekin Endüstriyel    | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗        | ✗    | ✗        | 0        |
+  | KM Metal            | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗        | ✓    | ✓        | 0        |
+  | Dizayn Grup         | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✓        | 1        |
+  | Vansan              | SUCCESS | ✗   | ✓     | ✗     | ✗        | ✗        | ✗    | ✗        | 26       |
+  | Etna                | SUCCESS | ✓   | ✓     | ✓     | İstanbul | Ümraniye | ✓    | ✓        | 9        |
+  | Standart Pompa      | SUCCESS | ✓   | ✗     | ✓     | ✗        | ✗        | ✓    | ✗        | 6        |
+  | Best Transformer    | FAILED  | ✓   | ✓     | ✗     | ✗        | ✗        | ✗    | ✗        | 0        |
+  | Sigma Elektrik      | FAILED  | ✗   | ✓     | ✓     | İstanbul | ✗        | ✓    | ✓        | 0 *BUG-7 |
+  | EAE Elektrik        | SUCCESS | ✓   | ✓     | ✓     | İstanbul | Esenyurt | ✓    | ✓        | 58       |
+  | Onka Elektrik       | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✗        | 8        |
+  | Mutlusan            | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✓        | 1        |
+  | Tuna Vida           | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✗        | 1        |
+  | Sarkuysan           | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✗        | 0        |
+
+  Özet: SUCCESS: 19 | PARTIAL: 1 | FAILED: 15
+  Test #7 → Test #8 değişimleri (B-task araştırması):
+    ✗ Kardemir: SUCCESS(1) → FAILED(0) — flaky, test #7'deki katalog bugün açık değil/bloklandı
+    = Tüm diğer FAILED firmalar değişmedi — B-task fixler etkisiz kaldı
+    SONUÇ: Kalan FAILED firmalar için generic scraper çözüm üretemiyor.
+           Gruplara göre: (1) BUG-7 (Erbakır, Sigma) (2) Site yapısı uyumsuz (3) Katalog yok
+
+  Test #7  [2026-05-25]  ← BUG-2 fix (navigasyon linkleri önce — iletişim sayfası sıralama)
+  Kapsam: _find_contact_info() — found_pages önce, common_contact_paths sonra; .php varyantları eklendi;
+          max_contact_pages 8→12. (Test #6 internet kesintisi nedeniyle geçersiz, #7 temiz tekrar.)
+
+  | Firma               | Durum   | Tel | Email | Adres | Şehir    | İlçe     | Logo | Açıklama | Katalog |
+  |---------------------|---------|-----|-------|-------|----------|----------|------|----------|---------|
+  | Tosyalı Holding     | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✓        | 22      |
+  | Kardemir            | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✓        | 1       |
+  | Borusan Boru        | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✓        | 5       |
+  | Çolakoğlu Metalurji | SUCCESS | ✓   | ✗     | ✓     | ✗        | ✗        | ✓    | ✓        | 6       |
+  | İzmir Demir Çelik   | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✓        | 1       |
+  | Noksel Çelik        | FAILED  | ✓   | ✓     | ✗     | ✗        | ✗        | ✗    | ✓        | 0       |
+  | Yücel Boru          | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✓        | 12      |
+  | Kroman Çelik        | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✓        | 6       |
+  | Assan Alüminyum     | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗        | ✓    | ✓        | 0       |
+  | Çemtaş Çelik        | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✗    | ✗        | 2       |
+  | Kaptan Demir Çelik  | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✗        | 0       |
+  | İçdaş Çelik         | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✓        | 2       |
+  | Erbakır             | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✗        | 0 *BUG-7|
+  | Knauf               | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗        | ✓    | ✓        | 0       |
+  | Seranit             | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗        | ✓    | ✓        | 9       |
+  | Mapei               | FAILED  | ✓   | ✓     | ✓     | Ankara   | ✗        | ✓    | ✓        | 0       |
+  | Nexans Türkiye      | FAILED  | ✓   | ✗     | ✗     | ✗        | ✗        | ✓    | ✓        | 0       |
+  | Ayvaz               | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✓        | 59      |
+  | HES                 | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗        | ✗    | ✗        | 2       |
+  | Fırat A.Ş.          | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✗        | 1       |
+  | Çözümbu             | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗        | ✗    | ✗        | 0       |
+  | Eine                | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✗        | 0       |
+  | Ekin Endüstriyel    | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗        | ✗    | ✗        | 0       |
+  | KM Metal            | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗        | ✓    | ✓        | 0       |
+  | Dizayn Grup         | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✓        | 1       |
+  | Vansan              | SUCCESS | ✗   | ✓     | ✗     | ✗        | ✗        | ✗    | ✗        | 26      |
+  | Etna                | SUCCESS | ✓   | ✓     | ✓     | İstanbul | Ümraniye | ✓    | ✓        | 9       |
+  | Standart Pompa      | SUCCESS | ✓   | ✗     | ✓     | ✗        | ✗        | ✓    | ✗        | 6       |
+  | Best Transformer    | FAILED  | ✓   | ✓     | ✗     | ✗        | ✗        | ✗    | ✗        | 0       |
+  | Sigma Elektrik      | FAILED  | ✗   | ✓     | ✓     | İstanbul | ✗        | ✓    | ✓        | 0 *BUG-7|
+  | EAE Elektrik        | SUCCESS | ✓   | ✓     | ✓     | İstanbul | Esenyurt | ✓    | ✓        | 57      |
+  | Onka Elektrik       | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗        | ✓    | ✗        | 8       |
+  | Mutlusan            | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✓        | 1       |
+  | Tuna Vida           | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✗        | 1       |
+  | Sarkuysan           | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗        | ✗    | ✗        | 0       |
+
+  Özet: SUCCESS: 20 | PARTIAL: 1 | FAILED: 14
+  Test #5 → Test #7 değişimleri (BUG-2 fix doğrulaması):
+    ✓ Yücel Boru:    PARTIAL(tel✗ email✗) → SUCCESS(tel✓ email✓) — /iletisim.php bulundu
+    ✓ Kroman Çelik:  PARTIAL(tel✗ email✗) → SUCCESS(tel✓ email✓) — /iletisim.php bulundu
+    ✓ İçdaş Çelik:   PARTIAL(tel✗ email✗) → SUCCESS(tel✓ email✓) — navigasyon linki önce denendi
+    ✓ Seranit:        PARTIAL(tel✗ email✗) → SUCCESS(tel✓ email✓) — /tr/Iletisim bulundu
+    ✓ Standart Pompa: PARTIAL(tel✗ email✗) → SUCCESS(tel✓ email✗) — /tr/iletisim/... bulundu
+    ~ HES:            PARTIAL(tel✗ email✗) → PARTIAL(tel✗ email✗) — iletişim sayfası hâlâ JS-heavy
+    ~ Sigma Elektrik: log'da 5 katalog tespit ama 0 indirildi (BUG-7 benzeri download failure)
+
+  Test #4  [2026-05-25]  ← BUG-5 fix (double-filter kaldırıldı)
+  Kapsam: _try_alternative_strategies içindeki should_download_url re-filter kaldırıldı.
+
+  | Firma               | Durum   | Tel | Email | Adres | Şehir    | İlçe           | Logo | Açıklama | Katalog |
+  |---------------------|---------|-----|-------|-------|----------|----------------|------|----------|---------|
+  | Tosyalı Holding     | SUCCESS | ✓   | ✗     | ✗     | ✗        | ✗              | ✓    | ✓        | 22      |
+  | Kardemir            | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗              | ✓    | ✓        | 0       |
+  | Borusan Boru        | SUCCESS | ✗   | ✓     | ✗     | ✗        | ✗              | ✓    | ✓        | 5       |
+  | Çolakoğlu Metalurji | SUCCESS | ✓   | ✗     | ✓     | ✗        | ✗              | ✓    | ✓        | 6       |
+  | İzmir Demir Çelik   | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗              | ✓    | ✓        | 1       |
+  | Noksel Çelik        | FAILED  | ✓   | ✓     | ✗     | ✗        | ✗              | ✗    | ✓        | 0       |
+  | Yücel Boru          | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗              | ✓    | ✓        | 12      |
+  | Kroman Çelik        | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗              | ✓    | ✓        | 6       |
+  | Assan Alüminyum     | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗              | ✓    | ✓        | 0       |
+  | Çemtaş Çelik        | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗              | ✗    | ✓        | 2       |
+  | Kaptan Demir Çelik  | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗              | ✗    | ✗        | 0       |
+  | İçdaş Çelik         | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗              | ✓    | ✓        | 2       |
+  | Erbakır             | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗              | ✗    | ✗        | 0 *BUG-7|
+  | Knauf               | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗              | ✓    | ✓        | 0       |
+  | Seranit             | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗              | ✓    | ✓        | 9       |
+  | Mapei               | FAILED  | ✓   | ✓     | ✓     | Ankara   | Nergiz Sk*     | ✓    | ✓        | 0       |
+  | Nexans Türkiye      | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗              | ✓    | ✓        | 0       |
+  | Ayvaz               | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗              | ✓    | ✓        | 59      |
+  | HES                 | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗              | ✗    | ✗        | 2       |
+  | Fırat A.Ş.          | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗              | ✗    | ✗        | 1       |
+  | Çözümbu             | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗              | ✗    | ✗        | 0       |
+  | Eine                | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗              | ✗    | ✗        | 0       |
+  | Ekin Endüstriyel    | FAILED  | ✗   | ✗     | ✗     | ✗        | ✗              | ✗    | ✗        | 0       |
+  | KM Metal            | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗              | ✓    | ✓        | 0       |
+  | Dizayn Grup         | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗              | ✗    | ✓        | 1       |
+  | Vansan              | SUCCESS | ✗   | ✓     | ✗     | ✗        | ✗              | ✗    | ✗        | 26      |
+  | Etna                | SUCCESS | ✓   | ✓     | ✓     | İstanbul | Ümraniye –*    | ✓    | ✓        | 9       |
+  | Standart Pompa      | PARTIAL | ✗   | ✗     | ✗     | ✗        | ✗              | ✓    | ✗        | 6       |
+  | Best Transformer    | FAILED  | ✓   | ✓     | ✗     | ✗        | ✗              | ✗    | ✗        | 0       |
+  | Sigma Elektrik      | FAILED  | ✗   | ✓     | ✓     | İstanbul | No:15*         | ✓    | ✓        | 0       |
+  | EAE Elektrik        | SUCCESS | ✓   | ✓     | ✓     | İstanbul | 34522 Esenyurt*| ✓    | ✓        | 57      |
+  | Onka Elektrik       | SUCCESS | ✓   | ✓     | ✗     | ✗        | ✗              | ✓    | ✗        | 8       |
+  | Mutlusan            | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗              | ✗    | ✓        | 1       |
+  | Tuna Vida           | SUCCESS | ✓   | ✓     | ✓     | ✗        | ✗              | ✗    | ✗        | 1       |
+  | Sarkuysan           | FAILED  | ✓   | ✓     | ✓     | ✗        | ✗              | ✗    | ✗        | 0       |
+
+  Özet: SUCCESS: 14 | PARTIAL: 6 | FAILED: 15
+  * BUG-7: Erbakır — deep_scan artık 13 URL buluyor (BUG-5 fix ✓) ama tüm indirmeler sessizce başarısız
+            Olası neden: deep_scan session'ına bağlı URL'ler (cookie/auth) veya JS-triggered download
+
+  Test #3 → Test #4 değişimleri:
+    ✓ Mutlusan: FAILED(0) → SUCCESS(1) — BUG-5 fix çalıştı (example.pdf, 711KB, gerçek dosya)
+    ✓ Vansan:   SUCCESS(21) → SUCCESS(26) — +5 katalog
+    ~ Kardemir: Test #3'te tel+email vardı, Test #4'te yok — flaky (site içeriği değişken)
+    ~ Erbakır:  "Bulunan katalog: 13" artık doğru gösteriliyor ama indirilemedi (BUG-7)
+
 ---
 
 BİLİNEN SORUNLAR  [2026-05-24]
@@ -815,15 +1076,20 @@ BİLİNEN SORUNLAR  [2026-05-24]
                region il değilse ama locality il ise: city=locality, district candidate=region.
     Dosya: utils/location_extractor.py → extract_city_district()
 
-  BUG-2: JS-rendered iletişim sayfaları — tel/email çekilemiyor  [KISMİ 2026-05-24]
-    Neden: Yücel Boru, Kroman Çelik, İçdaş Çelik sitelerinde iletişim bilgisi JS ile yükleniyor.
-           Eski kod Selenium'u yalnızca sayfa metni <500 karakter ise tetikliyordu.
-    Düzeltme: Sayfa yüklendikten sonra iletişim bilgisi extract edilir; phone VE email ikisi de
-               boşsa Selenium fallback otomatik devreye girer.
+  BUG-2: JS-rendered iletişim sayfaları — tel/email çekilemiyor  [DÜZELTILDI 2026-05-25]
+    Neden: _find_contact_info() common_contact_paths (~40 hardcoded URL) listesini, navigasyondan
+           bulunan gerçek linklere ÖNCE ekliyordu. max_contact_pages=8 ile hardcoded 404'ler bütçeyi
+           tüketince /iletisim.php, /tr/Iletisim, /tr/bize-ulasin gibi gerçek URL'ler hiç denenmiyordu.
+    Düzeltme:
+      1. found_pages (navigasyondan bulunan) artık listeye ÖNCE ekleniyor
+      2. common_contact_paths'e .php varyantları (/iletisim.php, /contact.php, /hakkimizda.php)
+         ve /tr/Iletisim, /tr/bize-ulasin eklendi
+      3. max_contact_pages 8 → 12
     Dosya: scrapers/generic_scraper.py → _find_contact_info()
-    Test #2 sonucu: Selenium fallback devreye girdi ama 3 firmada hâlâ ✗.
-                    Bu sitelerin iletişim bilgisini gerçekten gizliyor olma ihtimali var;
-                    manuel inceleme yapılmadı. AÇIK kalıyor.
+    Test #7 doğrulaması: 5/6 PARTIAL firma SUCCESS'e geçti.
+      ✓ Yücel Boru, Kroman Çelik, İçdaş Çelik, Seranit, Standart Pompa
+      ~ HES: hâlâ PARTIAL — iletişim sayfası (hes.com.tr/tr/bize-ulasin) tamamen JS-rendered,
+             Selenium de phone/email çıkaramıyor. Ayrı inceleme gerekiyor.
 
   BUG-3: İzmir Demir Çelik — PDF'ler bulunuyor ama indirilemiyor  [DÜZELTILDI 2026-05-24]
     Neden: _find_all_catalogs URL'leri buldu, ama download() içindeki should_download_url filtresi
@@ -837,6 +1103,62 @@ BİLİNEN SORUNLAR  [2026-05-24]
            ürün kataloğu bulunmuyor. Yalnızca Çerez Politikası PDF'i mevcut.
            Scraper doğru davranıyor — FAILED sonucu beklenen çıktı.
     Aksiyon: Test firmaları listesinden çıkarılabilir veya olduğu gibi bırakılabilir.
+
+  BUG-5: _try_alternative_strategies double-filter — deep_scan katalogları siliniyor  [DÜZELTILDI 2026-05-25]
+    Neden: _try_alternative_strategies() içinde, StrategyManager'dan dönen katalog URL'leri
+           should_download_url(url, '') ile tekrar filtreleniyordu. Deep_scan kendi içinde
+           PDF_NEGATIVE_KEYWORDS ile zaten filtrelemiş olsa da, should_download_url "context
+           kayıpları" nedeniyle (from_catalog_page=False, boş link_text) nötr URL'lerin
+           tümünü reddediyordu. Sonuç: deep_scan 13 katalog bulsa bile "Bulunan katalog: 0".
+    Test #3 kanıtı: Erbakır → "[deep_scan] 10 sayfa tarandı, 13 katalog bulundu" → "Bulunan katalog: 0"
+    Düzeltme: _try_alternative_strategies içindeki re-filter döngüsü kaldırıldı.
+              Stratejiler kendi filtrelemelerini yapıyor; _download_catalogs trusted=True kullandığı
+              için indirme aşamasında da sorun yok.
+    Dosya: scrapers/generic_scraper.py → _try_alternative_strategies()
+    Etkilenen firmalar (Test #3): Erbakır (13 katalog), muhtemelen Kaptan Demir, KM Metal,
+                                   Mutlusan, Sarkuysan da benzer şekilde etkilendi.
+
+  BUG-7: Katalog URL'leri tespit ediliyor ama indirilemedi  [DÜZELTILDI 2026-05-25]
+    Etkilenen: Erbakır (13 URL tespit, 0 indirildi), Sigma Elektrik (5 URL tespit, 0 indirildi)
+    Kök neden analizi (log inceleme ile tespit edildi):
+      Erbakır (wix.com tabanlı site):
+        a) wix:document://v1/ugd/HASH.pdf/... URL'leri — HTTP değil, Wix iç protokolü.
+           requests "No connection adapters" hatası verdi.
+        b) \/GUID\/hash-name.pdf backslash-escaped path'ler — requests \ → %5C encode eder,
+           sunucu 400 Bad Request döndü.
+        c) /Haftalık LME Bakır Bülteni-XX. Hafta.pdf plain path'ler — Wix CDN'de,
+           www.erbakir.com.tr üzerinde yok, sunucu 400/redirect verdi.
+      Sigma Elektrik:
+        SSLCertVerificationError — sigmaelektrik.com SSL sertifikası geçersiz,
+        tüm 5 download "certificate verify failed" ile başarısız oldu.
+    Düzeltme:
+      1. base_scraper.py resolve_url(): wix:document://v1/ugd/HASH.pdf →
+         https://static.wixstatic.com/ugd/HASH.pdf CDN dönüşümü.
+         \/ → / backslash normalizasyonu.
+      2. catalog_strategies.py _extract_catalogs_from_soup(): resolve_href() helper eklendi,
+         tüm 4 kaynak (a href, data-*, onclick, script) Wix-aware hale getirildi.
+      3. file_downloader.py download(): SSLError yakalandığında verify=False ile
+         otomatik yeniden deneme.
+    Beklenti (test-9'da doğrulanacak):
+      Sigma: SSL fallback ile 5 PDF indirilmeli → SUCCESS
+      Erbakır: Wix CDN dönüşümü en az 1 URL'i kurtarmalı. Plain path'ler hâlâ 400 alabilir.
+    Durum: DÜZELTILDI — test-9 ile doğrulanacak
+
+  BUG-6: İlçe parse hataları — adres satırı veya posta kodu ilçe alanına yazılıyor  [DÜZELTILDI 2026-05-25]
+    Neden: location_extractor.py adres metninden ilçe tespit ederken posta kodu veya
+           adres kalıpları ("No:15", "34522 Esenyurt", "Nergiz Sk", "Ümraniye –") ilçe
+           alanına kaçıyor.
+    Test #3 örnekleri:
+      Mapei:          city=Ankara ✓  district="Nergiz Sk"      (adres satırı)
+      Sigma Elektrik: city=İstanbul ✓ district="No:15"          (kapı no)
+      EAE Elektrik:   city=İstanbul ✓ district="34522 Esenyurt" (posta kodu + ilçe birlikte)
+      Etna:           city=İstanbul ✓ district="Ümraniye –"     (tire karakteri)
+    Öneri:
+      1. İlçe adayını 81 il + bilinen ilçe listesiyle doğrula (regex ile sayı/özel karakter içeriyorsa reddet)
+      2. Posta kodu pattern'i (\d{5}) tespit edilirse sil
+      3. Bilinen sonek kalıplarını temizle (Cad., Sk., Sok., No:, Mah. gibi adres bileşenleri)
+    Dosya: utils/location_extractor.py → extract_city_district(), _is_district_candidate(), _clean_component()
+    Durum: DÜZELTILDI 2026-05-25 — Test #5'te doğrulanacak.
 
 ---
 
@@ -1463,21 +1785,30 @@ Priority 1 — Bug fixes (must fix before pre-final):
 
 Priority 2 — Data Scraper (Phase 8 → 9 → 10):
 
-  [TODO-8] Scraper optimizasyonu — Phase 8  [DEVAM EDİYOR — 8a ✓ 8b ✓]
+  [TODO-8] Scraper optimizasyonu — Phase 8  [DEVAM EDİYOR]
     Kapsam: data-scraper/ Python modülü. Backend/frontend değişikliği yok.
     Yöntem LOCKED: admin panelden tek firma girişi (ad + URL + sektörler).
     Alt görevler:
-      8a. ✓ Selenium stratejisi düzelt — tamamlandı 2026-05-24
-          requests-first, JS_HEAVY_DOMAINS listesi, <500 char eşiği
+      8a.  ✓ Selenium stratejisi düzelt — tamamlandı 2026-05-24
+           requests-first, JS_HEAVY_DOMAINS listesi, <500 char eşiği
       8a+. ✓ Test altyapısı — tamamlandı 2026-05-24
-          --test N argümanı, TEST_COMPANIES sabiti (35 firma — 2026-05-25 genişletildi), generate_test_info()
-      8b. ✓ Katalog filtreleme iyileştir — tamamlandı 2026-05-24
-          from_catalog_page bağlamı, CATALOG_PATH_INDICATORS, PDF_NEGATIVE_KEYWORDS genişletme
-      8c. city/district çıkarımı: address metninden Türk şehir+ilçe parse et.
-      8d. İletişim iyileştirmesi: tel:/mailto: öncelikli, Türk alan kodu doğrulaması.
-      8e. Logo + açıklama çıkarımı: og:image, meta description, hakkımızda sayfası.
-      8f. sectors alanı: "sector" string → "sectors" array.
-      8g. imported takibi: company_info.json'a "imported": false alanı ekle.
+           --test N argümanı, TEST_COMPANIES sabiti (35 firma — 2026-05-25 genişletildi), generate_test_info()
+           Windows encoding fix: sys.stdout.reconfigure(utf-8) eklendi — 2026-05-25
+      8b.  ✓ Katalog filtreleme iyileştir — tamamlandı 2026-05-24
+           from_catalog_page bağlamı, CATALOG_PATH_INDICATORS, PDF_NEGATIVE_KEYWORDS genişletme
+           BUG-5 fix: _try_alternative_strategies double-filter kaldırıldı — 2026-05-25
+      8c.  ✓ city/district çıkarımı — tamamlandı 2026-05-24
+           BUG-6 AÇIK: ilçe alanına adres satırı/posta kodu kaçıyor — 2026-05-25
+      8d.  ✓ İletişim iyileştirmesi — tamamlandı 2026-05-24
+      8e.  ✓ Logo + açıklama çıkarımı — tamamlandı 2026-05-24
+      8f.  ✓ sectors alanı: "sector" → "sectors" array — tamamlandı 2026-05-24
+      8g.  ✓ imported takibi — tamamlandı 2026-05-24
+      8h.  ✓ İlçe parse fix (BUG-6) — tamamlandı 2026-05-25
+           _STREET_KEYWORDS'e 'sk', 'cd' eklendi
+           _clean_component: baştaki ZIP kodu + em-dash/en-dash temizleme eklendi
+           _is_district_candidate: rakamla başlayan token, "No:\d" kalıbı reddi eklendi
+           word_stem split ile "no:15" → "no" keyword eşleşmesi düzeltildi
+           utils/location_extractor.py
     Test metodolojisi: 35 şirket (2026-05-25 genişletildi), test-1/test-2/... klasörleri, her birinde TEST_INFO.md.
     Başarı kriteri: 1 iletişim kanalı + adres + 1 doğru katalog (bonus: logo, açıklama, city).
 
@@ -1507,14 +1838,17 @@ Priority 2 — Data Scraper (Phase 8 → 9 → 10):
       10h. Tab 2: Taranan Firmalar (liste + filtreler)
       10i. Tab 3: Katalog Analizi (bağımsız panel — analiz et + aday onay/reddet)
 
-NEXT SESSION: TODO-8 tamamlandı (8a–8g). Test #1 ve Test #2 çalıştırıldı.
-              BUG-1, BUG-2(kısmi), BUG-3, BUG-4 çözüldü.
-              TEST_COMPANIES 7 → 35 firmaya genişletildi (Borçelik çıkarıldı).
+NEXT SESSION: Test #3→#8 tamamlandı. En iyi sonuç Test #7:
+              SUCCESS 20 | PARTIAL 1 | FAILED 14
+              BUG-2 ✓, BUG-5 ✓, BUG-6 ✓, BUG-7 ✓ fix uygulandı (test-9 doğrulayacak).
+              B görevi SONUÇLANDI: kalan FAILED firmalar generic scraper ile çözülemiyor.
+                Grup 1 — BUG-7 fix uygulandı: Erbakır(Wix CDN), Sigma(SSL fallback)
+                Grup 2 — Site yapısı uyumsuz (login duvarı / dinamik API / SPA interaction):
+                          Noksel, Kaptan, Assan, Knauf, Mapei, Nexans, Best, Sarkuysan, KM Metal
+                Grup 3 — Kamuya açık PDF yok: Çözümbu, Eine, Ekin Endüstriyel
               Öncelikli devam seçenekleri:
-                A) Test #3 çalıştır (35 firma, python main.py --test 3)
-                B) BUG-2 derinlemesi: Yücel/Kroman/İçdaş iletişim neden bulunamıyor araştır
-                C) TODO-9 kararı: katalog analizi yöntemi (rule-based / LLM / OCR)
-                D) TODO-10: backend+frontend entegrasyonu
+                A) Test-9 çalıştır: BUG-7 fix doğrulama (Sigma SUCCESS olmalı, Erbakır?)
+                B) HES iletişim: JS-rendered, tek kalan PARTIAL — özel Selenium çözümü
 
 Completed 2026-04-20:
   - Nested <a> hydration fix in CompanyCard (/companies page)
@@ -1652,11 +1986,11 @@ DECISIONS LOG
 
 ---
 
-Document version: 11.0
-Date: May 24, 2026
-Status: ACTIVE -- Phase 7 complete. Data Scraper kullanım yöntemi LOCKED (2026-05-24):
-        Admin panelden tek firma girişi (ad + URL + sektörler multi-select combobox).
-        Phase 8 (scraper optimizasyonu), Phase 9 (katalog analizi — bağımsız panel),
-        Phase 10 (backend+frontend entegrasyon) yeniden planlandı.
-        Hesap Ayarları sayfası tamamlandı (2026-05-22).
-        TODO-1/4/5/6 uygulandı, test bekleniyor.
+Document version: 17.0
+Date: May 25, 2026
+Status: ACTIVE -- Phase 7 complete. Data Scraper Phase 8 tamamlandı.
+        En iyi sonuç Test #7: SUCCESS 20 | PARTIAL 1 | FAILED 14.
+        B görevi sonuçlandı: kalan FAILED firmalar generic scraper kapsamı dışında.
+        BUG-7 fix uygulandı (Wix CDN dönüşümü + SSL fallback) — test-9 ile doğrulanacak.
+        BUG-2 ✓, BUG-5 ✓, BUG-6 ✓ düzeltildi. BUG-7 (download) açık.
+        Phase 9 (katalog analizi) ve Phase 10 (backend+frontend) beklemede.

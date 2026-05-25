@@ -549,14 +549,19 @@ class DeepScanStrategy(CatalogStrategy):
             response.encoding = response.apparent_encoding or 'utf-8'
             soup = BeautifulSoup(response.text, 'lxml')
 
-            # İçerik yeterliyse döndür
+            # İçerik yeterliyse döndür — ama SPA shell kontrolü yap:
+            # 500+ karakter var ama <a> link sayısı < 5 → SPA olabilir → Selenium dene
             if len(soup.get_text()) > 500:
-                return soup
+                link_count = len(soup.find_all('a', href=True))
+                if link_count >= 5:
+                    return soup
+                logger.debug(f"[{self.name}] Sayfa metni var ama link az ({link_count}), SPA olabilir: {url}")
+                # SPA şüphesi — Selenium ile dene (aşağıda)
 
         except Exception as e:
             logger.debug(f"[{self.name}] Requests hatası ({url}): {e}")
 
-        # 2. İçerik yetersiz veya hata - Selenium ile dene
+        # 2. İçerik yetersiz/az link/hata - Selenium ile dene
         if self._driver is None:
             self._driver = self._init_selenium_driver()
 
@@ -608,6 +613,8 @@ class DeepScanStrategy(CatalogStrategy):
             # Öncelikli: /tr/ prefix'li (Türk siteleri)
             '/tr/download-listesi', '/tr/katalog', '/tr/download', '/tr/downloads',
             '/tr/dokuman', '/tr/dokumanlar', '/tr/urunler',
+            '/tr/teknik-bilgi', '/tr/teknik-dokuman', '/tr/teknik-dokumanlar',
+            '/tr/veri-sayfasi', '/tr/literatur', '/tr/kaynaklar',
             # Kök dizin path'leri
             '/download-listesi', '/katalog', '/kataloglar', '/download', '/downloads',
             '/catalog', '/catalogs', '/catalogue',
@@ -616,6 +623,9 @@ class DeepScanStrategy(CatalogStrategy):
             '/media', '/medya', '/files', '/dosyalar', '/dosya-merkezi',
             '/pdf', '/pdfs', '/brosur', '/brochure', '/brosurler',
             '/urunler', '/urun', '/products', '/product',
+            '/teknik-bilgi', '/teknik-dokuman', '/teknik-dokumanlar',
+            '/tds', '/datasheet', '/datasheets', '/data-sheets',
+            '/literatur', '/literature', '/kaynaklar', '/resources',
             # Alt dizinler
             '/kurumsal/katalog', '/kurumsal/dokuman',
             '/en/catalog', '/en/download',
@@ -672,6 +682,24 @@ class DeepScanStrategy(CatalogStrategy):
 
         catalogs: Set[str] = set()
 
+        def resolve_href(href: str) -> str:
+            """CMS iç URL'lerini gerçek HTTP URL'lerine çevirir."""
+            if not href:
+                return ''
+            # Wix protokol URL → CDN URL dönüşümü
+            if href.startswith('wix:document://v1/ugd/'):
+                ugd_path = href[len('wix:document://v1/ugd/'):]
+                file_hash = ugd_path.split('/')[0]
+                if file_hash.lower().endswith('.pdf'):
+                    return f"https://static.wixstatic.com/ugd/{file_hash}"
+                return ''
+            # Backslash-escaped path normalizasyonu (Wix JS çıktısı)
+            if '\\/' in href:
+                href = href.replace('\\/', '/')
+            if href.startswith(('http://', 'https://')):
+                return href
+            return urljoin(base_url, href)
+
         def normalize_turkish(text: str) -> str:
             """Türkçe karakterleri normalize et."""
             tr_map = str.maketrans({
@@ -717,8 +745,8 @@ class DeepScanStrategy(CatalogStrategy):
         for link in soup.find_all('a', href=True):
             href = link['href']
             if any(href.lower().endswith(ext) for ext in VALID_EXTENSIONS):
-                full_url = urljoin(base_url, href)
-                if is_valid_catalog(full_url):
+                full_url = resolve_href(href)
+                if full_url and is_valid_catalog(full_url):
                     catalogs.add(full_url)
 
         # 2. data-* attributes
@@ -726,8 +754,8 @@ class DeepScanStrategy(CatalogStrategy):
             for elem in soup.find_all(attrs={attr: True}):
                 href = elem.get(attr, '')
                 if any(href.lower().endswith(ext) for ext in VALID_EXTENSIONS):
-                    full_url = urljoin(base_url, href)
-                    if is_valid_catalog(full_url):
+                    full_url = resolve_href(href)
+                    if full_url and is_valid_catalog(full_url):
                         catalogs.add(full_url)
 
         # 3. onclick eventleri (window.open, location.href vb.)
@@ -743,8 +771,8 @@ class DeepScanStrategy(CatalogStrategy):
                 matches = re.findall(pattern, onclick)
                 for url in matches:
                     if any(url.lower().endswith(ext) for ext in VALID_EXTENSIONS):
-                        full_url = urljoin(base_url, url)
-                        if is_valid_catalog(full_url):
+                        full_url = resolve_href(url)
+                        if full_url and is_valid_catalog(full_url):
                             catalogs.add(full_url)
 
         # 4. Script içindeki URL'ler
@@ -753,8 +781,8 @@ class DeepScanStrategy(CatalogStrategy):
             urls = re.findall(r'["\']([^"\']*\.pdf)["\']', script_text, re.IGNORECASE)
             for url in urls:
                 if len(url) > 5:
-                    full_url = urljoin(base_url, url)
-                    if is_valid_catalog(full_url):
+                    full_url = resolve_href(url)
+                    if full_url and is_valid_catalog(full_url):
                         catalogs.add(full_url)
 
         return catalogs

@@ -312,6 +312,8 @@ class GenericScraper(BaseScraper):
             '/tr/download-listesi', '/tr/katalog', '/tr/download', '/tr/downloads',
             '/tr/dokuman', '/tr/dokumanlar', '/tr/urunler', '/tr/urun',
             '/tr/media', '/tr/medya',
+            '/tr/teknik-bilgi', '/tr/teknik-dokuman', '/tr/teknik-dokumanlar',
+            '/tr/veri-sayfasi', '/tr/literatur', '/tr/kaynaklar',
             # Kök dizin path'leri
             '/download-listesi', '/katalog', '/kataloglar', '/download', '/downloads',
             '/catalog', '/catalogs', '/catalogue',
@@ -322,6 +324,8 @@ class GenericScraper(BaseScraper):
             '/brosur', '/brosurler', '/brochure', '/brochures',
             '/pdf', '/pdfs', '/fiyat-listesi', '/pricelist',
             '/urunler', '/urun', '/products', '/product',
+            '/teknik-bilgi', '/teknik-dokuman', '/teknik-dokumanlar',
+            '/tds', '/datasheet', '/datasheets', '/literatur', '/literature', '/kaynaklar',
             # Alt dizinler
             '/kurumsal/katalog', '/kurumsal/dokuman',
         ]
@@ -346,12 +350,16 @@ class GenericScraper(BaseScraper):
             pages_checked += 1
             logger.debug(f"Katalog sayfası taranıyor ({pages_checked}/{max_pages}): {page_url}")
 
-            # Önce requests ile dene (daha hızlı), başarısız olursa Selenium
+            # Önce requests ile dene (daha hızlı), başarısız olursa veya SPA ise Selenium
             page_soup = self.fetch_page(page_url)
 
             if not page_soup:
-                # Selenium ile dene
                 page_soup = self.fetch_page_with_js(page_url)
+            elif page_soup and len(page_soup.find_all('a', href=True)) < 5:
+                # Sayfa yüklendi ama link çok az → SPA shell olabilir → Selenium dene
+                selenium_soup = self.fetch_page_with_js(page_url)
+                if selenium_soup and len(selenium_soup.find_all('a', href=True)) > len(page_soup.find_all('a', href=True)):
+                    page_soup = selenium_soup
 
             if page_soup:
                 # URL'de katalog/download kelimesi geçiyorsa katalog sayfası say
@@ -413,16 +421,11 @@ class GenericScraper(BaseScraper):
                 min_catalogs=1
             )
 
-            # Bulunan katalogları filtrele (negatif keyword kontrolü)
-            filtered_catalogs = []
-            for url in catalog_links:
-                should_download, reason = self.downloader.should_download_url(url, '')
-                if should_download:
-                    filtered_catalogs.append(url)
-                else:
-                    logger.debug(f"Strateji katalogu filtrelendi: {url} - {reason}")
-
-            return filtered_catalogs, soup
+            # Strateji kendi içinde filtreleme yapıyor (_extract_catalogs_from_soup /
+            # PDF_NEGATIVE_KEYWORDS). Burada tekrar filtrelemek katalogları siliyor
+            # çünkü from_catalog_page bağlamı kaybolmuş olur (BUG-5).
+            # _download_catalogs trusted=True kullandığı için indirme aşamasında sorun yok.
+            return catalog_links, soup
 
         except Exception as e:
             logger.debug(f"Multi-strateji hatası: {e}")
@@ -506,6 +509,9 @@ class GenericScraper(BaseScraper):
                 return
 
             full_url = self.resolve_url(base_url, url)
+            if not full_url:
+                return
+
             should_download, reason = self.downloader.should_download_url(
                 full_url, link_text, from_catalog_page
             )
@@ -628,17 +634,17 @@ class GenericScraper(BaseScraper):
         # 2. Yaygın iletişim sayfası URL'lerini dene
         common_contact_paths = [
             # Türkçe — kök dizin
-            '/iletisim', '/iletişim', '/iletisim-bilgileri', '/iletisim-formu',
+            '/iletisim', '/iletisim.php', '/iletişim', '/iletisim-bilgileri', '/iletisim-formu',
             '/bize-ulasin', '/bize-ulaşın', '/bizeulasin',
-            '/hakkimizda', '/hakkımızda', '/hakkinda', '/hakkında',
+            '/hakkimizda', '/hakkimizda.php', '/hakkımızda', '/hakkinda', '/hakkında',
             '/kurumsal', '/kurumsal/iletisim', '/kurumsal/hakkimizda',
             # İngilizce — kök dizin
-            '/contact', '/contact-us', '/contactus', '/contact-information',
+            '/contact', '/contact.php', '/contact-us', '/contactus', '/contact-information',
             '/about', '/about-us', '/aboutus', '/about-company',
             '/get-in-touch', '/reach-us',
             # /tr/ prefix'li (Türk kurumsal sitelerde yaygın)
-            '/tr/iletisim', '/tr/iletişim', '/tr/hakkimizda', '/tr/kurumsal',
-            '/tr/bize-ulasin', '/tr/contact',
+            '/tr/iletisim', '/tr/Iletisim', '/tr/iletişim', '/tr/hakkimizda', '/tr/kurumsal',
+            '/tr/bize-ulasin', '/tr/bize-ulaşın', '/tr/contact',
             # /en/ prefix'li (iki dilli siteler)
             '/en/contact', '/en/contact-us', '/en/about', '/en/about-us',
             # Kurumsal alt yollar
@@ -648,19 +654,17 @@ class GenericScraper(BaseScraper):
             '/iletisim.html', '/contact.html', '/hakkimizda.html',
         ]
 
-        contact_pages = []
-        for path in common_contact_paths:
-            contact_pages.append(base_url.rstrip('/') + path)
-
-        # 3. Sayfadaki linklerden iletişim sayfalarını bul
+        # 3. Sayfadaki linklerden iletişim sayfalarını bul (navigasyondan gelenler önce)
         found_pages = self.find_pages_by_keywords(main_soup, base_url, CONTACT_KEYWORDS)
-        contact_pages.extend(found_pages)
+        contact_pages = list(dict.fromkeys(found_pages))  # navigasyon linkleri önce
 
-        # Duplicate'ları kaldır
-        contact_pages = list(dict.fromkeys(contact_pages))
+        for path in common_contact_paths:
+            url = base_url.rstrip('/') + path
+            if url not in contact_pages:
+                contact_pages.append(url)
 
-        # 4. Her sayfayı dene (maksimum 8 sayfa)
-        max_contact_pages = 8
+        # 4. Her sayfayı dene (maksimum 12 sayfa)
+        max_contact_pages = 12
         pages_tried = 0
 
         for page_url in contact_pages:

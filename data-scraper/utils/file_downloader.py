@@ -295,13 +295,27 @@ class FileDownloader:
                 try:
                     logger.debug(f"İndiriliyor (deneme {attempt}): {url}")
 
-                    response = requests.get(
-                        url,
-                        headers=req_headers,
-                        timeout=self.timeout,
-                        stream=True,
-                        allow_redirects=True
-                    )
+                    try:
+                        response = requests.get(
+                            url,
+                            headers=req_headers,
+                            timeout=self.timeout,
+                            stream=True,
+                            allow_redirects=True
+                        )
+                    except requests.exceptions.SSLError:
+                        # Geçersiz/kendinden imzalı SSL sertifikası — verify=False ile tekrar dene
+                        import urllib3
+                        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+                        logger.debug(f"SSL hatası, verify=False ile tekrar: {url}")
+                        response = requests.get(
+                            url,
+                            headers=req_headers,
+                            timeout=self.timeout,
+                            stream=True,
+                            allow_redirects=True,
+                            verify=False
+                        )
                     response.raise_for_status()
 
                     # İçeriği oku

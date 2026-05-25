@@ -79,7 +79,9 @@ CATALOG_KEYWORDS = [
 
 CATALOG_PAGE_KEYWORDS = [
     'katalog', 'catalog', 'catalogue', 'download', 'indir', 'yukle',
-    'dokuman', 'document', 'documents', 'media', 'files', 'dosya'
+    'dokuman', 'document', 'documents', 'media', 'files', 'dosya',
+    'teknik', 'technical', 'tds', 'datasheet', 'data-sheet', 'veri',
+    'literatur', 'literature', 'kaynaklar', 'resources'
 ]
 
 # PDF FİLTRELEME
@@ -100,7 +102,7 @@ PDF_NEGATIVE_KEYWORDS = [
     'etik', 'davranis', 'davranış', 'finansal', 'faaliyet-rapor',
     'surdurulebilirlik', 'sürdürülebilirlik', 'sustainability',
     'annual-report', 'investor', 'yatirimci',
-    'vizyon', 'misyon', 'degerler', 'değerler', 'kurumsal',
+    'vizyon', 'misyon', 'degerler', 'değerler',
     'sertifika', 'certificate', 'certification', 'accreditation',
     'tse_en', 'tse-en', 'ts_en', 'ts-en',
     'iso9001', 'iso14001', 'iso45001', 'iso50001', 'iso27001',
