@@ -792,6 +792,14 @@ class GenericScraper(BaseScraper):
             contact = self._extract_from_page_text(soup, contact)
 
         # =================================================================
+        # STRATEGY 6: <script> etiket içeriği — React/Angular inline data
+        # Bazı JS uygulamalar iletişim verisini window.__data__ veya
+        # JSON bundle içine gömer; soup.get_text() bunları atlar.
+        # =================================================================
+        if not contact['phone'] or not contact['email']:
+            contact = self._extract_from_script_tags(soup, contact)
+
+        # =================================================================
         # EN İYİ SONUÇLARI SEÇ
         # =================================================================
         if contact['phones'] and not contact['phone']:
@@ -1318,6 +1326,37 @@ class GenericScraper(BaseScraper):
                     if self._is_valid_address(address):
                         contact['address'] = address
                         break
+
+        return contact
+
+    def _extract_from_script_tags(self, soup: BeautifulSoup, contact: Dict) -> Dict:
+        """
+        <script> etiket içeriğinden telefon ve email çıkarır.
+        React/Angular SPA'lar iletişim verisini JS bundle veya
+        window.__data__ gibi değişkenlere gömer; get_text() bunları atlar.
+        """
+        for script in soup.find_all('script'):
+            script_text = script.string
+            if not script_text:
+                continue
+            # Çok kısa veya çok uzun script'leri atla (analytics/tracking)
+            if len(script_text) < 20 or len(script_text) > 500_000:
+                continue
+
+            if not contact['phone']:
+                phones = self._find_phones_in_text(script_text)
+                for p in phones:
+                    if p not in contact['phones']:
+                        contact['phones'].append(p)
+
+            if not contact['email']:
+                emails = self._find_emails_in_text(script_text)
+                for e in emails:
+                    if self._is_valid_email(e) and e not in contact['emails']:
+                        contact['emails'].append(e)
+
+            if contact['phone'] and contact['email']:
+                break
 
         return contact
 

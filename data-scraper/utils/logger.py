@@ -22,7 +22,7 @@ import colorlog
 try:
     from config.settings import LOGS_DIR
 except ImportError:
-    LOGS_DIR = 'output/logs'
+    LOGS_DIR = r'D:\Sanayi Marketi Output\logs'
 
 
 def get_logger(name: str, log_file: Optional[str] = None) -> logging.Logger:

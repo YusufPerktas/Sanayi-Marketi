@@ -24,7 +24,7 @@ SELENIUM_JS_WAIT = float(os.getenv('SELENIUM_JS_WAIT', 2.0))
 SELENIUM_HEADLESS = os.getenv('SELENIUM_HEADLESS', 'true').lower() == 'true'
 
 # DİZİNLER
-OUTPUT_DIR = 'output'
+OUTPUT_DIR = r'D:\Sanayi Marketi Output'
 CATALOGS_DIR = os.path.join(OUTPUT_DIR, 'catalogs')
 LOGS_DIR = os.path.join(OUTPUT_DIR, 'logs')
 TESTS_DIR = os.path.join(OUTPUT_DIR, 'tests')
@@ -145,10 +145,40 @@ PDF_NEGATIVE_KEYWORDS = [
     'basvuru-formu', 'basvuru_formu',
     'teklif-formu', 'teklif_formu',
     'ihale-sartnamesi', 'ihale_sartnamesi',
+    # Firma-spesifik alakasız dökümanlar (test verisiyle tespit edildi)
+    'kredikart', 'kredi-kart', 'kredi_kart',  # kredi kartı bilgilendirme formu
+    'internet_sitesi',                          # web sitesi teknik rehber belgesi
 ]
 
 PDF_MIN_SIZE = int(os.getenv('PDF_MIN_SIZE', 10000))
 PDF_MAX_SIZE = int(os.getenv('PDF_MAX_SIZE', 100000000))
+
+# SERTİFİKA KURULUŞU DOSYA ADI FİLTRELERİ
+# should_download_url() içinde from_catalog_page'den önce kontrol edilir —
+# katalog sayfasından gelen PDF olsa bile sertifika belgelerini bloklar.
+
+# Dosya adının BAŞINDA bu prefix'ler varsa sertifika belgesidir
+CERT_BODY_FILENAME_PREFIXES = [
+    'dvgw_', 'dvgw-',                        # Alman gaz/su standardı (DVGW)
+    'bureau_veritas', 'bureau-veritas',        # Bureau Veritas sertifikası
+    'dnv-gl', 'dnv_gl', 'dnvgl',              # DNV-GL denizcilik sertifikası
+    'aenor_', 'aenor-',                        # İspanya AENOR standardı
+    'iep_atex', 'iep-atex',                    # IEP ATEX patlama koruması sertifikası
+    'kiwatr',                                   # KIWA Hollanda sertifikası
+    'tuv-',                                     # TÜV sertifika belgesi
+    'vds_', 'vds-',                             # VDS Alman yangın koruması sertifikası
+    'asme_u',                                   # ASME U/U2 Damgası (basınçlı kap sertifikası)
+    'bsi_en_', 'bsi_igem', 'bsi-6',            # BSI İngiliz standardı sertifikaları
+    'aga_stainless',                            # AGA Amerikan gaz sertifikası
+    'csa-6',                                    # CSA Kanada standardı sertifikası
+    'ul_vibration', 'ul_flexible', 'ul_hose',  # UL Amerikan sertifikaları
+]
+
+# Dosya adında HERHANGİ bir yerde bu pattern'lar varsa sertifika belgesidir
+CERT_FILENAME_PATTERNS = [
+    'bpv-certs', 'bpv_certs',                 # BPV sertifika dosyası
+    '-certs-', '_certs_', '-certs.',           # Genel sertifika adlandırma pattern'i
+]
 
 # İLETİŞİM
 CONTACT_KEYWORDS = [

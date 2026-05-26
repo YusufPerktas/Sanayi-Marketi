@@ -148,6 +148,15 @@ class BaseScraper(ABC):
             # JavaScript'in çalışması için bekle
             time.sleep(SELENIUM_JS_WAIT)
 
+            # Sayfanın en altına scroll et — lazy-load içeriğini tetikler
+            try:
+                self._selenium_driver.execute_script(
+                    "window.scrollTo(0, document.body.scrollHeight);"
+                )
+                time.sleep(0.8)
+            except Exception:
+                pass
+
             # Render edilmiş HTML'i al
             page_source = self._selenium_driver.page_source
             soup = BeautifulSoup(page_source, 'lxml')

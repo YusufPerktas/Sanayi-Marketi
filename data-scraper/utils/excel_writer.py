@@ -28,7 +28,7 @@ try:
         OUTPUT_DIR
     )
 except ImportError:
-    OUTPUT_DIR = 'output'
+    OUTPUT_DIR = r'D:\Sanayi Marketi Output'
     EXCEL_FILE = os.path.join(OUTPUT_DIR, 'company_data.xlsx')
     EXCEL_COLUMNS = [
         'company_name', 'website', 'sectors', 'phone', 'email',

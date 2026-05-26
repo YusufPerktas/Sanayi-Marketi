@@ -19,10 +19,12 @@ try:
         PDF_POSITIVE_KEYWORDS,
         PDF_NEGATIVE_KEYWORDS,
         PDF_MIN_SIZE,
-        PDF_MAX_SIZE
+        PDF_MAX_SIZE,
+        CERT_BODY_FILENAME_PREFIXES,
+        CERT_FILENAME_PATTERNS,
     )
 except ImportError:
-    CATALOGS_DIR = 'output/catalogs'
+    CATALOGS_DIR = r'D:\Sanayi Marketi Output\catalogs'
     DOWNLOAD_TIMEOUT = 30
     MAX_RETRIES = 3
     USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -31,6 +33,8 @@ except ImportError:
     PDF_NEGATIVE_KEYWORDS = ['privacy', 'policy', 'terms', 'legal', 'kvkk', 'gizlilik']
     PDF_MIN_SIZE = 10000
     PDF_MAX_SIZE = 100000000
+    CERT_BODY_FILENAME_PREFIXES = []
+    CERT_FILENAME_PATTERNS = []
 
 from utils.logger import get_logger
 from utils.validators import sanitize_filename
@@ -115,6 +119,16 @@ class FileDownloader:
         if re.match(r'^[a-f0-9]{20,}$', name_without_ext.lower()):
             if '/buttons/' in url.lower() or '/button/' in url.lower():
                 return False, "Hash-based filename in buttons directory"
+
+        # 0. Sertifika kuruluşu dosya adı kontrolü
+        # from_catalog_page=True olsa bile çalışır — gerçek katalog sayfalarında
+        # sertifika belgeleri ürün kataloglarıyla aynı dizinde bulunabilir.
+        for cert_prefix in CERT_BODY_FILENAME_PREFIXES:
+            if filename_normalized.startswith(cert_prefix):
+                return False, f"Certification body filename prefix: {cert_prefix}"
+        for cert_pattern in CERT_FILENAME_PATTERNS:
+            if cert_pattern in filename_normalized:
+                return False, f"Certification filename pattern: {cert_pattern}"
 
         combined = f"{decoded_url} {text_lower} {filename_normalized}"
 
