@@ -2,6 +2,63 @@ import apiClient from './api/client';
 import { Company } from './company.service';
 import type { PageResponse } from './company.service';
 
+// ── Scraper types ──────────────────────────────────────────────────
+
+export interface ScraperRunRequest {
+  companyName: string;
+  website: string;
+  sectors: string[];
+}
+
+export interface ScraperResult {
+  companyName: string | null;
+  website: string | null;
+  sectors: string[];
+  status: 'SUCCESS' | 'PARTIAL' | 'FAILED' | 'ERROR';
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  city: string | null;
+  district: string | null;
+  logoUrl: string | null;
+  description: string | null;
+  catalogCount: number;
+  catalogFiles: string[];
+  imported: boolean;
+  scrapeDate: string | null;
+  errorMessage: string | null;
+}
+
+export interface ScraperImportRequest {
+  companyName: string;
+  website: string | null;
+  sectors: string[];
+  phone: string | null;
+  email: string | null;
+  city: string | null;
+  district: string | null;
+  address: string | null;
+  catalogFile: string | null;
+  logoUrl: string | null;
+  description: string | null;
+}
+
+export interface ScraperImportResult {
+  companyId: number;
+  applicationId: number;
+}
+
+export interface MaterialImportItem {
+  materialName: string;
+  companyId?: number | null;
+}
+
+export interface MaterialImportResult {
+  created: number;
+  duplicates: string[];
+  errors: string[];
+}
+
 export interface DuplicatePair {
   companyA: Company;
   companyB: Company;
@@ -55,4 +112,18 @@ export const adminService = {
 
   mergeMaterials: (targetId: number, sourceId: number) =>
     apiClient.post(`/api/admin/materials/${targetId}/merge/${sourceId}`),
+
+  // ── Scraper ────────────────────────────────────────────────────
+
+  runScraper: (request: ScraperRunRequest) =>
+    apiClient.post<ScraperResult>('/api/admin/scraper/run', request).then((r) => r.data),
+
+  getScraperResults: () =>
+    apiClient.get<ScraperResult[]>('/api/admin/scraper/results').then((r) => r.data),
+
+  importCompany: (request: ScraperImportRequest) =>
+    apiClient.post<ScraperImportResult>('/api/admin/scraper/companies/import', request).then((r) => r.data),
+
+  importMaterials: (items: MaterialImportItem[]) =>
+    apiClient.post<MaterialImportResult>('/api/admin/scraper/materials/import', items).then((r) => r.data),
 };

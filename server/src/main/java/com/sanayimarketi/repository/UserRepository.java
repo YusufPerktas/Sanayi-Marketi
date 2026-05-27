@@ -1,6 +1,7 @@
 package com.sanayimarketi.repository;
 
 import com.sanayimarketi.entity.User;
+import com.sanayimarketi.entity.enums.UserRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,4 +13,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
 
     boolean existsByEmail(String email);
+
+    Optional<User> findFirstByRole(UserRole role);
 }

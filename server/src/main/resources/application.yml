@@ -39,6 +39,10 @@ logo:
   upload:
     dir: ${user.home}/sanayi-marketi-uploads/logos
 
+scraper:
+  output-dir: "D:/Sanayi Marketi Output"
+  script-dir: "C:/Users/Yusuf/Desktop/Sanayi Marketi/data-scraper"
+
 logging:
   level:
     org.hibernate.SQL: DEBUG

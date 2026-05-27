@@ -1346,77 +1346,120 @@ New Python module: data-scraper/catalog_analyzer.py
 
 ---
 
-PHASE 10 — Backend + Frontend Entegrasyonu  [PENDING — Phase 8 & 9 sonrası]
+PHASE 10 — Backend + Frontend Entegrasyonu  [TAMAMLANDI 2026-05-27]
 
-Backend endpoints (AdminController eklemeleri):
+Backend (AdminController + ScraperService — TAMAMLANDI 2026-05-27):
+
+  Yeni DTOs:
+    ScraperRunRequestDTO    { companyName, website, sectors[] }
+    ScraperResultDTO        { companyName, website, status, phone, email, address, city, district,
+                              logoUrl, description, scrapeDate, errorMessage, sectors[], catalogFiles[], catalogCount, imported }
+    ScraperImportRequestDTO { companyName, website, sectors[], phone, email, city, district, address,
+                              catalogFile (tek dosya adı), logoUrl, description }
+    ScraperImportResultDTO  { companyId, applicationId }
+    MaterialImportItemDTO   { materialName, companyId? }
+    MaterialImportResultDTO { created, duplicates[], errors[] }
+
+  Yeni Service: ScraperService.java
+    @Value("${scraper.output-dir}")  →  D:/Sanayi Marketi Output
+    @Value("${scraper.script-dir}")  →  C:/Users/Yusuf/Desktop/Sanayi Marketi/data-scraper
+    runScraper():
+      - UTF-8 temp JSON dosyası yazar (charset sorununu önler)
+      - ProcessBuilder: python main.py --input-json {tempFile}  (PYTHONIOENCODING=utf-8)
+      - stdout/stderr okunur ve @Slf4j ile loglanır (log.debug başarıda, log.warn zaman aşımı/dosya yok)
+      - stdoutReader thread join edilir: zaman aşımında join(3000), normal bitişte join(5000)
+      - 600 saniye timeout; zaman aşımında destroyForcibly() + log
+      - Tamamlandıktan sonra company_info.json'ı okur, ScraperResultDTO döner
+    getScraperResults():
+      - scraperOutputDir/catalogs/ altındaki tüm company_info.json'ları tarar
+      - scrapeDate'e göre desc sıralar
+      - Parse hataları log.warn ile loglanır (sessizce yutulmaz)
+    importCompany():
+      - Company (status: INACTIVE) kaydı oluşturur
+      - catalogFile varsa: ~/sanayi-marketi-uploads/catalogs/{companyId}/ klasörüne kopyalar
+      - CompanyApplication (type: AUTO_IMPORTED, status: PENDING, user: adminUser) oluşturur
+      - Admin kullanıcısı: önce findByEmail("admin@sanayimarketi.com"),
+        bulunamazsa UserRepository.findFirstByRole(ADMIN) — findAll() kullanılmaz
+      - company_info.json'da imported: true yazar (setImportedFlag); IOException log.warn ile loglanır
+    importMaterials():
+      - existsByMaterialNameIgnoreCase ile duplicate kontrolü
+      - Yeni malzeme: normalizedName türetilerek Materials tablosuna eklenir
+    sanitizeFilename():
+      - Python'un sanitize_filename mantığını Java'da birebir uygular
+      - "<>:\"/\\|?*" ve boşlukları "_" yapar, "__ → _" collapse, baş/son "_" siler
+      - Boş/null isim → "unnamed_file" (Python ile aynı; eskiden "unnamed" idi — path uyumsuzluğu vardı)
+    parseCompanyJson():
+      - Jackson JsonNode ile parse, iç içe contact_info / catalog_info nesneleri işler
 
   POST /api/admin/scraper/run
     Auth: ADMIN only
-    Body: { companyName, website, sectors: [] }
-    Action: Python scraper'ı subprocess olarak çalıştırır, sonucu döndürür
-    Returns: { status, contactInfo, catalogCount, catalogFiles[] }
+    Body: ScraperRunRequestDTO
+    Action: ScraperService.runScraper() → subprocess + JSON oku
+    Returns: ScraperResultDTO
 
   GET /api/admin/scraper/results
     Auth: ADMIN only
-    Action: D:\Sanayi Marketi Output\catalogs\ klasöründeki tüm company_info.json'ları okur
-    Returns: [{ companyName, status, imported, catalogCount, sectors, contactInfo }]
+    Action: ScraperService.getScraperResults() — tüm company_info.json'ları okur
+    Returns: List<ScraperResultDTO>
 
   POST /api/admin/scraper/companies/import
     Auth: ADMIN only
-    Body: { companyName, website, sectors[], phone, email, city, district, address, catalogFiles[] }
-    Action:
-      1. Company kaydı oluştur (status: INACTIVE)
-      2. Katalog dosyasını ~/sanayi-marketi-uploads/catalogs/{companyId}/ klasörüne kopyala
-      3. Company.catalogFileUrl güncelle
-      4. CompanyApplication oluştur (type: AUTO_IMPORTED, status: PENDING)
-      5. company_info.json'da imported: true yap
-    Returns: { companyId, applicationId }
-
-  POST /api/admin/scraper/catalogs/analyze
-    Auth: ADMIN only
-    Body: { companyName, catalogFile }
-    Action: catalog_analyzer.py'yi subprocess olarak çalıştırır
-    Returns: { status, candidateCount }
-
-  GET /api/admin/scraper/catalogs/candidates
-    Auth: ADMIN only
-    Query: ?companyName=X
-    Action: materials_candidates.json dosyasını okur
-    Returns: candidates listesi
+    Body: ScraperImportRequestDTO
+    Action: ScraperService.importCompany()
+    Returns: ScraperImportResultDTO { companyId, applicationId }
 
   POST /api/admin/scraper/materials/import
     Auth: ADMIN only
-    Body: [{ materialName, companyId? }]
-    Action:
-      1. Global malzeme havuzuna ekle (duplicate kontrolü)
-      2. companyId varsa CompanyMaterial kaydı oluştur (role: SELLER, price: null)
-    Returns: { created: N, duplicates: [...], errors: [...] }
+    Body: List<MaterialImportItemDTO>
+    Action: ScraperService.importMaterials()
+    Returns: MaterialImportResultDTO { created, duplicates[], errors[] }
 
-Frontend (/admin/scraper — şu an UI stub, tam implementasyon gerekiyor):
+  NOT: Katalog analizi endpoint'leri (catalogs/analyze, catalogs/candidates) Phase 9 kapsamında —
+       TODO-10'da uygulanmadı. Phase 9 başladığında eklenecek.
+
+  application.yml eklemeleri:
+    scraper:
+      output-dir: "D:/Sanayi Marketi Output"
+      script-dir: "C:/Users/Yusuf/Desktop/Sanayi Marketi/data-scraper"
+
+  data-scraper/main.py eklemeleri:
+    --input-json argümanı: admin API modunda çalışır, şirket bilgilerini JSON dosyasından okur
+    process_direct_company(company_name, website, sector):
+      - companies.json listesini bypass eder (admin panelden arbitrary firma girişi)
+      - FAILED dahil TÜM durumlarda company_info.json yazar
+      - GenericScraper ile process_company() çağırır, sonucu CATALOGS_DIR/{safeName}/ klasörüne kaydeder
+
+Frontend (/admin/scraper — TAMAMLANDI 2026-05-27):
+
+  admin.service.ts eklemeleri:
+    Types: ScraperRunRequest, ScraperResult, ScraperImportRequest, ScraperImportResult,
+           MaterialImportItem, MaterialImportResult
+    Methods: runScraper(), getScraperResults(), importCompany(), importMaterials()
+
+  /admin/scraper/page.tsx — 3 tab, tam fonksiyonel:
 
   Tab 1: Firma Tara
-    - Form: Firma Adı (text) + Website URL (text) + Sektörler (multi-select combobox)
-    - "Tara" butonu → POST /api/admin/scraper/run
-    - Sonuç kartı: status badge | katalog sayısı | telefon | email | şehir
-    - Başarılıysa: "Sisteme Aktar" butonu → POST /api/admin/scraper/companies/import
-    - Aktarım sonrası: /admin/approvals'a yönlendir (AUTO_IMPORTED onayı için)
+    - TextField: Firma Adı + Website URL
+    - Select multiple (OutlinedInput + renderValue): Sektörler
+    - useMutation → adminService.runScraper()
+    - Sonuç kartı: StatusChip (SUCCESS/PARTIAL/FAILED/ERROR renkli) + katalog sayısı + iletişim
+    - "Sisteme Aktar" butonu → ImportDialog açar
+
+  ImportDialog:
+    - catalogFile Select: scraper'dan gelen dosya listesi dropdown'ı
+    - "Aktar" → adminService.importCompany()
+    - Başarı sonrası /admin/approvals'a yönlendirir (AUTO_IMPORTED onayı için)
 
   Tab 2: Taranan Firmalar
-    - Tablo: firma adı | sektörler | katalog sayısı | iletişim durumu | durum (TARANMADI/PARTIAL/SUCCESS) | aktarım (YENİ/AKTARILDI)
-    - Her satırda: "Sisteme Aktar" (aktarılmamışsa) | "Tekrar Tara"
-    - Filtreler: Tümü | Aktarılmamış | Başarısız
+    - useQuery(['scraper-results']) → adminService.getScraperResults()
+    - Filtre butonları: Tümü | Aktarılmamış | Başarısız
+    - Tablo: firma adı, sektörler, katalog sayısı, iletişim, durum chip, aktarıldı mı
+    - Satır başına: "Aktar" (ImportDialog) + refresh icon (tekrar tara)
 
-  Tab 3: Katalog Analizi  [BAĞIMSIZ PANEL]
-    - Sol panel: Kataloğu analiz edilebilecek firmalar listesi
-      (company_info.json'da katalog var ve materials_candidates.json YOK olanlar)
-    - Her firma satırında katalog listesi: her katalog için "Analiz Et" butonu
-      → POST /api/admin/scraper/catalogs/analyze
-    - Analiz edilmiş kataloglar ayrı gösterilir (tekrar analiz engeli)
-    - Sağ panel / genişleyen satır: adaylar listesi
-      - malzeme adı | güven skoru | sayfa no | onay checkbox | düzenle butonu
-      - Sistemde zaten varsa sarı uyarı: "Zaten sistemde: X"
-      - "Seçilenleri Malzeme Havuzuna Ekle" → POST /api/admin/scraper/materials/import
-      - Filtreler: Tümü | Yüksek Güven (>0.8) | Orta | Düşük
+  Tab 3: Katalog Analizi  [STUB — Phase 9 bekleniyor]
+    - Alert: "Bu özellik Phase 9'da (katalog analizi) gelecek"
+    - Mevcut scraper sonuçlarından katalog içeren firmalar listelenir
+    - "Analiz Et" butonları disabled (Phase 9 hazır değil)
 
 ---
 
@@ -1578,7 +1621,24 @@ Database:     COMPLETE & LOCKED
 
 Backend:      RUNNING (Spring Boot Dashboard, port 8080)
               JWT Security: COMPLETE
-              AdminController + ScraperService: DEFERRED
+              AdminController + ScraperService: DONE (2026-05-27)
+                ScraperService.java: runScraper / getScraperResults / importCompany / importMaterials / sanitizeFilename
+                New DTOs: ScraperRunRequestDTO, ScraperResultDTO, ScraperImportRequestDTO,
+                          ScraperImportResultDTO, MaterialImportItemDTO, MaterialImportResultDTO
+                AdminController: 4 yeni scraper endpoint eklendi (run/results/companies/materials)
+                application.yml: scraper.output-dir + scraper.script-dir eklendi
+                MaterialRepository: existsByMaterialNameIgnoreCase() eklendi
+
+              ScraperService bug fixes: DONE (2026-05-28)
+                ScraperService.java:
+                  - @Slf4j eklendi; stdout/stderr artık log.debug/warn ile loglanıyor
+                  - stdoutReader thread join edildi (zaman aşımı: 3s, normal: 5s)
+                  - sanitizeFilename: boş isim fallback "unnamed" → "unnamed_file" (Python uyumu)
+                  - importCompany: findAll().stream().filter() → findFirstByRole(ADMIN) (verimlilik)
+                  - getScraperResults: parse exception artık log.warn ile loglanıyor
+                  - setImportedFlag: IOException artık log.warn ile loglanıyor
+                UserRepository.java: findFirstByRole(UserRole role) metodu eklendi
+                pom.xml: jackson-databind explicit bağımlılık eklendi (IDE çözümleme için)
 
               All fixes COMPLETE as of 2026-04-18:
                 1. PENDING_COMPANY_USER added to UserRole enum                [DONE]
@@ -1697,7 +1757,10 @@ Frontend:     COMPLETE + UPDATED (2026-04-20)
                                          "Girilmedi" shown for empty optional fields
                 - /admin/companies     company list + search + status chip + "Görüntüle" link
                 - /admin/duplicates    side-by-side comparison + merge/deactivate (REAL API 2026-04-21)
-                - /admin/scraper       scraper UI only (backend deferred)
+                - /admin/scraper       DONE (2026-05-27) — 3 tab, tam fonksiyonel
+                                             Tab 1: Firma Tara (form + useMutation + sonuç kartı + ImportDialog)
+                                             Tab 2: Taranan Firmalar (useQuery + filtreler + tablo + Aktar)
+                                             Tab 3: Katalog Analizi (stub — Phase 9 bekleniyor)
                 - /admin/statistics    real data: company count, material count,
                                        application breakdown + approval rate, city distribution
                 - /admin/materials     NEW (2026-04-20): admin material management
@@ -1807,8 +1870,10 @@ Frontend:     COMPLETE + UPDATED (2026-04-20)
                 - AdminLayout: "Malzemeler" nav item added (Inventory2Icon, /admin/materials)
                 - constants.ts: ADMIN_MATERIALS route added
 
-              KNOWN PENDING (frontend):
-                - /admin/scraper: UI only (backend deferred — see Data Scraper section)
+              Scraper entegrasyonu: DONE (2026-05-27)
+                - /admin/scraper: 3 tab tam fonksiyonel (Tab 1: Firma Tara, Tab 2: Tarananlar, Tab 3: Katalog stub)
+                - admin.service.ts: ScraperRunRequest/Result/ImportRequest/ImportResult + 4 method eklendi
+                - data-scraper/main.py: --input-json argümanı + process_direct_company() eklendi
 
               Hesap Ayarları: DONE (2026-05-22)
                 - /account/settings page implemented: email + password change
@@ -1817,9 +1882,9 @@ Frontend:     COMPLETE + UPDATED (2026-04-20)
 
               proxy.ts:      COMPLETE
 
-Data Scraper: ACTIVE DEVELOPMENT — Phase 8 (scraper optimizasyonu) + Phase 9 (katalog analizi) + Phase 10 (entegrasyon)
+Data Scraper: Phase 8 TAMAMLANDI (2026-05-27) | Phase 10 TAMAMLANDI (2026-05-27) | Phase 9 BEKLEYEN
               Admin kullanım yöntemi LOCKED: tek firma girişi (ad + URL + sektörler)
-              bkz. DATA SCRAPER bölümü ve TODO-8/9/10
+              bkz. DATA SCRAPER bölümü ve TODO-9
 Mobile:       OUT OF SCOPE
 
 ---
@@ -1944,20 +2009,19 @@ Priority 2 — Data Scraper (Phase 8 → 10 → 9):
     Test metodolojisi: 35 şirket (2026-05-25 genişletildi), test-1/test-2/... klasörleri, her birinde TEST_INFO.md.
     Başarı kriteri: 1 iletişim kanalı + adres + 1 doğru katalog (bonus: logo, açıklama, city).
 
-  [TODO-10] Backend + Frontend entegrasyonu — Phase 10  [BEKLEYEN]
-    Kapsam: backend AdminController + ScraperService + frontend /admin/scraper sayfası.
-    Bağımlılık: TODO-8 tamamlandıktan sonra. TODO-9'dan ÖNCE gelir.
-    Backend (6 endpoint — bkz. DATA SCRAPER PHASE 10 bölümü):
-      10a. POST /api/admin/scraper/run  (scraper'ı tetikle)
-      10b. GET  /api/admin/scraper/results  (taranan firmalar listesi)
-      10c. POST /api/admin/scraper/companies/import  (firmayı sisteme aktar)
-      10d. POST /api/admin/scraper/catalogs/analyze  (katalog analizi tetikle)
-      10e. GET  /api/admin/scraper/catalogs/candidates  (malzeme adaylarını getir)
-      10f. POST /api/admin/scraper/materials/import  (adayları malzeme havuzuna ekle)
-    Frontend (/admin/scraper — şu an UI stub, 3 tab):
-      10g. Tab 1: Firma Tara (form + sonuç kartı + sisteme aktar)
-      10h. Tab 2: Taranan Firmalar (liste + filtreler)
-      10i. Tab 3: Katalog Analizi (bağımsız panel — analiz et + aday onay/reddet)
+  [TODO-10] Backend + Frontend entegrasyonu — Phase 10  [TAMAMLANDI 2026-05-27]
+    Backend: ScraperService.java + AdminController 4 endpoint + 6 yeni DTO
+      - POST /api/admin/scraper/run          ✓
+      - GET  /api/admin/scraper/results      ✓
+      - POST /api/admin/scraper/companies/import  ✓
+      - POST /api/admin/scraper/materials/import  ✓
+      - catalogs/analyze + catalogs/candidates: Phase 9 kapsamına ertelendi
+    Frontend: /admin/scraper 3 tab + admin.service.ts + data-scraper/main.py
+      - Tab 1: Firma Tara — form + useMutation + sonuç kartı + ImportDialog  ✓
+      - Tab 2: Taranan Firmalar — useQuery + filtreler + tablo  ✓
+      - Tab 3: Katalog Analizi — stub (Phase 9 bekleniyor)  ✓
+    data-scraper/main.py: --input-json argümanı + process_direct_company()  ✓
+    TypeScript: 0 hata (3 tur tsc --noEmit düzeltmesi: ErrorOutlined icon, Select multiple typing)  ✓
 
   [TODO-9] Katalog analizi + malzeme çıkarımı — Phase 9  [BEKLEYEN — TODO-10 sonrası]
     Bağımlılık: TODO-10 (sistem entegrasyonu) tamamlanıp uçtan uca test edildikten sonra.
@@ -1992,16 +2056,15 @@ Priority 2 — Data Scraper (Phase 8 → 10 → 9):
                                      EAE e-line, Seranit AQUANIT/SERAWAYS, Mutlusan example.pdf dahil)
     Beklenti (test-9'da doğrulanacak): Ayvaz katalog sayısı azalacak ama doğru dosyalar kalacak.
 
-NEXT SESSION: TODO-8 TAMAMLANDI (2026-05-27). Test #10 final sonuç:
-              SUCCESS: 20 | PARTIAL: 1 | FAILED: 14
+TAMAMLANDI (2026-05-27):
+  TODO-8 (Phase 8): Test #10 final — SUCCESS: 20 | PARTIAL: 1 | FAILED: 14
               Tüm bug fix'ler uygulandı ve doğrulandı: BUG-2/5/6/7/8 ✓
-              HES: PARTIAL olarak kabul edildi — cookie consent popup Selenium'u blokluyor,
-                   pratik çözüm yok (logo/açıklama da boş).
+              HES: PARTIAL olarak kabul edildi — cookie consent popup Selenium'u blokluyor.
               Standart Pompa: test-9 flaky'ydi, test-10'da SUCCESS'e döndü ✓
-              Sıradaki aşama: TODO-10 — backend API + admin UI entegrasyonu
-                Backend (AdminController + ScraperService): 6 endpoint
-                Frontend (/admin/scraper): 3 tab (Tara / Tarananlar / Katalog Analizi)
-                Bağımlılık: TODO-9'dan ÖNCE gelir.
+  TODO-10 (Phase 10): Backend + Frontend entegrasyonu tamamlandı (2026-05-27)
+              ScraperService.java, 4 endpoint, 6 DTO, 3-tab admin scraper sayfası, Python --input-json
+  Sıradaki aşama: TODO-9 — Katalog analizi (Phase 9)
+              Karar gerekiyor: extraction yaklaşımı (Option A/B/C/D — bkz. DATA SCRAPER bölümü)
 
 Completed 2026-04-20:
   - Nested <a> hydration fix in CompanyCard (/companies page)
@@ -2139,11 +2202,10 @@ DECISIONS LOG
 
 ---
 
-Document version: 17.0
-Date: May 25, 2026
-Status: ACTIVE -- Phase 7 complete. Data Scraper Phase 8 tamamlandı.
-        En iyi sonuç Test #7: SUCCESS 20 | PARTIAL 1 | FAILED 14.
-        B görevi sonuçlandı: kalan FAILED firmalar generic scraper kapsamı dışında.
-        BUG-7 fix uygulandı (Wix CDN dönüşümü + SSL fallback) — test-9 ile doğrulanacak.
-        BUG-2 ✓, BUG-5 ✓, BUG-6 ✓ düzeltildi. BUG-7 (download) açık.
-        Phase 9 (katalog analizi) ve Phase 10 (backend+frontend) beklemede.
+Document version: 18.0
+Date: May 28, 2026
+Status: ACTIVE -- Phase 7 complete. Data Scraper Phase 8 + Phase 10 tamamlandı.
+        ScraperService bug fixes uygulandı (2026-05-28): @Slf4j logging, thread join,
+        sanitizeFilename fallback, findFirstByRole, jackson-databind explicit.
+        En iyi scraper sonucu Test #10: SUCCESS 20 | PARTIAL 1 | FAILED 14.
+        Sıradaki: TODO-9 — Katalog analizi (Phase 9), extraction yaklaşımı kararı bekleniyor.

@@ -200,6 +200,49 @@ def process_single_company(company_name: str, companies: List[Dict[str, str]]) -
     logger.info(f"Tekli arama tamamlandı: {company_name} ({status})")
 
 
+def process_direct_company(company_name: str, website: str, sector: str = '') -> None:
+    """Admin panel API'sinden tetiklenen doğrudan firma scraping.
+    companies.json'a gerek duymaz. Sonucu her zaman JSON'a kaydeder (FAILED dahil).
+    """
+    from utils.validators import sanitize_filename
+
+    company = {'company_name': company_name, 'website': website, 'sector': sector}
+
+    print(f"\n[DOĞRUDAN ARAMA MODU]")
+    print(f"Firma: {company_name}")
+    print(f"Web:   {website}")
+    print(f"Sektör: {sector or '-'}")
+    print(f"\nİşlem başlıyor...\n")
+
+    logger.info(f"Doğrudan arama başlıyor: {company_name}")
+
+    safe_company_name = sanitize_filename(company_name)
+    company_dir = os.path.join(CATALOGS_DIR, safe_company_name)
+
+    with GenericScraper(catalogs_dir=CATALOGS_DIR) as scraper:
+        result = process_company(scraper, company)
+
+    status = result.get('status', STATUS_ERROR)
+    catalog_count = result.get('catalog_count', 0)
+
+    print(f"\n[SONUÇ]")
+    print(f"  Durum:   {status}")
+    print(f"  Katalog: {catalog_count} dosya")
+    if result.get('phone'):
+        print(f"  Telefon: {result['phone']}")
+    if result.get('email'):
+        print(f"  Email:   {result['email']}")
+    if result.get('city'):
+        print(f"  Şehir:   {result['city']}")
+
+    # Her durumda kaydet (admin panel sonucu görebilsin)
+    if not JSONWriter.save_company(result, company_dir):
+        print(f"  ✗ JSON kaydı başarısız!")
+
+    print()
+    logger.info(f"Doğrudan arama tamamlandı: {company_name} ({status})")
+
+
 def process_batch(companies: List[Dict[str, str]]) -> None:
     """Toplu firma scraping modunu çalıştırır."""
     start_time = datetime.now()
@@ -467,12 +510,30 @@ def main() -> None:
     parser.add_argument('--company', type=str, help='Belirli firma adı ara (tekli mod)')
     parser.add_argument('--list', action='store_true', help='Firma listesini göster')
     parser.add_argument('--test', type=int, metavar='N', help='Test modu: tüm firmaları çek, output/tests/test-N/ klasörüne kaydet')
+    parser.add_argument('--input-json', type=str, help='Admin API modu: firma bilgilerini JSON dosyasından oku (company_name, website, sector)')
 
     args = parser.parse_args()
-    
+
+    # --input-json seçeneği (admin panel API modu — companies.json gerektirmez)
+    if args.input_json:
+        ensure_directories()
+        try:
+            with open(args.input_json, 'r', encoding='utf-8') as f:
+                company_data = json.load(f)
+        except Exception as e:
+            print(f"[HATA] Input JSON okunamadı: {e}")
+            logger.error(f"Input JSON okunamadı: {e}")
+            return
+        process_direct_company(
+            company_data.get('company_name', ''),
+            company_data.get('website', ''),
+            company_data.get('sector', ''),
+        )
+        return
+
     # Dizinleri oluştur
     ensure_directories()
-    
+
     # Firma listesini yükle
     try:
         companies = load_companies()
@@ -493,11 +554,11 @@ def main() -> None:
         logger.error(f"JSON parse hatası: {e}")
         print("\n[HATA] companies.json dosyası geçersiz JSON formatında!")
         return
-    
+
     if not companies:
         print("\n[UYARI] Firma listesi boş. İşlem yapılacak firma yok.")
         return
-    
+
     # --list seçeneği
     if args.list:
         print("[FİRMA LİSTESİ]")
@@ -507,7 +568,7 @@ def main() -> None:
             print(f"{i:3d}. {company['company_name']:35s} | {sector_str}")
         print()
         return
-    
+
     # --test seçeneği (test modu)
     if args.test is not None:
         test_companies = [c for c in companies if c.get('company_name') in TEST_COMPANIES]

@@ -1,12 +1,6 @@
 package com.sanayimarketi.controller;
 
-import com.sanayimarketi.dto.AdminMaterialResponseDTO;
-import com.sanayimarketi.dto.AdminMaterialStatsDTO;
-import com.sanayimarketi.dto.CompanyResponseDTO;
-import com.sanayimarketi.dto.DuplicatePairDTO;
-import com.sanayimarketi.dto.MaterialCreateRequestDTO;
-import com.sanayimarketi.dto.MaterialResponseDTO;
-import com.sanayimarketi.dto.PagedResponseDTO;
+import com.sanayimarketi.dto.*;
 import com.sanayimarketi.entity.Company;
 import com.sanayimarketi.entity.Material;
 import com.sanayimarketi.entity.enums.CompanyStatus;
@@ -14,6 +8,7 @@ import com.sanayimarketi.mapper.CompanyMapper;
 import com.sanayimarketi.mapper.MaterialMapper;
 import com.sanayimarketi.service.CompanyService;
 import com.sanayimarketi.service.MaterialService;
+import com.sanayimarketi.service.ScraperService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -34,6 +29,7 @@ public class AdminController {
     private final CompanyMapper companyMapper;
     private final MaterialService materialService;
     private final MaterialMapper materialMapper;
+    private final ScraperService scraperService;
 
     // ── Company endpoints ──────────────────────────────────────────
 
@@ -105,5 +101,29 @@ public class AdminController {
             @PathVariable Long sourceId) {
         materialService.mergeMaterials(targetId, sourceId);
         return ResponseEntity.ok().build();
+    }
+
+    // ── Scraper endpoints ──────────────────────────────────────────
+
+    @PostMapping("/scraper/run")
+    public ResponseEntity<ScraperResultDTO> runScraper(@RequestBody ScraperRunRequestDTO request) {
+        ScraperResultDTO result = scraperService.runScraper(
+                request.getCompanyName(), request.getWebsite(), request.getSectors());
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/scraper/results")
+    public ResponseEntity<List<ScraperResultDTO>> getScraperResults() {
+        return ResponseEntity.ok(scraperService.getScraperResults());
+    }
+
+    @PostMapping("/scraper/companies/import")
+    public ResponseEntity<ScraperImportResultDTO> importCompany(@RequestBody ScraperImportRequestDTO request) {
+        return ResponseEntity.ok(scraperService.importCompany(request));
+    }
+
+    @PostMapping("/scraper/materials/import")
+    public ResponseEntity<MaterialImportResultDTO> importMaterials(@RequestBody List<MaterialImportItemDTO> items) {
+        return ResponseEntity.ok(scraperService.importMaterials(items));
     }
 }
