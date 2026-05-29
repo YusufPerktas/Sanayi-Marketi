@@ -17,6 +17,8 @@ public interface MaterialRepository extends JpaRepository<Material, Long> {
 
     boolean existsByMaterialNameIgnoreCase(String name);
 
+    java.util.Optional<Material> findByMaterialNameIgnoreCase(String name);
+
     List<Material> findByParentMaterialId(Long parentId);
 
     List<Material> findByParentMaterialIsNull();

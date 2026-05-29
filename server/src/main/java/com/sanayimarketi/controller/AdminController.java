@@ -3,9 +3,11 @@ package com.sanayimarketi.controller;
 import com.sanayimarketi.dto.*;
 import com.sanayimarketi.entity.Company;
 import com.sanayimarketi.entity.Material;
+import com.sanayimarketi.dto.CompanyUpdateRequestDTO;
 import com.sanayimarketi.entity.enums.CompanyStatus;
 import com.sanayimarketi.mapper.CompanyMapper;
 import com.sanayimarketi.mapper.MaterialMapper;
+import com.sanayimarketi.repository.CompanyUserRepository;
 import com.sanayimarketi.service.CompanyService;
 import com.sanayimarketi.service.MaterialService;
 import com.sanayimarketi.service.ScraperService;
@@ -30,8 +32,22 @@ public class AdminController {
     private final MaterialService materialService;
     private final MaterialMapper materialMapper;
     private final ScraperService scraperService;
+    private final CompanyUserRepository companyUserRepository;
 
     // ── Company endpoints ──────────────────────────────────────────
+
+    @GetMapping("/companies/owned-ids")
+    public ResponseEntity<List<Long>> getOwnedCompanyIds() {
+        return ResponseEntity.ok(companyUserRepository.findAllOwnedCompanyIds());
+    }
+
+    @PutMapping("/companies/{id}")
+    public ResponseEntity<CompanyResponseDTO> adminUpdateCompany(
+            @PathVariable Long id,
+            @RequestBody CompanyUpdateRequestDTO request) {
+        Company updated = companyService.adminUpdateCompany(id, request);
+        return ResponseEntity.ok(companyMapper.toResponseDTO(updated));
+    }
 
     @GetMapping("/companies/duplicates")
     public ResponseEntity<List<DuplicatePairDTO>> getCompanyDuplicates() {
@@ -125,5 +141,20 @@ public class AdminController {
     @PostMapping("/scraper/materials/import")
     public ResponseEntity<MaterialImportResultDTO> importMaterials(@RequestBody List<MaterialImportItemDTO> items) {
         return ResponseEntity.ok(scraperService.importMaterials(items));
+    }
+
+    @PostMapping("/scraper/catalogs/analyze")
+    public ResponseEntity<MaterialsCandidatesResponseDTO> analyzeCatalog(
+            @RequestBody CatalogAnalyzeRequestDTO request) {
+        MaterialsCandidatesResponseDTO result = scraperService.analyzeCatalog(
+                request.getCompanyName(), request.getTestDir());
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/scraper/catalogs/candidates/{companyName}")
+    public ResponseEntity<MaterialsCandidatesResponseDTO> getCatalogCandidates(
+            @PathVariable String companyName,
+            @RequestParam(required = false) Integer testDir) {
+        return ResponseEntity.ok(scraperService.getCatalogCandidates(companyName, testDir));
     }
 }

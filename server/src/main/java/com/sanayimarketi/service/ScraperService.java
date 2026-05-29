@@ -28,6 +28,7 @@ public class ScraperService {
     private final CompanyApplicationRepository companyApplicationRepository;
     private final UserRepository userRepository;
     private final MaterialRepository materialRepository;
+    private final CompanyMaterialRepository companyMaterialRepository;
     private final ObjectMapper objectMapper;
 
     @Value("${scraper.output-dir}")
@@ -192,10 +193,11 @@ public class ScraperService {
                 .build();
         application = companyApplicationRepository.save(application);
 
-        // 4. company_info.json'da imported: true yap
+        // 4. company_info.json'da imported: true ve company_id yaz
         String safeName = sanitizeFilename(request.getCompanyName());
         Path jsonPath = Paths.get(scraperOutputDir, "catalogs", safeName, "company_info.json");
         setImportedFlag(jsonPath, true);
+        setCompanyIdFlag(jsonPath, company.getId());
 
         return new ScraperImportResultDTO(company.getId(), application.getId());
     }
@@ -212,22 +214,136 @@ public class ScraperService {
             if (item.getMaterialName() == null || item.getMaterialName().isBlank()) continue;
             String name = item.getMaterialName().trim();
 
-            if (materialRepository.existsByMaterialNameIgnoreCase(name)) {
-                duplicates.add(name);
-                continue;
-            }
             try {
-                Material material = new Material();
-                material.setMaterialName(name);
-                material.setNormalizedName(name.toLowerCase().trim());
-                material.setCreatedByCompanyId(item.getCompanyId());
-                materialRepository.save(material);
-                created++;
+                Material material;
+                if (materialRepository.existsByMaterialNameIgnoreCase(name)) {
+                    duplicates.add(name);
+                    // Material already exists — still create company link if requested
+                    material = materialRepository.findByMaterialNameIgnoreCase(name).orElse(null);
+                    if (material == null) continue;
+                } else {
+                    material = new Material();
+                    material.setMaterialName(name);
+                    material.setNormalizedName(name.toLowerCase().trim());
+                    material.setCreatedByCompanyId(item.getCompanyId());
+                    material = materialRepository.save(material);
+                    created++;
+                }
+
+                // company_materials bağlantısı oluştur (companyId verilmişse)
+                if (item.getCompanyId() != null) {
+                    Long companyId = item.getCompanyId();
+                    Long materialId = material.getId();
+                    final Material savedMaterial = material; // lambda için effectively final referans
+                    if (!companyRepository.existsById(companyId)) {
+                        log.warn("importMaterials: companyId={} bulunamadı, malzeme '{}' bağlantısız eklendi", companyId, name);
+                    } else if (companyMaterialRepository.findByCompanyIdAndMaterialId(companyId, materialId).isEmpty()) {
+                        companyRepository.findById(companyId).ifPresent(company -> {
+                            CompanyMaterial cm = new CompanyMaterial();
+                            cm.setCompany(company);
+                            cm.setMaterial(savedMaterial);
+                            cm.setRole(CompanyMaterialRole.PRODUCER);
+                            cm.setPrice(null);
+                            cm.setUnit(null);
+                            companyMaterialRepository.save(cm);
+                        });
+                    }
+                }
             } catch (Exception e) {
                 errors.add(name + ": " + e.getMessage());
             }
         }
         return new MaterialImportResultDTO(created, duplicates, errors);
+    }
+
+    // ── Catalog analysis ─────────────────────────────────────────────
+
+    public MaterialsCandidatesResponseDTO analyzeCatalog(String companyName, Integer testDir) {
+        String safeName = sanitizeFilename(companyName);
+        Path companyDir = testDir != null
+                ? Paths.get(scraperOutputDir, "tests", "test-" + testDir, safeName)
+                : Paths.get(scraperOutputDir, "catalogs", safeName);
+
+        if (!Files.exists(companyDir)) {
+            throw new IllegalArgumentException("Firma dizini bulunamadı: " + companyDir);
+        }
+
+        try {
+            List<String> cmd = new ArrayList<>(List.of(
+                    "python", "catalog_analyzer.py", "--company", companyName));
+            if (testDir != null) {
+                cmd.add("--test-dir");
+                cmd.add(String.valueOf(testDir));
+            }
+
+            ProcessBuilder pb = new ProcessBuilder(cmd);
+            pb.directory(new File(scraperScriptDir));
+            pb.redirectErrorStream(true);
+            pb.environment().put("PYTHONIOENCODING", "utf-8");
+
+            Process process = pb.start();
+            Thread reader = new Thread(() -> {
+                try (BufferedReader br = new BufferedReader(
+                        new InputStreamReader(process.getInputStream(),
+                                java.nio.charset.StandardCharsets.UTF_8))) {
+                    while (br.readLine() != null) {}
+                } catch (IOException ignored) {}
+            });
+            reader.start();
+            boolean finished = process.waitFor(120, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                log.warn("Katalog analizi zaman aşımı [{}]", companyName);
+                throw new RuntimeException("Katalog analizi zaman aşımına uğradı");
+            }
+            try { reader.join(3000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+
+        } catch (Exception e) {
+            if (e instanceof RuntimeException re) throw re;
+            throw new RuntimeException("Katalog analizi çalıştırılamadı: " + e.getMessage(), e);
+        }
+
+        return getCatalogCandidates(companyName, testDir);
+    }
+
+    public MaterialsCandidatesResponseDTO getCatalogCandidates(String companyName, Integer testDir) {
+        String safeName = sanitizeFilename(companyName);
+        Path candidatesPath = testDir != null
+                ? Paths.get(scraperOutputDir, "tests", "test-" + testDir, safeName, "materials_candidates.json")
+                : Paths.get(scraperOutputDir, "catalogs", safeName, "materials_candidates.json");
+
+        if (!Files.exists(candidatesPath)) {
+            return MaterialsCandidatesResponseDTO.builder()
+                    .companyName(companyName)
+                    .status("NOT_ANALYZED")
+                    .candidates(List.of())
+                    .totalCandidates(0)
+                    .build();
+        }
+
+        try {
+            JsonNode root = objectMapper.readTree(candidatesPath.toFile());
+            List<MaterialCandidateDTO> candidates = new ArrayList<>();
+            root.path("candidates").forEach(node -> candidates.add(MaterialCandidateDTO.builder()
+                    .name(node.path("name").asText())
+                    .confidence(node.path("confidence").asDouble())
+                    .sourcePage(node.path("source_page").asInt())
+                    .category(nullIfEmpty(node.path("category").asText(null)))
+                    .build()));
+
+            return MaterialsCandidatesResponseDTO.builder()
+                    .companyName(root.path("company_name").asText(companyName))
+                    .catalogFile(nullIfEmpty(root.path("catalog_file").asText(null)))
+                    .analyzedAt(nullIfEmpty(root.path("analyzed_at").asText(null)))
+                    .extractionMethod(root.path("extraction_method").asText("rule-based"))
+                    .candidates(candidates)
+                    .totalCandidates(root.path("total_candidates").asInt(candidates.size()))
+                    .status(root.path("status").asText("PENDING_REVIEW"))
+                    .build();
+        } catch (IOException e) {
+            log.warn("materials_candidates.json parse hatası [{}]: {}", companyName, e.getMessage());
+            throw new RuntimeException("Katalog sonuçları okunamadı", e);
+        }
     }
 
     // ── Helpers ──────────────────────────────────────────────────────
@@ -258,8 +374,21 @@ public class ScraperService {
                 .catalogCount(catalogInfo.path("count").asInt(0))
                 .catalogFiles(catalogFiles)
                 .imported(root.path("imported").asBoolean(false))
+                .companyId(root.has("company_id") && !root.path("company_id").isNull()
+                        ? root.path("company_id").asLong() : null)
                 .scrapeDate(root.path("scrape_date").asText(null))
                 .build();
+    }
+
+    private void setCompanyIdFlag(Path jsonPath, Long companyId) {
+        try {
+            if (!Files.exists(jsonPath)) return;
+            JsonNode root = objectMapper.readTree(jsonPath.toFile());
+            ((ObjectNode) root).put("company_id", companyId);
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(jsonPath.toFile(), root);
+        } catch (IOException e) {
+            log.warn("company_id bayrağı güncellenemedi [{}]: {}", jsonPath, e.getMessage());
+        }
     }
 
     private void setImportedFlag(Path jsonPath, boolean value) {

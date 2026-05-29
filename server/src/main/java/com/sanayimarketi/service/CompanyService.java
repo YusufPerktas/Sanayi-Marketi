@@ -1,5 +1,6 @@
 package com.sanayimarketi.service;
 
+import com.sanayimarketi.dto.CompanyUpdateRequestDTO;
 import com.sanayimarketi.dto.DuplicatePairDTO;
 import com.sanayimarketi.entity.Company;
 import com.sanayimarketi.entity.CompanyUser;
@@ -82,6 +83,25 @@ public class CompanyService {
         company.setGoogleMapsEmbedUrl(companyDetails.getGoogleMapsEmbedUrl());
         // status, logoUrl, catalogFileUrl/Type are managed by dedicated endpoints — do not overwrite here
 
+        return companyRepository.save(company);
+    }
+
+    /** Admin: firma güncelle — sahiplik kontrolü yok */
+    @Transactional
+    public Company adminUpdateCompany(Long id, CompanyUpdateRequestDTO request) {
+        Company company = getCompanyById(id);
+        if (request.getCompanyName() != null) company.setCompanyName(request.getCompanyName());
+        if (request.getDescription() != null) company.setDescription(request.getDescription());
+        if (request.getCountry() != null) company.setCountry(request.getCountry());
+        if (request.getCity() != null) company.setCity(request.getCity());
+        if (request.getDistrict() != null) company.setDistrict(request.getDistrict());
+        if (request.getFullAddress() != null) company.setFullAddress(request.getFullAddress());
+        if (request.getPhone() != null) company.setPhone(request.getPhone());
+        if (request.getEmail() != null) company.setEmail(request.getEmail());
+        if (request.getWebsite() != null) company.setWebsite(request.getWebsite());
+        if (request.getLatitude() != null) company.setLatitude(request.getLatitude());
+        if (request.getLongitude() != null) company.setLongitude(request.getLongitude());
+        if (request.getGoogleMapsEmbedUrl() != null) company.setGoogleMapsEmbedUrl(request.getGoogleMapsEmbedUrl());
         return companyRepository.save(company);
     }
 

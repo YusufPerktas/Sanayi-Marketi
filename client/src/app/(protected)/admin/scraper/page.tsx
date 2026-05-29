@@ -5,18 +5,22 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
+  Drawer,
   FormControl,
+  FormControlLabel,
   InputLabel,
   MenuItem,
   OutlinedInput,
   Select,
-
+  Switch,
   Tab,
   Table,
   TableBody,
@@ -35,10 +39,18 @@ import ErrorOutlinedIcon from '@mui/icons-material/ErrorOutlined';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
+import AddCircleOutlinedIcon from '@mui/icons-material/AddCircleOutlined';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { colors } from '@/utils/colors';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { adminService, ScraperResult, ScraperImportRequest } from '@/services/admin.service';
+import {
+  adminService,
+  ScraperResult,
+  ScraperImportRequest,
+  MaterialsCandidates,
+  MaterialCandidate,
+} from '@/services/admin.service';
 import { useRouter } from 'next/navigation';
 
 const SECTORS = [
@@ -498,9 +510,244 @@ function TabTarananFirmalar() {
   );
 }
 
+// ── Catalog Candidate Drawer ──────────────────────────────────────
+
+interface CandidateDrawerProps {
+  open: boolean;
+  companyName: string;
+  companyId: number | null;
+  onClose: () => void;
+}
+
+function CandidateDrawer({ open, companyName, companyId, onClose }: CandidateDrawerProps) {
+  const [linkToCompany, setLinkToCompany] = useState(false);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [candidates, setCandidates] = useState<MaterialsCandidates | null>(null);
+  const queryClient = useQueryClient();
+
+  const analyzeMutation = useMutation({
+    mutationFn: () => adminService.analyzeCatalog({ companyName }),
+    onSuccess: (data) => {
+      setCandidates(data);
+      setSelected(new Set(data.candidates.map((_, i) => i).filter((i) => data.candidates[i].confidence >= 0.85)));
+    },
+  });
+
+  const importMutation = useMutation({
+    mutationFn: () => {
+      if (!candidates) return Promise.reject('Aday yok');
+      const items = candidates.candidates
+        .filter((_, i) => selected.has(i))
+        .map((c) => ({ materialName: c.name, companyId: linkToCompany && companyId ? companyId : undefined }));
+      return adminService.importMaterials(items);
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-materials'] });
+      alert(`${result.created} malzeme eklendi. ${result.duplicates.length} zaten mevcut.`);
+      onClose();
+    },
+  });
+
+  function toggleAll(checked: boolean) {
+    if (!candidates) return;
+    setSelected(checked ? new Set(candidates.candidates.map((_, i) => i)) : new Set());
+  }
+
+  function toggleOne(i: number) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(i) ? next.delete(i) : next.add(i);
+      return next;
+    });
+  }
+
+  // Reset when re-opened for a new company
+  React.useEffect(() => {
+    if (open) {
+      setCandidates(null);
+      setSelected(new Set());
+      setLinkToCompany(false);
+    }
+  }, [open, companyName]);
+
+  const allChecked = candidates ? selected.size === candidates.candidates.length : false;
+  const highConf = candidates?.candidates.filter((c) => c.confidence >= 0.85).length ?? 0;
+
+  return (
+    <Drawer
+      anchor="right"
+      open={open}
+      onClose={onClose}
+      slotProps={{ paper: { sx: { width: { xs: '100%', sm: 560 }, p: 0 } } }}
+    >
+      {/* Başlık */}
+      <Box sx={{ px: 3, py: 2.5, borderBottom: `1px solid rgba(195,198,215,0.2)`, bgcolor: colors.surfaceContainerLow }}>
+        <Typography sx={{ fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: '1rem', color: colors.onSurface }}>
+          Katalog Analizi
+        </Typography>
+        <Typography sx={{ fontSize: '0.8rem', color: colors.onSurfaceVariant, mt: 0.5 }}>
+          {companyName}
+        </Typography>
+      </Box>
+
+      <Box sx={{ flex: 1, overflow: 'auto', px: 3, py: 2 }}>
+        {/* Analiz Et */}
+        {!candidates && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center', py: 4 }}>
+            <AnalyticsIcon sx={{ fontSize: '3rem', color: colors.onSurfaceVariant, opacity: 0.4 }} />
+            <Typography sx={{ color: colors.onSurfaceVariant, fontSize: '0.875rem', textAlign: 'center' }}>
+              PDF katalogları analiz edilmemiş.<br />Malzeme adaylarını çıkarmak için analiz başlatın.
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={analyzeMutation.isPending ? <CircularProgress size={16} color="inherit" /> : <AnalyticsIcon />}
+              onClick={() => analyzeMutation.mutate()}
+              disabled={analyzeMutation.isPending}
+            >
+              {analyzeMutation.isPending ? 'Analiz Ediliyor...' : 'Analiz Et'}
+            </Button>
+            {analyzeMutation.isError && (
+              <Alert severity="error" sx={{ fontSize: '0.8rem', width: '100%' }}>
+                Analiz başarısız: {String((analyzeMutation.error as Error)?.message)}
+              </Alert>
+            )}
+          </Box>
+        )}
+
+        {/* Sonuçlar */}
+        {candidates && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* Özet */}
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <Chip label={`Toplam: ${candidates.totalCandidates}`} size="small"
+                sx={{ bgcolor: colors.surfaceContainerHigh, fontSize: '0.75rem' }} />
+              <Chip label={`Yüksek güven: ${highConf}`} size="small"
+                sx={{ bgcolor: '#dcfce7', color: '#166534', fontSize: '0.75rem' }} />
+              <Chip label={`Seçili: ${selected.size}`} size="small"
+                sx={{ bgcolor: colors.primaryContainer, color: colors.primary, fontSize: '0.75rem' }} />
+            </Box>
+
+            {/* Firma bağlantısı toggle */}
+            {companyId && (
+              <Box sx={{ bgcolor: colors.surfaceContainerLow, borderRadius: 2, px: 2, py: 1.5 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={linkToCompany}
+                      onChange={(e) => setLinkToCompany(e.target.checked)}
+                      size="small"
+                    />
+                  }
+                  label={
+                    <Typography sx={{ fontSize: '0.85rem', color: colors.onSurface }}>
+                      Firma bağlantısı oluştur
+                      <Typography component="span" sx={{ fontSize: '0.75rem', color: colors.onSurfaceVariant, ml: 1 }}>
+                        (company_materials tablosuna ekler)
+                      </Typography>
+                    </Typography>
+                  }
+                />
+              </Box>
+            )}
+
+            <Divider />
+
+            {/* Seç tümünü */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Checkbox
+                checked={allChecked}
+                indeterminate={selected.size > 0 && !allChecked}
+                onChange={(e) => toggleAll(e.target.checked)}
+                size="small"
+              />
+              <Typography sx={{ fontSize: '0.8rem', color: colors.onSurfaceVariant }}>
+                Tümünü seç / kaldır
+              </Typography>
+            </Box>
+
+            {/* Aday listesi */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              {candidates.candidates.map((c: MaterialCandidate, i: number) => (
+                <Box
+                  key={i}
+                  onClick={() => toggleOne(i)}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 1.5,
+                    py: 1,
+                    borderRadius: 2,
+                    cursor: 'pointer',
+                    bgcolor: selected.has(i) ? colors.primaryFixed : 'transparent',
+                    '&:hover': { bgcolor: selected.has(i) ? colors.primaryFixed : colors.surfaceContainerLow },
+                    border: `1px solid ${selected.has(i) ? colors.primary + '40' : 'transparent'}`,
+                  }}
+                >
+                  <Checkbox
+                    checked={selected.has(i)}
+                    onChange={() => toggleOne(i)}
+                    size="small"
+                    onClick={(e) => e.stopPropagation()}
+                    sx={{ p: 0.5 }}
+                  />
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontSize: '0.85rem', color: colors.onSurface, fontWeight: 500 }}>
+                      {c.name}
+                    </Typography>
+                    {c.category && (
+                      <Typography sx={{ fontSize: '0.7rem', color: colors.onSurfaceVariant }}>
+                        {c.category}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0 }}>
+                    <Chip
+                      label={c.confidence.toFixed(2)}
+                      size="small"
+                      sx={{
+                        height: 18,
+                        fontSize: '0.65rem',
+                        bgcolor: c.confidence >= 0.85 ? '#dcfce7' : '#fef3c7',
+                        color: c.confidence >= 0.85 ? '#166534' : '#92400e',
+                      }}
+                    />
+                    <Typography sx={{ fontSize: '0.7rem', color: colors.onSurfaceVariant }}>s.{c.sourcePage}</Typography>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        )}
+      </Box>
+
+      {/* Alt butonlar */}
+      {candidates && (
+        <Box sx={{ px: 3, py: 2, borderTop: `1px solid rgba(195,198,215,0.2)`, display: 'flex', gap: 1.5 }}>
+          <Button variant="outlined" onClick={onClose} sx={{ flex: 1 }}>İptal</Button>
+          <Button
+            variant="contained"
+            disabled={selected.size === 0 || importMutation.isPending}
+            startIcon={importMutation.isPending ? <CircularProgress size={16} color="inherit" /> : <AddCircleOutlinedIcon />}
+            onClick={() => importMutation.mutate()}
+            sx={{ flex: 2 }}
+          >
+            {importMutation.isPending
+              ? 'Ekleniyor...'
+              : `${selected.size} Malzemeyi Havuza Ekle`}
+          </Button>
+        </Box>
+      )}
+    </Drawer>
+  );
+}
+
 // ── Tab 3: Katalog Analizi ────────────────────────────────────────
 
 function TabKatalogAnalizi() {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [activeCompany, setActiveCompany] = useState<{ name: string; companyId: number | null } | null>(null);
+
   const { data: results = [], isLoading } = useQuery({
     queryKey: ['scraper-results'],
     queryFn: adminService.getScraperResults,
@@ -508,56 +755,76 @@ function TabKatalogAnalizi() {
 
   const withCatalogs = results.filter((r) => r.catalogCount > 0);
 
+  function openDrawer(name: string, companyId: number | null) {
+    setActiveCompany({ name, companyId });
+    setDrawerOpen(true);
+  }
+
   return (
     <Box>
-      <Alert severity="info" sx={{ mb: 3, fontSize: '0.85rem' }}>
-        <strong>Phase 9 — Geliştirme aşamasında.</strong> Katalog analiz modülü (catalog_analyzer.py)
-        tamamlandığında bu panel aktif hale gelecek. Şu an mevcut katalog dosyaları görüntülenebilir.
-      </Alert>
-
       {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
       ) : withCatalogs.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 8, color: colors.onSurfaceVariant }}>
           <FolderOpenIcon sx={{ fontSize: '3rem', mb: 2, opacity: 0.4 }} />
-          <Typography>Katalog bulunan firma yok. Önce Tab 1'den firma tarayın.</Typography>
+          <Typography>Katalog bulunan firma yok. Önce Tab 1&apos;den firma tarayın.</Typography>
         </Box>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {withCatalogs.map((r, i) => (
-            <Box
-              key={i}
-              sx={{
-                bgcolor: colors.surfaceContainerLowest,
-                borderRadius: 3,
-                p: 3,
-                border: `1px solid rgba(195,198,215,0.15)`,
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                <Typography sx={{ fontWeight: 700, color: colors.onSurface, fontSize: '0.9rem' }}>
-                  {r.companyName}
-                </Typography>
-                <Chip label={`${r.catalogCount} katalog`} size="small"
-                  sx={{ bgcolor: colors.surfaceContainerHigh, fontSize: '0.7rem' }} />
-              </Box>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {r.catalogFiles.map((f) => (
-                  <Box key={f} sx={{ display: 'flex', alignItems: 'center', gap: 1,
-                    bgcolor: colors.surfaceContainerLow, borderRadius: 2, px: 1.5, py: 0.75 }}>
-                    <FolderOpenIcon sx={{ fontSize: '0.85rem', color: colors.onSurfaceVariant }} />
-                    <Typography sx={{ fontSize: '0.75rem', color: colors.onSurface }}>{f}</Typography>
-                    <Tooltip title="Phase 9 tamamlandığında kullanılabilir">
-                      <Button size="small" disabled sx={{ fontSize: '0.65rem', py: 0, minWidth: 0, px: 1 }}>
-                        Analiz Et
-                      </Button>
-                    </Tooltip>
-                  </Box>
+        <Box sx={{ bgcolor: colors.surfaceContainerLowest, borderRadius: 3, overflow: 'hidden', border: `1px solid rgba(195,198,215,0.15)` }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ bgcolor: colors.surfaceContainerLow }}>
+                {['Firma Adı', 'Katalog', 'Aktarıldı', 'İşlemler'].map((h) => (
+                  <TableCell key={h} sx={{ fontSize: '0.75rem', fontWeight: 700, color: colors.onSurfaceVariant, py: 1.5 }}>
+                    {h}
+                  </TableCell>
                 ))}
-              </Box>
-            </Box>
-          ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {withCatalogs.map((r, i) => (
+                <TableRow key={i} sx={{ '&:hover': { bgcolor: colors.surfaceContainerLow } }}>
+                  <TableCell sx={{ fontSize: '0.85rem', fontWeight: 600, color: colors.onSurface }}>
+                    {r.companyName || '—'}
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={`${r.catalogCount} dosya`}
+                      size="small"
+                      sx={{ bgcolor: colors.surfaceContainerHigh, fontSize: '0.7rem' }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {r.imported
+                      ? <Chip label="Aktarıldı" size="small" sx={{ bgcolor: '#dcfce7', color: '#166534', fontSize: '0.7rem' }} />
+                      : <Chip label="Aktarılmadı" size="small" sx={{ bgcolor: colors.surfaceContainerHigh, color: colors.onSurfaceVariant, fontSize: '0.7rem' }} />
+                    }
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<AnalyticsIcon sx={{ fontSize: '0.9rem' }} />}
+                      onClick={() => openDrawer(r.companyName ?? '', r.companyId ? Number(r.companyId) : null)}
+                      sx={{ fontSize: '0.7rem', py: 0.25, borderColor: colors.primary, color: colors.primary }}
+                    >
+                      Analiz Et
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </Box>
+      )}
+
+      {activeCompany && (
+        <CandidateDrawer
+          open={drawerOpen}
+          companyName={activeCompany.name}
+          companyId={activeCompany.companyId}
+          onClose={() => setDrawerOpen(false)}
+        />
       )}
     </Box>
   );

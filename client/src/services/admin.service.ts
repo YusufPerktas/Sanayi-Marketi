@@ -25,6 +25,7 @@ export interface ScraperResult {
   catalogCount: number;
   catalogFiles: string[];
   imported: boolean;
+  companyId: number | null;
   scrapeDate: string | null;
   errorMessage: string | null;
 }
@@ -88,6 +89,47 @@ export interface AdminMaterialStats {
 
 export type AdminMaterialFilter = 'ALL' | 'USER_CREATED' | 'UNUSED' | 'SUSPICIOUS';
 
+// ── Catalog analysis types ─────────────────────────────────────────
+
+export interface CatalogAnalyzeRequest {
+  companyName: string;
+  testDir?: number | null;
+}
+
+export interface MaterialCandidate {
+  name: string;
+  confidence: number;
+  sourcePage: number;
+  category: string | null;
+}
+
+export interface MaterialsCandidates {
+  companyName: string;
+  catalogFile: string | null;
+  analyzedAt: string | null;
+  extractionMethod: string;
+  candidates: MaterialCandidate[];
+  totalCandidates: number;
+  status: 'PENDING_REVIEW' | 'REVIEWED' | 'NOT_ANALYZED';
+}
+
+// ── Company update (admin) ─────────────────────────────────────────
+
+export interface AdminCompanyUpdateRequest {
+  companyName?: string;
+  description?: string;
+  country?: string;
+  city?: string;
+  district?: string;
+  fullAddress?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  googleMapsEmbedUrl?: string | null;
+}
+
 export const adminService = {
   getCompanyDuplicates: () =>
     apiClient.get<DuplicatePair[]>('/api/admin/companies/duplicates').then((r) => r.data),
@@ -126,4 +168,20 @@ export const adminService = {
 
   importMaterials: (items: MaterialImportItem[]) =>
     apiClient.post<MaterialImportResult>('/api/admin/scraper/materials/import', items).then((r) => r.data),
+
+  analyzeCatalog: (request: CatalogAnalyzeRequest) =>
+    apiClient.post<MaterialsCandidates>('/api/admin/scraper/catalogs/analyze', request).then((r) => r.data),
+
+  getCatalogCandidates: (companyName: string, testDir?: number) =>
+    apiClient
+      .get<MaterialsCandidates>(`/api/admin/scraper/catalogs/candidates/${encodeURIComponent(companyName)}`, {
+        params: testDir != null ? { testDir } : {},
+      })
+      .then((r) => r.data),
+
+  adminUpdateCompany: (id: number, data: AdminCompanyUpdateRequest) =>
+    apiClient.put<Company>(`/api/admin/companies/${id}`, data).then((r) => r.data),
+
+  getOwnedCompanyIds: () =>
+    apiClient.get<number[]>('/api/admin/companies/owned-ids').then((r) => r.data),
 };

@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Alert, Box, Button, CircularProgress, FormControl, FormHelperText,
-  FormLabel, IconButton, InputAdornment, MenuItem, OutlinedInput, Select, Typography,
+  FormLabel, IconButton, InputAdornment, MenuItem, OutlinedInput, Select,
+  ToggleButton, ToggleButtonGroup, Typography, Autocomplete, TextField,
 } from '@mui/material';
 import BusinessIcon from '@mui/icons-material/Business';
 import EmailIcon from '@mui/icons-material/Email';
@@ -15,13 +16,18 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import LanguageIcon from '@mui/icons-material/Language';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import AddBusinessIcon from '@mui/icons-material/AddBusiness';
+import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import { AxiosError } from 'axios';
 import { companyApplicationService } from '@/services/companyApplication.service';
+import { companyService, Company } from '@/services/company.service';
 import { useAuth } from '@/context/useAuth';
 import { ROUTES, UserRole, TURKISH_CITIES } from '@/utils/constants';
 import { colors } from '@/utils/colors';
 
 interface ApiError { error: string; message: string; fieldErrors?: Record<string, string> }
+
+type ApplyMode = 'MANUAL_NEW' | 'MANUAL_EXISTING';
 
 const labelSx = {
   fontSize: '0.75rem', fontWeight: 600, color: colors.onSurfaceVariant,
@@ -33,12 +39,17 @@ export default function CompanyApplyPage() {
   const router = useRouter();
   const { login } = useAuth();
 
+  const [mode, setMode] = useState<ApplyMode>('MANUAL_NEW');
   const [form, setForm] = useState({
     email: '', password: '',
     companyName: '', description: '',
     phone: '', companyEmail: '', website: '',
     city: '', district: '',
   });
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [companySearch, setCompanySearch] = useState('');
+  const [companyOptions, setCompanyOptions] = useState<Company[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -61,10 +72,30 @@ export default function CompanyApplyPage() {
     setForm((p) => ({ ...p, phone: formatted }));
   }
 
+  async function handleCompanySearch(value: string) {
+    setCompanySearch(value);
+    if (value.trim().length < 2) { setCompanyOptions([]); return; }
+    setSearchLoading(true);
+    try {
+      const results = await companyService.search(value.trim());
+      setCompanyOptions(results);
+    } catch {
+      setCompanyOptions([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setFieldErrors({});
+
+    if (mode === 'MANUAL_EXISTING' && !selectedCompany) {
+      setError('Lütfen talep etmek istediğiniz firmayı seçin.');
+      return;
+    }
+
     const rawPhone = form.phone.replace(/\D/g, '');
     if (form.phone && (rawPhone.length !== 11 || !rawPhone.startsWith('0'))) {
       setFieldErrors({ phone: 'Geçerli bir telefon numarası girin (örn: 0532 123 45 67 veya 0312 123 45 67)' });
@@ -75,8 +106,9 @@ export default function CompanyApplyPage() {
       const data = await companyApplicationService.registerCompany({
         email: form.email,
         password: form.password,
-        proposedCompanyName: form.companyName,
-        applicationType: 'MANUAL_NEW',
+        proposedCompanyName: mode === 'MANUAL_NEW' ? form.companyName : (selectedCompany?.companyName ?? ''),
+        applicationType: mode,
+        targetCompanyId: mode === 'MANUAL_EXISTING' ? selectedCompany?.id ?? null : null,
         description: form.description || undefined,
         phone: rawPhone || undefined,
         companyEmail: form.companyEmail || undefined,
@@ -105,7 +137,7 @@ export default function CompanyApplyPage() {
       <Box sx={{ bgcolor: colors.surfaceContainerLowest, width: '100%', maxWidth: 560, p: { xs: 4, sm: 6 }, borderRadius: 3, boxShadow: colors.shadow }}>
 
         {/* Brand */}
-        <Box sx={{ textAlign: 'center', mb: 5 }}>
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
           <Box sx={{ width: 56, height: 56, bgcolor: colors.primaryFixed, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2 }}>
             <BusinessIcon sx={{ color: colors.primary, fontSize: '1.75rem' }} />
           </Box>
@@ -115,10 +147,35 @@ export default function CompanyApplyPage() {
           <Typography sx={{ fontFamily: 'var(--font-manrope)', fontWeight: 700, fontSize: '1.6rem', color: colors.primary }}>
             Firma Başvurusu
           </Typography>
-          <Typography sx={{ fontSize: '0.875rem', color: colors.onSurfaceVariant, mt: 1 }}>
-            Firmanızı platforma eklemek için formu doldurun. * ile işaretli alanlar zorunludur.
-          </Typography>
         </Box>
+
+        {/* Mod seçimi */}
+        <ToggleButtonGroup
+          value={mode}
+          exclusive
+          onChange={(_, v) => { if (v) { setMode(v); setError(null); setFieldErrors({}); setSelectedCompany(null); } }}
+          fullWidth
+          sx={{ mb: 3 }}
+        >
+          <ToggleButton value="MANUAL_NEW" sx={{ textTransform: 'none', fontSize: '0.8rem', gap: 0.75, py: 1.25 }}>
+            <AddBusinessIcon sx={{ fontSize: '1rem' }} />
+            Yeni Firma Kaydı
+          </ToggleButton>
+          <ToggleButton value="MANUAL_EXISTING" sx={{ textTransform: 'none', fontSize: '0.8rem', gap: 0.75, py: 1.25 }}>
+            <AssignmentIndIcon sx={{ fontSize: '1rem' }} />
+            Mevcut Firmayı Talep Et
+          </ToggleButton>
+        </ToggleButtonGroup>
+
+        {/* Mod açıklaması */}
+        <Alert
+          severity={mode === 'MANUAL_NEW' ? 'info' : 'warning'}
+          sx={{ mb: 3, fontSize: '0.8rem' }}
+        >
+          {mode === 'MANUAL_NEW'
+            ? 'Firmanızı platforma yeni olarak eklemek için formu doldurun. Yönetici onayı gereklidir.'
+            : 'Sisteme zaten eklenmiş bir firmanın sahibiyseniz sahiplik talep edebilirsiniz. Yönetici kimliğinizi doğrulayacaktır.'}
+        </Alert>
 
         {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
@@ -147,20 +204,64 @@ export default function CompanyApplyPage() {
 
           {/* FİRMA BİLGİLERİ */}
           <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: colors.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: '0.1em', pt: 1.5 }}>
-            Firma Bilgileri
+            {mode === 'MANUAL_NEW' ? 'Firma Bilgileri' : 'Talep Edilecek Firma'}
           </Typography>
 
-          <FormControl error={!!fieldErrors.proposedCompanyName}>
-            <FormLabel sx={labelSx}>Firma Adı *</FormLabel>
-            <OutlinedInput value={form.companyName} onChange={set('companyName')} placeholder="Firma adınız" required
-              startAdornment={<InputAdornment position="start"><BusinessIcon sx={{ color: colors.outline, fontSize: '1.1rem' }} /></InputAdornment>} sx={inputSx} />
-            {fieldErrors.proposedCompanyName && <FormHelperText>{fieldErrors.proposedCompanyName}</FormHelperText>}
-          </FormControl>
+          {mode === 'MANUAL_EXISTING' ? (
+            /* Mevcut firma arama */
+            <FormControl error={!!fieldErrors.targetCompanyId}>
+              <FormLabel sx={labelSx}>Sistemdeki Firmanızı Seçin *</FormLabel>
+              <Autocomplete
+                options={companyOptions}
+                getOptionLabel={(o) => `${o.companyName}${o.city ? ` — ${o.city}` : ''}`}
+                loading={searchLoading}
+                value={selectedCompany}
+                onChange={(_, v) => setSelectedCompany(v)}
+                inputValue={companySearch}
+                onInputChange={(_, v) => handleCompanySearch(v)}
+                noOptionsText={companySearch.length < 2 ? 'En az 2 karakter girin' : 'Firma bulunamadı'}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Firma adını yazın..."
+                    size="small"
+                    sx={{ '& .MuiOutlinedInput-root': inputSx }}
+                    slotProps={{
+                      input: {
+                        endAdornment: (
+                          <>
+                            {searchLoading && <CircularProgress size={16} />}
+                          </>
+                        ),
+                      },
+                    }}
+                  />
+                )}
+              />
+              {selectedCompany && (
+                <Alert severity="success" sx={{ mt: 1, fontSize: '0.8rem' }}>
+                  Seçilen firma: <strong>{selectedCompany.companyName}</strong>
+                  {selectedCompany.city ? ` — ${selectedCompany.city}` : ''}
+                </Alert>
+              )}
+              {fieldErrors.targetCompanyId && <FormHelperText>{fieldErrors.targetCompanyId}</FormHelperText>}
+            </FormControl>
+          ) : (
+            <FormControl error={!!fieldErrors.proposedCompanyName}>
+              <FormLabel sx={labelSx}>Firma Adı *</FormLabel>
+              <OutlinedInput value={form.companyName} onChange={set('companyName')} placeholder="Firma adınız" required
+                startAdornment={<InputAdornment position="start"><BusinessIcon sx={{ color: colors.outline, fontSize: '1.1rem' }} /></InputAdornment>} sx={inputSx} />
+              {fieldErrors.proposedCompanyName && <FormHelperText>{fieldErrors.proposedCompanyName}</FormHelperText>}
+            </FormControl>
+          )}
 
           <FormControl>
-            <FormLabel sx={labelSx}>Firma Açıklaması</FormLabel>
+            <FormLabel sx={labelSx}>Açıklama</FormLabel>
             <OutlinedInput multiline rows={3} value={form.description} onChange={set('description')}
-              placeholder="Firmanız ve ürettiğiniz / sattığınız ürünler hakkında kısa bilgi..." sx={inputSx} />
+              placeholder={mode === 'MANUAL_NEW'
+                ? 'Firmanız ve ürettiğiniz / sattığınız ürünler hakkında kısa bilgi...'
+                : 'Bu firmada görevinizi ve sahipliği kanıtlayan bilgileri ekleyebilirsiniz...'
+              } sx={inputSx} />
           </FormControl>
 
           <FormControl error={!!fieldErrors.phone}>
@@ -206,13 +307,17 @@ export default function CompanyApplyPage() {
 
           <Button type="submit" variant="contained" fullWidth size="large" disabled={loading}
             sx={{ mt: 1, py: 1.75, fontSize: '1rem', fontFamily: 'var(--font-manrope)', borderRadius: 2 }}>
-            {loading ? <CircularProgress size={22} color="inherit" /> : 'Başvuruyu Gönder'}
+            {loading ? <CircularProgress size={22} color="inherit" /> : (
+              mode === 'MANUAL_NEW' ? 'Başvuruyu Gönder' : 'Sahiplik Talebini Gönder'
+            )}
           </Button>
         </Box>
 
         <Box sx={{ mt: 3, p: 2.5, bgcolor: colors.surfaceContainerLow, borderRadius: 2 }}>
           <Typography sx={{ fontSize: '0.8rem', color: colors.onSurfaceVariant, lineHeight: 1.6 }}>
-            Başvurunuz yönetici onayına gönderilecektir. Onay süreci genellikle 24–48 saat sürmektedir.
+            {mode === 'MANUAL_NEW'
+              ? 'Başvurunuz yönetici onayına gönderilecektir. Onay süreci genellikle 24–48 saat sürmektedir.'
+              : 'Sahiplik talebiniz yönetici tarafından incelenerek doğrulanacaktır. Onay sonrası firma yönetim paneline erişim sağlarsınız.'}
           </Typography>
         </Box>
 

@@ -93,6 +93,21 @@ function DetailRow({ app }: { app: CompanyApplication }) {
         </Box>
       )}
 
+      {/* MANUAL_EXISTING: talep edilen firma */}
+      {app.applicationType === 'MANUAL_EXISTING' && app.targetCompanyName && (
+        <Box sx={{ mt: 2, p: 2, bgcolor: '#fef9c3', borderRadius: 1.5, border: '1px solid #fde047' }}>
+          <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: '#854d0e', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.5 }}>
+            Talep Edilen Firma
+          </Typography>
+          <Typography sx={{ fontSize: '0.875rem', color: '#713f12', fontWeight: 600 }}>
+            {app.targetCompanyName}
+          </Typography>
+          <Typography sx={{ fontSize: '0.75rem', color: '#92400e', mt: 0.5 }}>
+            Bu kullanıcı mevcut firmanın sahipliğini talep ediyor. Onaylamadan önce kimliğini doğrulayın.
+          </Typography>
+        </Box>
+      )}
+
       {app.rejectionReason && (
         <Box sx={{ mt: 2, p: 2, bgcolor: colors.errorContainer, borderRadius: 1.5 }}>
           <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: colors.error, mb: 0.5 }}>Red Sebebi:</Typography>

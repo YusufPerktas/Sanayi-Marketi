@@ -26,6 +26,7 @@ public class ScraperResultDTO {
     private int catalogCount;
     private List<String> catalogFiles;
     private boolean imported;
+    private Long companyId;    // DB'deki Company.id — import sonrası company_info.json'a yazılır
     private String scrapeDate;
     private String errorMessage;
 }

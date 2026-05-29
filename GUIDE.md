@@ -1288,7 +1288,7 @@ BİLİNEN SORUNLAR  [2026-05-24]
 
 ---
 
-PHASE 9 — Katalog Analizi → Malzeme Çıkarımı  [PENDING DECISION]
+PHASE 9 — Katalog Analizi → Malzeme Çıkarımı  [TAMAMLANDI 2026-05-29]
 
 Hedef: İndirilen PDF kataloglarından ürün/malzeme isimlerini çıkar.
        Bu isimler admin onayıyla global malzeme havuzuna eklenir.
@@ -1323,26 +1323,24 @@ materials_candidates.json format:
     "status": "PENDING_REVIEW"
   }
 
-Extraction approach (UNDECIDED — karar verilecek):
+Extraction approach (LOCKED 2026-05-29 — Option A):
+  pdfminer.six (metin çıkarımı) + Rule-based (Türkçe sanayi keyword'leri + regex)
+  Ücretsiz, GPU gerektirmez, dijital PDF'lerde yüksek başarı.
+  Taranmış PDF fallback: Surya OCR 2 (GGUF, CPU-compatible) — eklenmedi, gerekirse eklenir.
 
-  Option A — Rule-based (regex + keyword)
-    Ücretsiz, hızlı, API gerektirmez. Karmaşık layout'larda başarısız olabilir.
-
-  Option B — LLM (Claude API)
-    Yüksek doğruluk, Türkçe anlar. API maliyeti var (~$0.001-0.01/sayfa).
-
-  Option C — Hybrid (önce rule-based, düşük güvenli sonuçlar için LLM)
-    En iyi doğruluk/maliyet dengesi. En karmaşık implementasyon.
-
-  Option D — OCR + rule-based (taranmış/görsel PDF'ler için)
-    Bazı eski Türk kataloglar taranmış — Tesseract gerektirir, yavaş.
-
-  Öneri: Option A ile başla (MVP). Doğruluk yetersizse B/C'ye geç.
-
-New Python module: data-scraper/catalog_analyzer.py
+Python module: data-scraper/catalog_analyzer.py  [TAMAMLANDI 2026-05-29]
   - Bağımsız çalışır: python catalog_analyzer.py --company "Borusan Boru"
-  - company_info.json'dan katalog dosyalarını okur
+  - python catalog_analyzer.py --company "Dizayn Grup" --test-dir 10
+  - python catalog_analyzer.py --pdf "/path/to/file.pdf" --company "Test"
+  - company_info.json'dan PDF listesini okur
   - materials_candidates.json yazar (aynı klasöre)
+  - Bağımlılık: pdfminer.six (requirements.txt'e eklendi)
+
+Test sonucu (Dizayn Grup — dizayn-fiyat-listesi.pdf, 28 sayfa):
+  28 sayfa, 6082 satır → 88 aday (86 yüksek güven, 2 düşük)
+  Doğru tespitler: PP-R Boru, Kompozit Boru, Rakorlu Dirsek, Küresel Vana,
+                   Kelepçe çeşitleri, Atık Su Boruları, PE-RT Boru, Kollektör vb.
+  False positive oranı: ~%10 (admin review ile kolayca elenir)
 
 ---
 
@@ -1621,24 +1619,77 @@ Database:     COMPLETE & LOCKED
 
 Backend:      RUNNING (Spring Boot Dashboard, port 8080)
               JWT Security: COMPLETE
-              AdminController + ScraperService: DONE (2026-05-27)
+
+              Phase 11 fixes + new endpoints: DONE (2026-05-29)
+
+              CompanyApplicationService.java — approveApplication() yeniden yazıldı:
+                3 tip için ayrı switch-case akışı:
+                  AUTO_IMPORTED:
+                    - company.status → ACTIVE (sadece bu)
+                    - Admin rolü hiç değiştirilmiyor  [BUGFIX — eskiden admin COMPANY_USER oluyordu]
+                  MANUAL_EXISTING:
+                    - targetCompany null ise → IllegalStateException
+                    - user.findByUserId() ile mevcut link kontrol edilir:
+                        * Farklı firmaya bağlıysa → IllegalStateException  [BUGFIX — eskiden sessizce atlanıyordu]
+                        * Aynı firmaya bağlıysa → idempotent (sadece rol upgrade)
+                        * Bağlı değilse → CompanyUser oluşturulur
+                    - user.role → COMPANY_USER  [BUGFIX — önceden eksikti]
+                  MANUAL_NEW:
+                    - DB trigger ile company + company_users oluşur (değişmedi)
+                    - user.role → COMPANY_USER + application fields → company kopyalanır
+
+              CompanyApplicationService.java — reapply() düzeltildi:
+                - applicationType artık last.getApplicationType() korunur  [BUGFIX — eskiden hardcode MANUAL_NEW]
+                - MANUAL_EXISTING için targetCompany korunur
+                - AUTO_IMPORTED → MANUAL_NEW olarak dönüştürülür (kullanıcı AUTO_IMPORTED reapply yapamaz)
+
+              CompanyService.java — adminUpdateCompany() eklendi:
+                - Ownership check olmadan firma güncelleme (admin bypass)
+                - Kullanım: PUT /api/admin/companies/{id}
+                - Null-safe: sadece gönderilen alanlar güncellenir
+
+              ScraperService.java — extend edildi:
+                - analyzeCatalog(companyName, testDir): catalog_analyzer.py subprocess çalıştırır (120s timeout)
+                - getCatalogCandidates(companyName, testDir): materials_candidates.json okur → DTO döner
+                - importMaterials(): companyId verilince company_materials kaydı da oluşturulur  [EXTEND]
+                  * findByCompanyIdAndMaterialId() ile duplicate kontrolü
+                  * CompanyMaterialRole.PRODUCER default, price/unit null
+                  * company not found → log.warn, material yine de eklenir
+                - importCompany(): company_id alanını company_info.json'a yazar  [NEW]
+                  * scrapeDate sonrası companyId JSON'da saklanır → Tab 3 firma bağlantısı için kullanılır
+                - setCompanyIdFlag() helper metodu eklendi
+                - CompanyMaterialRepository inject edildi
+
+              ScraperResultDTO.java — companyId: Long eklendi  [NEW]
+
+              New DTOs (2026-05-29):
+                CatalogAnalyzeRequestDTO     { companyName, testDir }
+                MaterialCandidateDTO         { name, confidence, sourcePage, category }
+                MaterialsCandidatesResponseDTO { companyName, catalogFile, analyzedAt,
+                                                extractionMethod, candidates, totalCandidates, status }
+
+              AdminController.java — yeni endpointler:
+                GET  /api/admin/companies/owned-ids           → sahipli firma ID listesi
+                PUT  /api/admin/companies/{id}                → admin firma düzenleme (bypass)
+                POST /api/admin/scraper/catalogs/analyze      → catalog_analyzer.py tetikle
+                GET  /api/admin/scraper/catalogs/candidates/{companyName} → aday listesi oku
+                (CompanyUserRepository inject edildi)
+
+              Repository güncellemeleri (2026-05-29):
+                CompanyUserRepository: existsByCompanyId(Long), findAllOwnedCompanyIds() [NEW]
+                MaterialRepository: findByMaterialNameIgnoreCase(String) [NEW]
+
+              Önceki backend değişiklikleri (2026-05-27/28):
                 ScraperService.java: runScraper / getScraperResults / importCompany / importMaterials / sanitizeFilename
                 New DTOs: ScraperRunRequestDTO, ScraperResultDTO, ScraperImportRequestDTO,
                           ScraperImportResultDTO, MaterialImportItemDTO, MaterialImportResultDTO
                 AdminController: 4 yeni scraper endpoint eklendi (run/results/companies/materials)
                 application.yml: scraper.output-dir + scraper.script-dir eklendi
                 MaterialRepository: existsByMaterialNameIgnoreCase() eklendi
-
-              ScraperService bug fixes: DONE (2026-05-28)
-                ScraperService.java:
-                  - @Slf4j eklendi; stdout/stderr artık log.debug/warn ile loglanıyor
-                  - stdoutReader thread join edildi (zaman aşımı: 3s, normal: 5s)
-                  - sanitizeFilename: boş isim fallback "unnamed" → "unnamed_file" (Python uyumu)
-                  - importCompany: findAll().stream().filter() → findFirstByRole(ADMIN) (verimlilik)
-                  - getScraperResults: parse exception artık log.warn ile loglanıyor
-                  - setImportedFlag: IOException artık log.warn ile loglanıyor
-                UserRepository.java: findFirstByRole(UserRole role) metodu eklendi
-                pom.xml: jackson-databind explicit bağımlılık eklendi (IDE çözümleme için)
+                ScraperService bug fixes (2026-05-28):
+                  @Slf4j logging, stdoutReader thread join, sanitizeFilename fallback, findFirstByRole
+                UserRepository.java: findFirstByRole(UserRole role) eklendi
+                pom.xml: jackson-databind explicit bağımlılık
 
               All fixes COMPLETE as of 2026-04-18:
                 1. PENDING_COMPANY_USER added to UserRole enum                [DONE]
@@ -1880,11 +1931,52 @@ Frontend:     COMPLETE + UPDATED (2026-04-20)
                 - UserController PUT /api/users/me wired, password verification in UserService
                 - DashboardLayout nav updated (both user and company variants)
 
+              Phase 11 frontend değişiklikleri: DONE (2026-05-29)
+
+              /company-apply — MANUAL_EXISTING modu eklendi  [NEW]
+                - ToggleButtonGroup: "Yeni Firma Kaydı" / "Mevcut Firmayı Talep Et"
+                - MANUAL_EXISTING modunda: Autocomplete firma arama (GET /api/companies?name=...)
+                - selectedCompany → targetCompanyId olarak backend'e gönderilir
+                - applicationType: mode (MANUAL_NEW veya MANUAL_EXISTING) dinamik gönderilir
+                - Form description alanı: mod bazlı açıklama metni
+
+              /admin/approvals — MANUAL_EXISTING başvuru göstergesi  [NEW]
+                - DetailRow: applicationType === 'MANUAL_EXISTING' ise sarı uyarı kutusu gösterilir
+                  "Talep Edilen Firma: {targetCompanyName}" + "kimliğini doğrulayın" notu
+
+              /admin/companies — sahipsiz badge + admin düzenleme  [NEW]
+                - useQuery(['admin-owned-company-ids']) → adminService.getOwnedCompanyIds()
+                - "Sahipsiz" Chip: firma ownedSet'te yoksa PersonOffIcon + sarı badge
+                - Sayfa başında "X sahipsiz" chip'i
+                - "Düzenle" butonu → EditDialog açar (adminService.adminUpdateCompany())
+                - EditDialog: companyName, description, city, district, phone, email, website, fullAddress
+
+              /admin/scraper Tab 3 — tam implementasyon  [NEW — eskisi stub'dı]
+                - Firma listesi (katalogCount > 0 olanlar): companyName | katalog sayısı | aktarıldı mı | işlemler
+                - "Analiz Et" butonu → CandidateDrawer açılır
+                CandidateDrawer (sağ Drawer, 560px):
+                  - analyzeMutation: adminService.analyzeCatalog({ companyName })
+                  - Analiz sonucu: özet chip'ler (toplam/yüksek güven/seçili)
+                  - "Firma Bağlantısı Oluştur" Switch: companyId varsa gösterilir
+                  - Checkbox listesi: name | confidence chip | sayfa no
+                  - Auto-select: confidence ≥ 0.85 olanlar başlangıçta seçili
+                  - "Seçilenleri Malzeme Havuzuna Ekle" → importMaterials({ materialName, companyId? })
+
+              admin.service.ts — yeni metodlar  [NEW]
+                analyzeCatalog(request: CatalogAnalyzeRequest) → MaterialsCandidates
+                getCatalogCandidates(companyName, testDir?) → MaterialsCandidates
+                adminUpdateCompany(id, data) → Company
+                getOwnedCompanyIds() → number[]
+                Types: CatalogAnalyzeRequest, MaterialCandidate, MaterialsCandidates,
+                       AdminCompanyUpdateRequest
+                ScraperResult: companyId alanı eklendi
+
               proxy.ts:      COMPLETE
 
-Data Scraper: Phase 8 TAMAMLANDI (2026-05-27) | Phase 10 TAMAMLANDI (2026-05-27) | Phase 9 BEKLEYEN
+Data Scraper: Phase 8 TAMAMLANDI (2026-05-27) | Phase 9 TAMAMLANDI (2026-05-29)
+              Phase 10 TAMAMLANDI (2026-05-27) | Phase 11 TAMAMLANDI (2026-05-29)
               Admin kullanım yöntemi LOCKED: tek firma girişi (ad + URL + sektörler)
-              bkz. DATA SCRAPER bölümü ve TODO-9
+              bkz. DATA SCRAPER bölümü
 Mobile:       OUT OF SCOPE
 
 ---
@@ -1918,6 +2010,44 @@ Phase 7: Bug Fixes & UX Improvements    [DONE 2026-04-21]
   - FavoriteController returns MaterialResponseDTO (field name fix)
   - All favorite toggle handlers invalidate cache immediately
   - Homepage search bar: category toggle integrated inside bar
+
+Phase 8: Scraper Optimizasyonu         [DONE 2026-05-27]
+  - Test #10: SUCCESS 20/35 | PARTIAL 1 | FAILED 14
+  - Selenium requests-first stratejisi, katalog filtreleme, iletişim iyileştirmesi
+  - city/district çıkarımı + ilçe parse fix, logo + açıklama çıkarımı
+  - sectors array, imported takibi, sertifika belge filtresi (BUG-8)
+  - Wix CDN dönüşümü + SSL fallback (BUG-7), double-filter fix (BUG-5)
+  - Test altyapısı: 35 firma, TEST_INFO.md, --test N argümanı
+
+Phase 9: Katalog Analizi               [DONE 2026-05-29]
+  - data-scraper/catalog_analyzer.py: pdfminer.six + rule-based (ücretsiz, GPU yok)
+  - Türkçe sanayi keyword seti, fiyat/spec temizleme, deduplication
+  - materials_candidates.json çıktısı (GUIDE.md formatı)
+  - Test: Dizayn Grup (28 sayfa, 6082 satır) → 88 aday, ~%90 doğruluk
+  - requirements.txt'e pdfminer.six==20231228 eklendi
+
+Phase 10: Backend + Frontend Entegrasyonu [DONE 2026-05-27]
+  - ScraperService.java + AdminController 4 endpoint + 6 DTO
+  - /admin/scraper 3-tab sayfası (Tab 1: Tara, Tab 2: Tarananlar, Tab 3: stub)
+  - data-scraper/main.py: --input-json argümanı + process_direct_company()
+
+Phase 11: Tam Akış Entegrasyonu        [DONE 2026-05-29]
+  Backend bug fix'leri:
+    - approveApplication() 3 tip için doğru akış (AUTO_IMPORTED/MANUAL_EXISTING/MANUAL_NEW)
+    - MANUAL_EXISTING onayında company_users oluşturma + çakışma kontrolü
+    - reapply() applicationType + targetCompany koruma
+  Yeni backend özellikleri:
+    - adminUpdateCompany() — sahiplik bypass ile firma düzenleme
+    - analyzeCatalog() + getCatalogCandidates() — catalog_analyzer.py entegrasyonu
+    - importMaterials() extend — company_materials bağlantısı
+    - GET /api/admin/companies/owned-ids
+    - POST /api/admin/scraper/catalogs/analyze
+    - GET /api/admin/scraper/catalogs/candidates/{companyName}
+  Frontend özellikleri:
+    - /company-apply: MANUAL_EXISTING modu (firma arama + sahiplik talebi)
+    - /admin/approvals: MANUAL_EXISTING için targetCompanyName uyarısı
+    - /admin/companies: Sahipsiz badge + admin düzenleme dialogu
+    - /admin/scraper Tab 3: CandidateDrawer (tam implementasyon)
 
 ---
 
@@ -2023,17 +2153,11 @@ Priority 2 — Data Scraper (Phase 8 → 10 → 9):
     data-scraper/main.py: --input-json argümanı + process_direct_company()  ✓
     TypeScript: 0 hata (3 tur tsc --noEmit düzeltmesi: ErrorOutlined icon, Select multiple typing)  ✓
 
-  [TODO-9] Katalog analizi + malzeme çıkarımı — Phase 9  [BEKLEYEN — TODO-10 sonrası]
-    Bağımlılık: TODO-10 (sistem entegrasyonu) tamamlanıp uçtan uca test edildikten sonra.
-    Kapsam: data-scraper/ Python modülü. Yeni dosya: catalog_analyzer.py
-    Bağımsız çalışır — firma scraping'inden ayrı panel ve akış.
-    Karar gerektiren: extraction yaklaşımı (Option A/B/C/D) — bkz. DATA SCRAPER bölümü.
-    Alt görevler:
-      9a. PDF metin çıkarımı: pdfminer.six veya PyMuPDF ile sayfa bazlı text extraction.
-      9b. Malzeme isim tespiti: seçilen yaklaşıma göre implementasyon.
-      9c. materials_candidates.json format + yazıcı.
-      9d. Güven skoru hesaplama (rule-based için).
-      9e. Yinelenen materyal tespiti: mevcut sistem malzemeleriyle karşılaştırma.
+  [TODO-9] Katalog analizi + malzeme çıkarımı — Phase 9  [TAMAMLANDI 2026-05-29]
+    Yaklaşım: Option A — pdfminer.six + rule-based (ücretsiz, GPU yok)
+    Dosya: data-scraper/catalog_analyzer.py
+    Test: Dizayn Grup (28 sayfa) → 88 aday, ~%90 doğruluk, admin review ile tamamlanıyor.
+    Kalan: Frontend Tab 3 (Katalog Analizi) backend entegrasyonu — Phase 11 kapsamı.
 
   BUG-8: Alakasız sertifika/form belgeleri katalog olarak indiriliyor  [DÜZELTILDI 2026-05-26]
     Neden: from_catalog_page=True olunca step 3 (PDF from catalog page) tüm PDF'leri
@@ -2058,13 +2182,103 @@ Priority 2 — Data Scraper (Phase 8 → 10 → 9):
 
 TAMAMLANDI (2026-05-27):
   TODO-8 (Phase 8): Test #10 final — SUCCESS: 20 | PARTIAL: 1 | FAILED: 14
-              Tüm bug fix'ler uygulandı ve doğrulandı: BUG-2/5/6/7/8 ✓
-              HES: PARTIAL olarak kabul edildi — cookie consent popup Selenium'u blokluyor.
-              Standart Pompa: test-9 flaky'ydi, test-10'da SUCCESS'e döndü ✓
-  TODO-10 (Phase 10): Backend + Frontend entegrasyonu tamamlandı (2026-05-27)
-              ScraperService.java, 4 endpoint, 6 DTO, 3-tab admin scraper sayfası, Python --input-json
-  Sıradaki aşama: TODO-9 — Katalog analizi (Phase 9)
-              Karar gerekiyor: extraction yaklaşımı (Option A/B/C/D — bkz. DATA SCRAPER bölümü)
+  TODO-10 (Phase 10): Backend + Frontend entegrasyonu tamamlandı
+  TODO-9 (Phase 9): catalog_analyzer.py tamamlandı (2026-05-29)
+  Phase 11 (2026-05-29): approveApplication bug fix'ler + MANUAL_EXISTING akışı + katalog analizi UI
+
+Priority 3 — Phase 11 sonrası tespit edilen eksiklikler (2026-05-29):
+
+  [TODO-11] MANUAL_EXISTING reapply formunda targetCompany gösterilmiyor
+    Problem:  /application/status sayfasındaki ReapplyForm, başvurunun applicationType'ını
+              ve targetCompanyName'ini göstermiyor. MANUAL_EXISTING red sonrası yeniden başvururken
+              kullanıcı hangi firmayı talep ettiğini göremez.
+    Etki:     Düşük — kullanıcı karışabilir ama işlev doğru çalışıyor.
+    Scope:    client/src/app/(protected)/application/status/page.tsx — ReapplyForm komponenti
+    Çözüm:   application.targetCompanyName'i form başlığında göster.
+             "Firma: {targetCompanyName} için yeniden başvuruyor" notu ekle.
+
+  [TODO-12] /admin/companies sayfası sadece ACTIVE firmaları gösteriyor
+    Problem:  companyService.getAll() public endpoint'i CompanyStatus.ACTIVE filtreli çalışır.
+              INACTIVE firmalar (scraper import sonrası onay öncesi) admin listesinde görünmez.
+              Admin, onaylamadan önce bu firmaları bu sayfadan göremez.
+    Etki:     Orta — /admin/approvals'tan firmayı görebilir ama admin/companies'den değil.
+    Scope:    AdminController + CompanyService + client/src/app/(protected)/admin/companies/page.tsx
+    Çözüm:   GET /api/admin/companies/list → tüm statuslar (no ACTIVE filter)
+             Veya mevcut endpoint'e ?status=ALL admin parametresi ekle.
+
+  [TODO-13] Katalog analizi: hardcoded PRODUCER rolü
+    Problem:  importMaterials() company_materials oluştururken rol her zaman PRODUCER.
+              Satıcı/distribütör firmalar için SELLER veya BOTH uygun olabilir.
+    Etki:     Düşük — admin sonradan /company/materials'dan düzenleyebilir.
+    Scope:    ScraperService.java importMaterials() + CandidateDrawer (frontend)
+    Çözüm:   MaterialImportItemDTO'ya role alanı ekle (opsiyonel, default PRODUCER).
+             Frontend'de drawer'a rol seçimi ekle.
+
+  [TODO-14] MANUAL_EXISTING: aynı firmayı birden fazla kullanıcı talep edebilir
+    Problem:  Birden fazla kullanıcı aynı firmayı talep eden MANUAL_EXISTING başvurusu yapabilir.
+              Admin her ikisini de onaylarsa: ilk onay company_users oluşturur, ikinci onay
+              IllegalStateException fırlatır (mevcut fix sayesinde). Ama ikinci kullanıcı zaten
+              COMPANY_USER rolüne sahip olmadan PENDING_COMPANY_USER olarak kalır.
+    Etki:     Düşük — admin senaryoyu fark edip ikinci başvuruyu reddederse sorun yok.
+    Scope:    CompanyApplicationService.approveApplication() + UI uyarısı
+    Çözüm:   MANUAL_EXISTING başvuru kabul sırasında aynı firmaya başka pending başvuru varsa
+             admin'e uyarı göster. (Frontend: /admin/approvals'da targetCompanyId çakışması chip'i)
+
+  [TODO-15] DB trigger davranışı AUTO_IMPORTED için belgelenmemiş
+    Problem:  approve_company_application() DB trigger'ı MANUAL_NEW için company + company_users
+              oluşturuyor. AUTO_IMPORTED için ne yaptığı db.sql'de görünür ama GUIDE'da açıklanmamış.
+              Eğer trigger tüm APPROVED başvurularda company oluşturmaya çalışıyorsa ve
+              AUTO_IMPORTED için targetCompany referansı check edilmiyorsa duplicate company riski var.
+    Etki:     Potansiyel yüksek — ancak mevcut kod "saveAndFlush + post-trigger update" ile
+              bu durumu zaten ele alıyor (Phase 6'da fixlenmişti).
+    Scope:    db.sql — approve_company_application() trigger'ı incelenmeli
+    Çözüm:   db.sql'deki trigger'ı okuyup davranışını GUIDE.md'ye ekle.
+             Trigger'ın applicationType'ı kontrol ettiğinden emin ol.
+
+---
+
+COMPANY CLAIMING AKIŞI (MANUAL_EXISTING) — TAM SENARYO DOKÜMANTASYONU  [2026-05-29]
+
+Adım 1: Kullanıcı /company-apply sayfasına gider
+  - "Mevcut Firmayı Talep Et" tabına geçer
+  - Firma arama (Autocomplete) ile mevcut firmayı bulur
+  - Hesap bilgilerini (email, şifre) ve firma bilgilerini doldurur
+  - Gönder → POST /api/auth/register-company
+    Body: { email, password, proposedCompanyName, applicationType: "MANUAL_EXISTING",
+            targetCompanyId, description, phone, ... }
+
+Adım 2: Backend register-company işlemi
+  - User oluşturulur (role: PENDING_COMPANY_USER)
+  - CompanyApplication oluşturulur (type: MANUAL_EXISTING, targetCompany: set, status: PENDING)
+  - JWT token döner → kullanıcı /application/status'a yönlendirilir
+
+Adım 3: Admin /admin/approvals'da başvuruyu görür
+  - Tip: "Mevcut" chip (sarı)
+  - Expandable row'da: "Talep Edilen Firma: {targetCompanyName}" uyarı kutusu
+  - Admin kimliği doğrular (telefon, email, açıklama incelenir)
+
+Adım 4: Admin onaylar
+  - PUT /api/company-applications/{id}/approve
+  - approveApplication() MANUAL_EXISTING dalı:
+    * Mevcut user link kontrolü:
+      - Farklı firmaya bağlıysa → 400 (admin reddetmeli, kullanıcı önce diğer firmayla bağı koparmalı)
+      - Aynı firmaya bağlıysa → idempotent (zaten bağlı, rol upgrade yeterli)
+      - Bağlı değilse → CompanyUser{user, targetCompany} oluşturulur
+    * user.role → COMPANY_USER
+
+Adım 5: Kullanıcı giriş yapar → /company/manage'e yönlendirilir
+  - Artık kendi firmasını tam olarak yönetebilir (edit, materials, catalog)
+
+Red durumu:
+  - Admin reddeder → /application/status sayfasında red gerekçesi gösterilir
+  - "Yeniden Başvur" formu: aynı firmayı tekrar talep eder (targetCompany korunur)
+
+Çakışma durumu (birden fazla talep):
+  - Kullanıcı A MANUAL_EXISTING başvurusu yapıp onaylandı → company_users bağlantısı var
+  - Kullanıcı B aynı firmayı talep etti → admin onaylarsa → IllegalStateException
+  - Admin B'nin başvurusunu reddetmeli
+
+---
 
 Completed 2026-04-20:
   - Nested <a> hydration fix in CompanyCard (/companies page)
@@ -2199,13 +2413,37 @@ DECISIONS LOG
 | Duplicate detection     | Levenshtein ≥70%, Turkish normalization, suffix removal       | LOCKED |
 | FavoriteController      | Returns MaterialResponseDTO (not FavoriteMaterialResponseDTO) | LOCKED |
 | Homepage search bar     | Category toggle integrated inside bar (not below it)          | LOCKED |
+| AUTO_IMPORTED approval  | company.status→ACTIVE only; admin role NOT upgraded           | LOCKED |
+| MANUAL_EXISTING approval| company_users created; conflict→IllegalStateException         | LOCKED |
+| reapply() type preserve | applicationType + targetCompany preserved (not hardcode NEW)  | LOCKED |
+| Admin company edit      | PUT /api/admin/companies/{id} bypasses ownership check        | LOCKED |
+| importMaterials company | companyId → company_materials with PRODUCER role (default)    | LOCKED |
+| Catalog analysis method | Option A: pdfminer.six + rule-based, free, no GPU            | LOCKED |
+| Catalog analysis role   | Imported materials get PRODUCER role; admin can edit later    | PENDING |
+| INACTIVE company admin  | /admin/companies shows only ACTIVE (TODO-12 to fix)           | PENDING |
+| Company claiming flow   | MANUAL_EXISTING fully documented (see COMPANY CLAIMING AKIŞI) | LOCKED |
+| Sahipsiz firma tespiti  | GET /api/admin/companies/owned-ids → frontend badge overlay   | LOCKED |
+| company_id in JSON      | importCompany writes company_id to company_info.json          | LOCKED |
 
 ---
 
-Document version: 18.0
-Date: May 28, 2026
-Status: ACTIVE -- Phase 7 complete. Data Scraper Phase 8 + Phase 10 tamamlandı.
-        ScraperService bug fixes uygulandı (2026-05-28): @Slf4j logging, thread join,
-        sanitizeFilename fallback, findFirstByRole, jackson-databind explicit.
-        En iyi scraper sonucu Test #10: SUCCESS 20 | PARTIAL 1 | FAILED 14.
-        Sıradaki: TODO-9 — Katalog analizi (Phase 9), extraction yaklaşımı kararı bekleniyor.
+Document version: 20.0
+Date: May 29, 2026
+Status: ACTIVE -- Phase 8, 9, 10, 11 tamamlandı. Uçtan uca akış entegrasyonu, katalog analizi
+        ve MANUAL_EXISTING claiming akışı çalışır durumda.
+
+Sıradaki öncelikli işler:
+  1. TODO-1, 4, 5, 6 — "TEST BEKLİYOR" durumundaki düzeltmeleri uçtan uca test et
+  2. TODO-12 — /admin/companies INACTIVE firma gösterimi (admin endpoint gerekli)
+  3. TODO-11 — MANUAL_EXISTING reapply formunda targetCompanyName göster
+  4. TODO-14 — Aynı firma talep çakışması için admin uyarısı
+  5. TODO-15 — DB trigger davranışını belgelemek için db.sql'i incele
+    - MaterialRepository: findByMaterialNameIgnoreCase() [NEW]
+    - ScraperResultDTO: companyId alanı eklendi [NEW]
+    - New DTOs: CatalogAnalyzeRequestDTO, MaterialCandidateDTO, MaterialsCandidatesResponseDTO [NEW]
+  Frontend:
+    - /company-apply: MANUAL_EXISTING mod (firma arama + talep) [NEW]
+    - /admin/approvals: MANUAL_EXISTING başvurularda targetCompanyName gösterimi [NEW]
+    - /admin/companies: Sahipsiz badge, admin düzenleme dialogu [NEW]
+    - /admin/scraper Tab 3: CandidateDrawer (checkbox seçimi, firma bağlantısı, import) [NEW]
+    - admin.service.ts: analyzeCatalog, getCatalogCandidates, adminUpdateCompany, getOwnedCompanyIds [NEW]
