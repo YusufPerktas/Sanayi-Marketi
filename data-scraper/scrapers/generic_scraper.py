@@ -1059,6 +1059,14 @@ class GenericScraper(BaseScraper):
 
         return ''
 
+    @staticmethod
+    def _is_safe_text(text: str, min_alpha_ratio: float = 0.50) -> bool:
+        """Metnin binary/garbled veri olmadığını kontrol eder."""
+        if not text or len(text) < 10:
+            return False
+        alpha = sum(1 for c in text if c.isalpha())
+        return alpha / len(text) >= min_alpha_ratio
+
     def _extract_description(self, soup: BeautifulSoup, base_url: str) -> str:
         """
         Firma açıklamasını çıkarır.
@@ -1081,7 +1089,7 @@ class GenericScraper(BaseScraper):
             meta = soup.find('meta', attrs=attr)
             if meta:
                 content = meta.get('content', '').strip()
-                if content and len(content) >= 50:
+                if content and len(content) >= 50 and self._is_safe_text(content):
                     logger.debug(f"Açıklama (meta): {content[:80]}...")
                     return content[:1500]
 
@@ -1092,9 +1100,10 @@ class GenericScraper(BaseScraper):
                 items = raw if isinstance(raw, list) else [raw]
                 for item in items:
                     desc = item.get('description', '') if isinstance(item, dict) else ''
-                    if desc and len(str(desc)) >= 50:
-                        logger.debug(f"Açıklama (Schema.org): {str(desc)[:80]}...")
-                        return str(desc)[:1500]
+                    desc = str(desc)
+                    if len(desc) >= 50 and self._is_safe_text(desc):
+                        logger.debug(f"Açıklama (Schema.org): {desc[:80]}...")
+                        return desc[:1500]
             except Exception:
                 continue
 
@@ -1149,6 +1158,15 @@ class GenericScraper(BaseScraper):
                 link_count = len(p.find_all('a'))
                 word_count = len(text.split())
                 if link_count > word_count / 3:
+                    continue
+                # Garbled text tespiti: alfabetik karakter oranı < %55 ise reddet
+                alpha_count = sum(1 for c in text if c.isalpha())
+                if alpha_count / len(text) < 0.55:
+                    continue
+                # Çok fazla kısa token (tek harf/rakam ağırlıklı menü kalıntısı)
+                tokens = text.split()
+                short_token_ratio = sum(1 for t in tokens if len(t) <= 2) / max(len(tokens), 1)
+                if short_token_ratio > 0.5:
                     continue
                 # Puanlama: firma hintleri içeriyorsa öncelik ver
                 score = sum(1 for h in _COMPANY_HINTS if h in text_lower)

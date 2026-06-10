@@ -1451,8 +1451,16 @@ Frontend (/admin/scraper — TAMAMLANDI 2026-05-27):
   Tab 2: Taranan Firmalar
     - useQuery(['scraper-results']) → adminService.getScraperResults()
     - Filtre butonları: Tümü | Aktarılmamış | Başarısız
-    - Tablo: firma adı, sektörler, katalog sayısı, iletişim, durum chip, aktarıldı mı
-    - Satır başına: "Aktar" (ImportDialog) + refresh icon (tekrar tara)
+    - Tablo: firma adı, sektörler, katalog sayısı, iletişim (tel+email metni), durum chip, tarih
+    - Satır başına: ⓘ Detay (ResultDetailDrawer) + "Aktar" (ImportDialog) + refresh (tekrar tara)
+    - ResultDetailDrawer (sağ Drawer, 520px) [2026-05-29]:
+        * Başlık: firma adı + StatusChip + website linki (OpenInNewIcon) + tarama tarihi
+        * Logo: <img> olarak render, yüklenemezse gizlenir
+        * İletişim: tel, e-posta, adres, şehir/ilçe — ikon ile
+        * Sektörler: Chip listesi
+        * Açıklama: tam metin (sanitizeDescription filtresi geçmişse)
+        * Kataloglar: her dosya adı listede, toplam sayı başlıkta
+        * Footer: Kapat + "Sisteme Aktar" (FAILED/ERROR'da gizli)
 
   Tab 3: Katalog Analizi  [STUB — Phase 9 bekleniyor]
     - Alert: "Bu özellik Phase 9'da (katalog analizi) gelecek"
@@ -1808,10 +1816,10 @@ Frontend:     COMPLETE + UPDATED (2026-04-20)
                                          "Girilmedi" shown for empty optional fields
                 - /admin/companies     company list + search + status chip + "Görüntüle" link
                 - /admin/duplicates    side-by-side comparison + merge/deactivate (REAL API 2026-04-21)
-                - /admin/scraper       DONE (2026-05-27) — 3 tab, tam fonksiyonel
-                                             Tab 1: Firma Tara (form + useMutation + sonuç kartı + ImportDialog)
-                                             Tab 2: Taranan Firmalar (useQuery + filtreler + tablo + Aktar)
-                                             Tab 3: Katalog Analizi (stub — Phase 9 bekleniyor)
+                - /admin/scraper       YENİDEN YAZILDI (2026-06-10) — Phase 12
+                                             Tab 1: Paralel scraping, iş listesi (JobCard), canlı süre, İptal/Retry
+                                             Tab 2: Arama + filtre + editable ImportDialog + tel:/mailto: + re-scrape
+                                             Tab 3: Auto-fetch önceki analiz + Snackbar + companyId null açıklaması
                 - /admin/statistics    real data: company count, material count,
                                        application breakdown + approval rate, city distribution
                 - /admin/materials     NEW (2026-04-20): admin material management
@@ -1925,6 +1933,48 @@ Frontend:     COMPLETE + UPDATED (2026-04-20)
                 - /admin/scraper: 3 tab tam fonksiyonel (Tab 1: Firma Tara, Tab 2: Tarananlar, Tab 3: Katalog stub)
                 - admin.service.ts: ScraperRunRequest/Result/ImportRequest/ImportResult + 4 method eklendi
                 - data-scraper/main.py: --input-json argümanı + process_direct_company() eklendi
+
+              Scraper UI iyileştirmeleri: DONE (2026-05-29)
+
+                Timeout düzeltmesi (admin.service.ts):
+                  - runScraper(): Axios timeout 10s → 660s (backend 600s timeout + pay)
+                  - analyzeCatalog(): Axios timeout 10s → 180s (backend 120s timeout + pay)
+                  - Neden: global apiConfig timeout=10000ms, scraper dakikalarca çalışıyor.
+                    Per-request { timeout } override ile çözüldü.
+
+                Tab 2 — ResultDetailDrawer (page.tsx):
+                  - Her tabloya ⓘ butonu eklendi (InfoOutlinedIcon)
+                  - Tıklandığında 520px sağ Drawer açılır
+                  - İçerik: logo, tam iletişim bilgisi (tel/email/adres/şehir/ilçe), sektörler,
+                    tam açıklama metni, katalog dosya listesi (her dosya ayrı satırda)
+                  - Drawer footer: Kapat + Sisteme Aktar (FAILED'da gizli)
+                  - "Sisteme Aktar"a drawer içinden basılınca drawer kapanır, ImportDialog açılır
+
+                Tab 2 — tablo satır yüksekliği:
+                  - Table size="small" kaldırıldı → normal MUI satır yüksekliği
+                  - Tüm TableCell'lere py: 2 eklendi
+                  - İletişim sütunu: chip yerine gerçek tel/email metni, alt alta
+
+                Açıklama kalite filtresi — iki katmanlı çözüm:
+                  Sorun: Scraper bazı sitelerde PDF binary verisini HTML gibi parse edip
+                         description alanına yazdı. Mevcut company_info.json dosyalarında hâlâ var.
+
+                  (1) Frontend — sanitizeDescription() (page.tsx):
+                        [...text].filter(c => /\p{L}/u.test(c)).length / text.length < 0.50
+                        → null döner → Tab 1 sonuç kartı + DetailDrawer'da bölüm hiç gösterilmez
+                        Hem mevcut bozuk JSON'lar hem yeni taramalar için etkili.
+
+                  (2) Scraper — _is_safe_text() + _extract_description() (generic_scraper.py):
+                        @staticmethod _is_safe_text(text, min_alpha_ratio=0.50)
+                        → meta description ve Schema.org kaynaklarına da uygulandı
+                        (önceden sadece paragraf çıkarımında kontrol vardı)
+
+                  (3) Scraper — _extract_first_meaningful_paragraph() ek filtreler:
+                        - alpha_count / len(text) < 0.55 → reddet
+                        - short_token_ratio > 0.50 → reddet (menü kalıntısı)
+
+                  Mevcut bozuk veri: ilgili firmalar Tab 2'den "Tekrar tara" ile yeniden
+                  taratılmalı. Yeni taramada açıklama ya doğru gelir ya da boş bırakılır.
 
               Hesap Ayarları: DONE (2026-05-22)
                 - /account/settings page implemented: email + password change
@@ -2048,6 +2098,72 @@ Phase 11: Tam Akış Entegrasyonu        [DONE 2026-05-29]
     - /admin/approvals: MANUAL_EXISTING için targetCompanyName uyarısı
     - /admin/companies: Sahipsiz badge + admin düzenleme dialogu
     - /admin/scraper Tab 3: CandidateDrawer (tam implementasyon)
+
+Phase 12: Scraper Panel Yeniden Tasarımı  [DONE 2026-06-10]
+  - WebConfig.java: /scraper-files/** statik endpoint eklendi
+  - admin.service.ts runScraper(): signal?: AbortSignal parametresi eklendi
+  - page.tsx tam yeniden yazım:
+      Paralel scraping (çoklu bağımsız job), canlı süre sayacı, HTTP abort (İptal butonu)
+      Tab 1: sonuç kartı kaldırıldı — iş listesi (JobCard) ile değiştirildi
+      Tab 2: arama + filtre + editable ImportDialog + tel:/mailto: linkler + re-scrape onay
+      Tab 3: getCatalogCandidates auto-fetch + Snackbar
+      Sayfa düzeyinde global Snackbar bileşeni
+
+Phase 12: Scraper Panel Yeniden Tasarımı   [TAMAMLANDI 2026-06-10]
+
+  Motivasyon:
+    1. Admin bir scraping başlatınca bitmesini beklemek zorunda — paralel çalışma yok.
+    2. Tab 1 sonuç kartı tab değişince kayboluyor, Tab 2 ile görev çakışması var.
+    3. ImportDialog alanları düzenlenemiyor (yanlış scrape verisi aktarım öncesi düzeltilemez).
+    4. Tab 3 alert() kullanıyor; Tab 2'de arama/sıralama/re-scrape onayı yok.
+    5. Katalog dosyaları ResultDetailDrawer'da görünüyor ama indirilebilir değil.
+
+  Uygulanan değişiklikler:
+
+  server/src/main/java/com/sanayimarketi/config/WebConfig.java:
+    - scraperOutputDir field (@Value("${scraper.output-dir}")) eklendi
+    - addResourceHandlers(): /scraper-files/** → {scraper.output-dir}/catalogs/ statik sunumu
+    - application.yml: scraper.output-dir zaten mevcut (D:/Sanayi Marketi Output)
+
+  client/src/services/admin.service.ts:
+    - runScraper(): isteğe bağlı signal?: AbortSignal parametresi eklendi
+      (Axios isteğine { signal } geçilir — HTTP abort desteği)
+
+  client/src/app/(protected)/admin/scraper/page.tsx  [TAM YENİDEN YAZILDI]:
+
+    Sayfa düzeyinde state:
+      ScrapeJob: { id, companyName, website, sectors, status, startedAt, endedAt?, result?, errorMessage? }
+      JobStatus: 'running' | 'completed' | 'partial' | 'failed' | 'error' | 'cancelled'
+      jobs: ScrapeJob[]
+      abortRefs: useRef<Record<string, AbortController>>
+      now: number  (setInterval 1sn — sadece running job varken)
+      startScrape() / cancelJob() / retryJob() sayfa düzeyinde fonksiyonlar
+
+    Tab 1 — Tara:
+      - Form: Firma Adı + Website URL + Sektörler (multi-select) + "Tara" butonu
+      - "Tara" bloklamaz — her tıklama bağımsız job başlatır (paralel çalışma)
+      - Aktif iş sayısı tab başlığında canlı rozet
+      - JobCard: running → canlı süre + İptal | done → özet + "Tarananlar" | bad → Tekrar Dene
+      - Sonuç kartı KALDIRILDI
+      - İş bitti → scraper-results query invalidate
+
+    Tab 2 — Tarananlar:
+      - Tab etiketi: toplam sonuç sayısı rozeti
+      - Özet bar: Toplam / Aktarılmamış / Bekliyor / Başarısız chip'leri
+      - Firma adına göre anlık arama + 4 filtre butonu (Tümü / Aktarılmamış / Kısmi / Başarısız)
+      - İletişim sütunu: tel: ve mailto: link'leri
+      - "Aktarıldı" chip: companyId varsa link içerir
+      - Re-scrape: ConfirmDialog → startScrape() → Snackbar
+      - ImportDialog: tüm alanlar düzenlenebilir TextField (companyName, phone, email, city, district, address)
+      - ResultDetailDrawer: katalog dosyaları /scraper-files/{safeName}/{filename} indirilebilir link
+
+    Tab 3 — Katalog Analizi:
+      - Drawer açılınca getCatalogCandidates() ile önceki analiz otomatik yüklenir
+      - Önceki analiz varsa sonuçlar direkt gösterilir (yeniden analiz gerekmez)
+      - companyId null ise açıklama notu gösterilir ("Önce Tab 2'den aktar")
+      - Import başarısı: alert() → sayfa düzeyinde Snackbar
+
+    Global Snackbar bileşeni: sayfa düzeyinde, Tab 2 ve Tab 3 tarafından ortak kullanılır
 
 ---
 
@@ -2427,17 +2543,18 @@ DECISIONS LOG
 
 ---
 
-Document version: 20.0
-Date: May 29, 2026
-Status: ACTIVE -- Phase 8, 9, 10, 11 tamamlandı. Uçtan uca akış entegrasyonu, katalog analizi
-        ve MANUAL_EXISTING claiming akışı çalışır durumda.
+Document version: 22.0
+Date: June 10, 2026
+Status: ACTIVE -- Phase 8-12 tamamlandı. Scraper panel yeniden tasarımı tamamlandı (2026-06-10).
+        Paralel scraping, JobCard listesi, editable ImportDialog, arama/filtre, katalog indirme linki.
 
 Sıradaki öncelikli işler:
-  1. TODO-1, 4, 5, 6 — "TEST BEKLİYOR" durumundaki düzeltmeleri uçtan uca test et
-  2. TODO-12 — /admin/companies INACTIVE firma gösterimi (admin endpoint gerekli)
-  3. TODO-11 — MANUAL_EXISTING reapply formunda targetCompanyName göster
-  4. TODO-14 — Aynı firma talep çakışması için admin uyarısı
-  5. TODO-15 — DB trigger davranışını belgelemek için db.sql'i incele
+  1. Phase 12 testi — /admin/scraper sayfasını uçtan uca test et (paralel job, İptal, Tab 2 filtre, Tab 3 drawer)
+  2. TODO-1, 4, 5, 6 — "TEST BEKLİYOR" durumundaki düzeltmeleri uçtan uca test et
+  3. TODO-12 — /admin/companies INACTIVE firma gösterimi (admin endpoint gerekli)
+  4. TODO-11 — MANUAL_EXISTING reapply formunda targetCompanyName göster
+  5. TODO-14 — Aynı firma talep çakışması için admin uyarısı
+  6. TODO-15 — DB trigger davranışını belgelemek için db.sql'i incele
     - MaterialRepository: findByMaterialNameIgnoreCase() [NEW]
     - ScraperResultDTO: companyId alanı eklendi [NEW]
     - New DTOs: CatalogAnalyzeRequestDTO, MaterialCandidateDTO, MaterialsCandidatesResponseDTO [NEW]

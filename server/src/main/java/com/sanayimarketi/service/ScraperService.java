@@ -29,7 +29,8 @@ public class ScraperService {
     private final UserRepository userRepository;
     private final MaterialRepository materialRepository;
     private final CompanyMaterialRepository companyMaterialRepository;
-    private final ObjectMapper objectMapper;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${scraper.output-dir}")
     private String scraperOutputDir;

@@ -30,6 +30,7 @@ com\sanayimarketi\entity\CompanyApplication$CompanyApplicationBuilder.class
 com\sanayimarketi\entity\Material$MaterialBuilder.class
 com\sanayimarketi\dto\CompanyResponseDTO$CompanyResponseDTOBuilder.class
 com\sanayimarketi\entity\UserFavoriteMaterial.class
+com\sanayimarketi\service\CompanyApplicationService$1.class
 com\sanayimarketi\entity\CompanyUser$CompanyUserBuilder.class
 com\sanayimarketi\dto\CompanyResponseDTO.class
 com\sanayimarketi\entity\UserFavoriteMaterialId.class

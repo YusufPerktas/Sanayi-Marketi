@@ -157,8 +157,8 @@ export const adminService = {
 
   // ── Scraper ────────────────────────────────────────────────────
 
-  runScraper: (request: ScraperRunRequest) =>
-    apiClient.post<ScraperResult>('/api/admin/scraper/run', request).then((r) => r.data),
+  runScraper: (request: ScraperRunRequest, signal?: AbortSignal) =>
+    apiClient.post<ScraperResult>('/api/admin/scraper/run', request, { timeout: 660_000, signal }).then((r) => r.data),
 
   getScraperResults: () =>
     apiClient.get<ScraperResult[]>('/api/admin/scraper/results').then((r) => r.data),
@@ -170,7 +170,7 @@ export const adminService = {
     apiClient.post<MaterialImportResult>('/api/admin/scraper/materials/import', items).then((r) => r.data),
 
   analyzeCatalog: (request: CatalogAnalyzeRequest) =>
-    apiClient.post<MaterialsCandidates>('/api/admin/scraper/catalogs/analyze', request).then((r) => r.data),
+    apiClient.post<MaterialsCandidates>('/api/admin/scraper/catalogs/analyze', request, { timeout: 180_000 }).then((r) => r.data),
 
   getCatalogCandidates: (companyName: string, testDir?: number) =>
     apiClient

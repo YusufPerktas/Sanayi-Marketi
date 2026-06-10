@@ -14,11 +14,16 @@ public class WebConfig implements WebMvcConfigurer {
     @Value("${logo.upload.dir}")
     private String logoUploadDir;
 
+    @Value("${scraper.output-dir}")
+    private String scraperOutputDir;
+
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/uploads/catalogs/**")
                 .addResourceLocations("file:" + catalogUploadDir + "/");
         registry.addResourceHandler("/uploads/logos/**")
                 .addResourceLocations("file:" + logoUploadDir + "/");
+        registry.addResourceHandler("/scraper-files/**")
+                .addResourceLocations("file:" + scraperOutputDir + "/catalogs/");
     }
 }
